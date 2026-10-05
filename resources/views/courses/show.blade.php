@@ -54,11 +54,19 @@
         <section class="card">
             <div class="card-head"><h3>Avaliações</h3><span>{{ $course->assessments->count() }}</span></div>
             @forelse ($course->assessments as $assessment)
-                <article class="item">
+                @php
+                    $conditional = (bool) ($assessment->metadata['conditional'] ?? false);
+                    $regime = $assessment->metadata['regime'] ?? null;
+                @endphp
+                <article class="item {{ $conditional ? 'conditional-item' : '' }}">
                     <div class="date">{{ $assessment->due_at?->copy()->timezone(config('app.timezone'))->format('d/m') ?? '—' }}</div>
                     <div>
                         <strong>{{ $assessment->title }}</strong>
-                        <p>{{ ucfirst($assessment->type) }} · {{ $assessment->confirmed ? 'Confirmada' : 'Por confirmar' }}</p>
+                        <p>
+                            {{ ucfirst(str_replace('_', ' ', $assessment->type)) }}
+                            @if($regime) · {{ ucfirst($regime) }} @endif
+                            · {{ $conditional ? 'Condicional' : 'Ação necessária' }}
+                        </p>
                     </div>
                 </article>
             @empty

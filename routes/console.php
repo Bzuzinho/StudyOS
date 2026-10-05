@@ -2,6 +2,7 @@
 
 use App\Models\SyncConnection;
 use App\Services\Academic\AcademicCatalogBootstrapper;
+use App\Services\Academic\AssessmentCalendarBootstrapper;
 use App\Services\Calendar\ICalendarSyncService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -16,6 +17,13 @@ Artisan::command('studyos:bootstrap-academic-year', function () {
 
     return 0;
 })->purpose('Bootstrap the audited 2026/2027 InforEstudante course catalogue');
+
+Artisan::command('studyos:bootstrap-assessments', function () {
+    $stats = app(AssessmentCalendarBootstrapper::class)->run();
+    $this->info('Assessment calendar ready: '.json_encode($stats, JSON_UNESCAPED_UNICODE));
+
+    return 0;
+})->purpose('Bootstrap the official 2026/2027 first-semester assessment calendar');
 
 Artisan::command('studyos:sync-ical {connection?}', function () {
     $connectionId = $this->argument('connection');
