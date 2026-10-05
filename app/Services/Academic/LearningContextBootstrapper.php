@@ -66,8 +66,8 @@ class LearningContextBootstrapper
                 $macroMaterial,
                 'macro-slides-folder-six-pdfs-audit',
                 'Inventário auditado',
-                now(),
-                ['observed_items' => 6, 'observed_format' => 'PDF'],
+                Carbon::createFromFormat('Y-m-d H:i', '2026-10-05 00:00', config('app.timezone')),
+                ['observed_items' => 6, 'observed_format' => 'PDF', 'date_precision' => 'day'],
             );
 
             LessonSummary::query()->updateOrCreate(
