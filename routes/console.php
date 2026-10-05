@@ -4,6 +4,7 @@ use App\Models\SyncConnection;
 use App\Services\Academic\AcademicCatalogBootstrapper;
 use App\Services\Academic\AssessmentCalendarBootstrapper;
 use App\Services\Academic\MoodleAuditBootstrapper;
+use App\Services\Academic\LearningContextBootstrapper;
 use App\Services\Calendar\ICalendarSyncService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -32,6 +33,13 @@ Artisan::command('studyos:bootstrap-moodle-audit', function () {
 
     return 0;
 })->purpose('Bootstrap audited Moodle course mappings and confirmed activities');
+
+Artisan::command('studyos:bootstrap-learning-context', function () {
+    $stats = app(LearningContextBootstrapper::class)->run();
+    $this->info('Learning context ready: '.json_encode($stats, JSON_UNESCAPED_UNICODE));
+
+    return 0;
+})->purpose('Bootstrap audited materials, versions and lesson summaries');
 
 Artisan::command('studyos:sync-ical {connection?}', function () {
     $connectionId = $this->argument('connection');
@@ -102,6 +110,9 @@ Artisan::command('studyos:deploy-prepare', function () {
 
     $moodle = app(MoodleAuditBootstrapper::class)->run();
     $this->info('Moodle audit data ready: '.json_encode($moodle, JSON_UNESCAPED_UNICODE));
+
+    $learning = app(LearningContextBootstrapper::class)->run();
+    $this->info('Learning context ready: '.json_encode($learning, JSON_UNESCAPED_UNICODE));
 
     return 0;
 })->purpose('Prepare StudyOS database and audited academic data before deployment');
