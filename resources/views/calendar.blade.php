@@ -13,6 +13,7 @@
         <div class="nav-links">
             <a href="/">Dashboard</a>
             <a class="active" href="/calendar">Calendário</a>
+            <a href="/courses">UCs</a>
         </div>
     </nav>
 
@@ -51,7 +52,11 @@
                         @endphp
                         <div class="calendar-event {{ $event->status === 'cancelled' ? 'cancelled' : '' }}">
                             <div class="event-time">{{ $localStart->format('H:i') }}@if($localEnd)–{{ $localEnd->format('H:i') }}@endif</div>
-                            <strong>{{ $event->course?->name ?? $event->title }}</strong>
+                            @if($event->course)
+                                <a href="{{ route('courses.show', $event->course) }}"><strong>{{ $event->course->name }}</strong></a>
+                            @else
+                                <strong>{{ $event->title }}</strong>
+                            @endif
                             <span>{{ $event->location ?: 'Sala por confirmar' }}</span>
                             @if($event->course && $event->title !== $event->course->name)
                                 <small>{{ $event->title }}</small>

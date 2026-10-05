@@ -15,8 +15,16 @@ class SystemStatusController
         $lastRun = SyncRun::query()->latest('started_at')->first();
 
         return response()->json([
-            'courses' => Course::count(),
-            'calendar_events' => ClassOccurrence::count(),
+            'courses' => [
+                'total' => Course::count(),
+                'active' => Course::query()->where('status', 'active')->count(),
+                'planned' => Course::query()->where('status', 'planned')->count(),
+            ],
+            'calendar_events' => [
+                'total' => ClassOccurrence::count(),
+                'linked_to_course' => ClassOccurrence::query()->whereNotNull('course_id')->count(),
+                'unlinked' => ClassOccurrence::query()->whereNull('course_id')->count(),
+            ],
             'sync_connections' => SyncConnection::count(),
             'last_sync' => $lastRun ? [
                 'status' => $lastRun->status,
