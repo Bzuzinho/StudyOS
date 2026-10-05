@@ -4,12 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>StudyOS</title>
-    <link rel="stylesheet" href="/css/app.css">
+    @include('partials.app-identity')
+    <link rel="stylesheet" href="/css/app.css?v=brand-1">
 </head>
 <body>
 <div class="shell">
     <nav class="nav">
-        <a class="brand" href="/">StudyOS</a>
+        <a class="brand" href="/" aria-label="StudyOS — Painel académico"><img src="/brand/studyos-mark.svg" width="36" height="36" alt=""><span>StudyOS</span></a>
         <div class="nav-links">
             <a class="active" href="/">Dashboard</a>
             <a href="/calendar">Calendário</a>
