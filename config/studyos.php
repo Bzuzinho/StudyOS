@@ -2,6 +2,7 @@
 
 return [
     'calendar' => [
+        'inforestudante_url' => env('INFORESTUDANTE_ICAL_URL'),
         'allowed_hosts' => array_values(array_filter(array_map(
             'trim',
             explode(',', env('STUDYOS_CALENDAR_ALLOWED_HOSTS', 'inforestudante.ipleiria.pt,inforestudante.ulo.pt,ead.ulo.pt'))
