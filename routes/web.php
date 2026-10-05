@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DashboardController;
@@ -9,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', DashboardController::class)->name('dashboard');
 Route::get('/calendar', CalendarController::class)->name('calendar');
+Route::get('/activities', ActivityController::class)->name('activities.index');
 
 Route::get('/calendar/events/create', [ManualCalendarEventController::class, 'create'])->name('calendar-events.create');
 Route::post('/calendar/events', [ManualCalendarEventController::class, 'store'])->name('calendar-events.store');

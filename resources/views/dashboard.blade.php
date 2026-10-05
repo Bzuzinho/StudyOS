@@ -15,11 +15,12 @@
             <a class="active" href="/">Dashboard</a>
             <a href="/calendar">Calendário</a>
             <a href="/courses">UCs</a>
+            <a href="/activities">Atividades</a>
         </div>
     </nav>
 
     <header class="topbar">
-        <div><p class="eyebrow">StudyOS · Alpha 0.4</p><h1>Painel académico</h1></div>
+        <div><p class="eyebrow">StudyOS · Alpha 0.6</p><h1>Painel académico</h1></div>
         <div class="sync {{ $lastSync?->status === 'success' ? 'ok' : '' }}"><span></span>{{ $lastSync ? 'Última sincronização: '.$lastSync->started_at?->copy()->timezone(config('app.timezone'))->format('d/m H:i') : 'Sincronização ainda não configurada' }}</div>
     </header>
 
@@ -61,7 +62,22 @@
             @endforelse
         </section>
 
-        <section class="card wide">
+        <section class="card">
+            <div class="card-head"><h3>Tarefas pendentes</h3><a href="/activities">Ver atividades</a></div>
+            @forelse ($pendingTasks as $task)
+                <article class="item">
+                    <div class="date">{{ $task->due_at ? $task->due_at->copy()->timezone(config('app.timezone'))->format('d/m') : '—' }}</div>
+                    <div>
+                        <strong>{{ $task->title }}</strong>
+                        <p>{{ $task->course?->name }} · {{ $task->due_at ? 'Com prazo' : 'Prazo não publicado' }}</p>
+                    </div>
+                </article>
+            @empty
+                <p class="empty">Sem tarefas pendentes registadas.</p>
+            @endforelse
+        </section>
+
+        <section class="card">
             <div class="card-head"><h3>UCs do 1.º semestre</h3><a href="/courses">Ver todas</a></div>
             <div class="compact-course-grid">
                 @forelse ($activeCourses as $course)
@@ -77,13 +93,14 @@
         </section>
 
         <section class="card wide">
-            <div class="card-head"><h3>Roadmap Alpha</h3><span>0.4</span></div>
+            <div class="card-head"><h3>Roadmap Alpha</h3><span>0.6</span></div>
             <div class="roadmap">
                 <div class="done"><b>01</b><span>Fundação de dados</span></div>
                 <div class="done"><b>02</b><span>iCalendar InforEstudante</span></div>
                 <div class="done"><b>03</b><span>Calendário visual</span></div>
-                <div class="active"><b>04</b><span>UCs e associação automática</span></div>
-                <div><b>05</b><span>Moodle e avaliações</span></div>
+                <div class="done"><b>04</b><span>UCs e associação automática</span></div>
+                <div class="done"><b>05</b><span>Avaliações oficiais</span></div>
+                <div class="active"><b>06</b><span>Moodle e atividades</span></div>
             </div>
         </section>
     </main>

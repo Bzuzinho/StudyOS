@@ -15,6 +15,7 @@
             <a href="/">Dashboard</a>
             <a class="active" href="/calendar">Calendário</a>
             <a href="/courses">UCs</a>
+            <a href="/activities">Atividades</a>
         </div>
     </nav>
 
@@ -60,8 +61,9 @@
                             $localEnd = $event->localEndsAt();
                             $isManual = $event->source === 'manual';
                             $isAssessment = $event->source === 'estg_assessment_calendar_2026_27';
+                            $isMoodle = $event->source === 'moodle_audit';
                         @endphp
-                        <div class="calendar-event {{ $event->status === 'cancelled' ? 'cancelled' : '' }} {{ $isManual ? 'manual' : '' }} {{ $isAssessment ? 'assessment-event' : '' }}">
+                        <div class="calendar-event {{ $event->status === 'cancelled' ? 'cancelled' : '' }} {{ $isManual ? 'manual' : '' }} {{ $isAssessment ? 'assessment-event' : '' }} {{ $isMoodle ? 'moodle-event' : '' }}">
                             <div class="event-topline">
                                 <div class="event-time">{{ $localStart->format('H:i') }}@if($localEnd)–{{ $localEnd->format('H:i') }}@endif</div>
                                 @if($isManual)
@@ -77,7 +79,9 @@
                             @if($event->course && $event->title !== $event->course->name)
                                 <small>{{ $event->title }}</small>
                             @endif
-                            @if($isAssessment)
+                            @if($isMoodle)
+                                <small class="moodle-label">Moodle · prazo confirmado</small>
+                            @elseif($isAssessment)
                                 <small class="assessment-label">Avaliação periódica · calendário oficial</small>
                             @elseif($isManual)
                                 <small class="manual-label">Manual · {{ ucfirst($event->source_payload['event_type'] ?? 'evento') }}</small>

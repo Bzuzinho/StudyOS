@@ -3,6 +3,7 @@
 use App\Models\SyncConnection;
 use App\Services\Academic\AcademicCatalogBootstrapper;
 use App\Services\Academic\AssessmentCalendarBootstrapper;
+use App\Services\Academic\MoodleAuditBootstrapper;
 use App\Services\Calendar\ICalendarSyncService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -24,6 +25,13 @@ Artisan::command('studyos:bootstrap-assessments', function () {
 
     return 0;
 })->purpose('Bootstrap the official 2026/2027 first-semester assessment calendar');
+
+Artisan::command('studyos:bootstrap-moodle-audit', function () {
+    $stats = app(MoodleAuditBootstrapper::class)->run();
+    $this->info('Moodle audit data ready: '.json_encode($stats, JSON_UNESCAPED_UNICODE));
+
+    return 0;
+})->purpose('Bootstrap audited Moodle course mappings and confirmed activities');
 
 Artisan::command('studyos:sync-ical {connection?}', function () {
     $connectionId = $this->argument('connection');
@@ -72,6 +80,31 @@ Artisan::command('studyos:sync-ical {connection?}', function () {
 
     return $failed ? 1 : 0;
 })->purpose('Synchronize configured StudyOS iCalendar sources');
+
+Artisan::command('studyos:deploy-prepare', function () {
+    $migrationExit = $this->call('migrate', ['--force' => true]);
+
+    if ($migrationExit !== 0) {
+        return $migrationExit;
+    }
+
+    $catalogue = app(AcademicCatalogBootstrapper::class)->run();
+    $this->info('Academic catalogue ready: '.json_encode($catalogue, JSON_UNESCAPED_UNICODE));
+
+    $syncExit = $this->call('studyos:sync-ical');
+
+    if ($syncExit !== 0) {
+        return $syncExit;
+    }
+
+    $assessments = app(AssessmentCalendarBootstrapper::class)->run();
+    $this->info('Assessment calendar ready: '.json_encode($assessments, JSON_UNESCAPED_UNICODE));
+
+    $moodle = app(MoodleAuditBootstrapper::class)->run();
+    $this->info('Moodle audit data ready: '.json_encode($moodle, JSON_UNESCAPED_UNICODE));
+
+    return 0;
+})->purpose('Prepare StudyOS database and audited academic data before deployment');
 
 Schedule::command('studyos:sync-ical')
     ->everyThirtyMinutes()

@@ -15,6 +15,7 @@
             <a href="/">Dashboard</a>
             <a href="/calendar">Calendário</a>
             <a class="active" href="/courses">UCs</a>
+            <a href="/activities">Atividades</a>
         </div>
     </nav>
 
@@ -32,6 +33,7 @@
         <div class="course-hero-metrics">
             <div><strong>{{ $course->classOccurrences->count() }}</strong><span>ocorrências</span></div>
             <div><strong>{{ $course->assessments->count() }}</strong><span>avaliações</span></div>
+            <div><strong>{{ $course->tasks->count() }}</strong><span>tarefas</span></div>
         </div>
     </header>
 
@@ -71,6 +73,22 @@
                 </article>
             @empty
                 <p class="empty">Ainda não foram recolhidas avaliações para esta UC.</p>
+            @endforelse
+        </section>
+
+        <section class="card wide">
+            <div class="card-head"><h3>Tarefas</h3><span>{{ $course->tasks->count() }}</span></div>
+            @forelse($course->tasks as $task)
+                <article class="item">
+                    <div class="date">{{ $task->due_at ? $task->due_at->copy()->timezone(config('app.timezone'))->format('d/m') : '—' }}</div>
+                    <div>
+                        <strong>{{ $task->title }}</strong>
+                        <p>{{ ucfirst($task->type) }} · {{ $task->status === 'completed' ? 'Concluída' : 'Pendente' }}@if(!$task->due_at) · prazo não publicado@endif</p>
+                        @if($task->description)<small class="task-description">{{ $task->description }}</small>@endif
+                    </div>
+                </article>
+            @empty
+                <p class="empty">Sem tarefas registadas para esta UC.</p>
             @endforelse
         </section>
 
