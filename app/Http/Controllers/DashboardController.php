@@ -17,7 +17,13 @@ class DashboardController
         $dayEnd = $now->copy()->endOfDay();
 
         return view('dashboard', [
-            'courseCount' => Course::count(),
+            'courseCount' => Course::query()->where('status', 'active')->count(),
+            'plannedCourseCount' => Course::query()->where('status', 'planned')->count(),
+            'activeCourses' => Course::query()
+                ->where('status', 'active')
+                ->withCount('classOccurrences')
+                ->orderBy('name')
+                ->get(),
             'todayClasses' => ClassOccurrence::query()
                 ->with('course')
                 ->whereBetween('starts_at', [$dayStart, $dayEnd])
