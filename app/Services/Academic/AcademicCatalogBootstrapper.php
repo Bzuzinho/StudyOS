@@ -2,12 +2,16 @@
 
 namespace App\Services\Academic;
 
+use App\Models\ClassOccurrence;
 use App\Models\Course;
 use App\Models\SourceCourse;
+use App\Services\Calendar\CourseMatcher;
 use Illuminate\Support\Facades\DB;
 
 class AcademicCatalogBootstrapper
 {
+    public function __construct(private readonly CourseMatcher $courseMatcher) {}
+
     /**
      * Official 2026/2027 enrolment observed in InforEstudante.
      * This bootstrap is intentionally idempotent and can later be replaced by
@@ -66,11 +70,30 @@ class AcademicCatalogBootstrapper
                 $wasExisting ? $updated++ : $created++;
             }
 
+            $relinked = 0;
+
+            ClassOccurrence::query()
+                ->whereNull('course_id')
+                ->orderBy('id')
+                ->chunkById(200, function ($occurrences) use (&$relinked) {
+                    foreach ($occurrences as $occurrence) {
+                        $course = $this->courseMatcher->match($occurrence->title);
+
+                        if (! $course) {
+                            continue;
+                        }
+
+                        $occurrence->update(['course_id' => $course->id]);
+                        $relinked++;
+                    }
+                });
+
             return [
                 'created' => $created,
                 'updated' => $updated,
                 'active' => Course::query()->where('status', 'active')->count(),
                 'planned' => Course::query()->where('status', 'planned')->count(),
+                'calendar_relinked' => $relinked,
             ];
         });
     }
