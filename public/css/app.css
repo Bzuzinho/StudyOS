@@ -4,3 +4,5 @@
 @media(max-width:760px){.form-grid{grid-template-columns:1fr}.field.span-2{grid-column:auto}.form-actions{flex-direction:column-reverse}.form-actions .button{width:100%}}
 
 .calendar-event.assessment-event{border-left-color:#e4a84f;background:#251d10}.assessment-label{color:#e7bb75!important;text-transform:uppercase;letter-spacing:.04em}.conditional-item{opacity:.62}.conditional-item .date{color:#8e99a0}
+
+.brand{display:inline-flex;align-items:center;gap:11px;font-size:24px;font-weight:650;letter-spacing:-.04em;color:#f3f5f7;line-height:1;flex-shrink:0}.brand img{display:block;width:36px;height:36px}.brand:focus-visible{outline:2px solid #9aadc4;outline-offset:6px;border-radius:4px}
