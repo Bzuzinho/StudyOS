@@ -5,12 +5,20 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ManualCalendarEventController;
+use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\SystemStatusController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', DashboardController::class)->name('dashboard');
 Route::get('/calendar', CalendarController::class)->name('calendar');
 Route::get('/activities', ActivityController::class)->name('activities.index');
+
+Route::get('/materials', [MaterialController::class, 'index'])->name('materials.index');
+Route::get('/materials/create', [MaterialController::class, 'create'])->name('materials.create');
+Route::post('/materials', [MaterialController::class, 'store'])->name('materials.store');
+Route::get('/materials/{material}/edit', [MaterialController::class, 'edit'])->name('materials.edit');
+Route::put('/materials/{material}', [MaterialController::class, 'update'])->name('materials.update');
+Route::delete('/materials/{material}', [MaterialController::class, 'destroy'])->name('materials.destroy');
 
 Route::get('/calendar/events/create', [ManualCalendarEventController::class, 'create'])->name('calendar-events.create');
 Route::post('/calendar/events', [ManualCalendarEventController::class, 'store'])->name('calendar-events.store');
