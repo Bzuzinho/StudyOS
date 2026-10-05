@@ -109,9 +109,11 @@ class ManualCalendarEventController
             'title' => ['nullable', 'string', 'max:255'],
             'date' => ['required', 'date_format:Y-m-d'],
             'start_time' => ['required', 'date_format:H:i'],
-            'end_time' => ['nullable', 'date_format:H:i'],
+            'end_time' => ['nullable', 'date_format:H:i', 'after:start_time'],
             'location' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:3000'],
+        ], [
+            'end_time.after' => 'A hora de fim tem de ser posterior à hora de início.',
         ]);
     }
 
@@ -119,15 +121,9 @@ class ManualCalendarEventController
     {
         $timezone = config('app.timezone', 'Europe/Lisbon');
         $startsAt = Carbon::createFromFormat('Y-m-d H:i', $data['date'].' '.$data['start_time'], $timezone);
-
-        $endsAt = null;
-        if (! empty($data['end_time'])) {
-            $endsAt = Carbon::createFromFormat('Y-m-d H:i', $data['date'].' '.$data['end_time'], $timezone);
-
-            if ($endsAt->lte($startsAt)) {
-                abort(422, 'A hora de fim tem de ser posterior à hora de início.');
-            }
-        }
+        $endsAt = ! empty($data['end_time'])
+            ? Carbon::createFromFormat('Y-m-d H:i', $data['date'].' '.$data['end_time'], $timezone)
+            : null;
 
         return [$startsAt->utc(), $endsAt?->utc()];
     }
