@@ -12,17 +12,12 @@ class AcademicCatalogBootstrapper
 {
     public function __construct(private readonly CourseMatcher $courseMatcher) {}
 
-    /**
-     * Official 2026/2027 enrolment observed in InforEstudante.
-     * This bootstrap is intentionally idempotent and can later be replaced by
-     * an authenticated InforEstudante collector without changing the data model.
-     */
     private const COURSES = [
-        ['code' => '6709', 'name' => 'Contabilidade Financeira I', 'semester' => 1, 'status' => 'active', 'ects' => 6, 'groups' => ['TP1'], 'aliases' => ['CF I', 'CFI']],
-        ['code' => '23456', 'name' => 'Estatística Aplicada à Gestão I', 'semester' => 1, 'status' => 'active', 'groups' => ['PL1', 'TP1'], 'aliases' => ['EAG I', 'EAGI']],
-        ['code' => '11909', 'name' => 'Inglês', 'semester' => 1, 'status' => 'active', 'groups' => ['TP1'], 'aliases' => ['Inglês', 'English']],
+        ['code' => '6709', 'name' => 'Contabilidade Financeira I', 'semester' => 1, 'status' => 'active', 'ects' => 6, 'groups' => ['TP1'], 'aliases' => ['CF I', 'CFI', 'CFIN 1', 'CFIN I']],
+        ['code' => '23456', 'name' => 'Estatística Aplicada à Gestão I', 'semester' => 1, 'status' => 'active', 'groups' => ['PL1', 'TP1'], 'aliases' => ['EAG I', 'EAGI', 'EAG 1']],
+        ['code' => '11909', 'name' => 'Inglês', 'semester' => 1, 'status' => 'active', 'groups' => ['TP1'], 'aliases' => ['Inglês', 'English', 'ING', 'C1 English', 'C1 English 1st semester']],
         ['code' => '14020', 'name' => 'Introdução à Gestão', 'semester' => 1, 'status' => 'active', 'groups' => ['TP1'], 'aliases' => ['IG']],
-        ['code' => '10149', 'name' => 'Macroeconomia', 'semester' => 1, 'status' => 'active', 'groups' => ['TP1'], 'aliases' => ['Macroeconomia']],
+        ['code' => '10149', 'name' => 'Macroeconomia', 'semester' => 1, 'status' => 'active', 'groups' => ['TP1'], 'aliases' => ['Macroeconomia', 'MACRO']],
         ['code' => '15436', 'name' => 'Métodos Quantitativos', 'semester' => 1, 'status' => 'active', 'groups' => ['TP1'], 'aliases' => ['MQ']],
         ['code' => '10150', 'name' => 'Contabilidade Financeira II', 'semester' => 2, 'status' => 'planned', 'groups' => [], 'aliases' => ['CF II', 'CFII']],
         ['code' => '17497', 'name' => 'Estatística Aplicada à Gestão II', 'semester' => 2, 'status' => 'planned', 'groups' => [], 'aliases' => ['EAG II', 'EAGII']],
@@ -71,20 +66,24 @@ class AcademicCatalogBootstrapper
             }
 
             $relinked = 0;
+            $unmatched = 0;
 
             ClassOccurrence::query()
-                ->whereNull('course_id')
+                ->where('source', 'inforestudante_ical')
                 ->orderBy('id')
-                ->chunkById(200, function ($occurrences) use (&$relinked) {
+                ->chunkById(200, function ($occurrences) use (&$relinked, &$unmatched) {
                     foreach ($occurrences as $occurrence) {
                         $course = $this->courseMatcher->match($occurrence->title);
 
                         if (! $course) {
+                            $unmatched++;
                             continue;
                         }
 
-                        $occurrence->update(['course_id' => $course->id]);
-                        $relinked++;
+                        if ((int) $occurrence->course_id !== (int) $course->id) {
+                            $occurrence->update(['course_id' => $course->id]);
+                            $relinked++;
+                        }
                     }
                 });
 
@@ -94,6 +93,7 @@ class AcademicCatalogBootstrapper
                 'active' => Course::query()->where('status', 'active')->count(),
                 'planned' => Course::query()->where('status', 'planned')->count(),
                 'calendar_relinked' => $relinked,
+                'calendar_unmatched' => $unmatched,
             ];
         });
     }
