@@ -17,6 +17,7 @@
             <a href="/courses">UCs</a>
             <a href="/activities">Atividades</a>
             <a class="active" href="/materials">Materiais</a>
+            <a href="/study">Estudo</a>
         </div>
     </nav>
 
