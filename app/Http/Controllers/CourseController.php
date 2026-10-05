@@ -10,7 +10,7 @@ class CourseController
     public function index(): View
     {
         $courses = Course::query()
-            ->withCount(['classOccurrences', 'assessments', 'tasks'])
+            ->withCount(['classOccurrences', 'assessments', 'tasks', 'materials', 'lessonSummaries'])
             ->with(['classOccurrences' => fn ($query) => $query
                 ->where('starts_at', '>=', now())
                 ->orderBy('starts_at')
@@ -34,6 +34,8 @@ class CourseController
             'classOccurrences' => fn ($query) => $query->orderBy('starts_at'),
             'assessments' => fn ($query) => $query->orderBy('due_at'),
             'tasks' => fn ($query) => $query->orderByRaw('due_at is null, due_at asc'),
+            'materials' => fn ($query) => $query->with('versions')->where('status', 'active')->orderByDesc('updated_at'),
+            'lessonSummaries' => fn ($query) => $query->orderByDesc('occurred_at'),
         ]);
 
         $now = now();

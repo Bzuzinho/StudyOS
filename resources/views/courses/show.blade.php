@@ -16,6 +16,7 @@
             <a href="/calendar">Calendário</a>
             <a class="active" href="/courses">UCs</a>
             <a href="/activities">Atividades</a>
+            <a href="/materials">Materiais</a>
         </div>
     </nav>
 
@@ -34,6 +35,7 @@
             <div><strong>{{ $course->classOccurrences->count() }}</strong><span>ocorrências</span></div>
             <div><strong>{{ $course->assessments->count() }}</strong><span>avaliações</span></div>
             <div><strong>{{ $course->tasks->count() }}</strong><span>tarefas</span></div>
+            <div><strong>{{ $course->materials->count() }}</strong><span>materiais</span></div>
         </div>
     </header>
 
@@ -96,6 +98,55 @@
                 </article>
             @empty
                 <p class="empty">Sem tarefas registadas para esta UC.</p>
+            @endforelse
+        </section>
+
+        <section class="card wide">
+            <div class="card-head"><h3>Materiais</h3><a href="{{ route('materials.index') }}">{{ $course->materials->count() }} registado(s)</a></div>
+            <div class="course-material-grid">
+                @forelse($course->materials as $material)
+                    @php
+                        $latestVersion = $material->versions->first();
+                    @endphp
+                    <article class="course-material">
+                        <div class="material-card-head">
+                            <span class="material-type">{{ strtoupper($material->type) }}</span>
+                            <span class="source-pill {{ $material->source === 'manual' ? 'manual' : '' }}">{{ $material->source === 'manual' ? 'Manual' : 'Auditado' }}</span>
+                        </div>
+                        <strong>{{ $material->title }}</strong>
+                        @if($latestVersion)
+                            <small>{{ $latestVersion->version_label ?: 'Versão observada' }}</small>
+                        @endif
+                        <div class="material-meta">
+                            @if($material->url)
+                                <a href="{{ $material->url }}" target="_blank" rel="noopener noreferrer">Abrir ↗</a>
+                            @endif
+                            @if($material->source === 'manual')
+                                <a href="{{ route('materials.edit', $material) }}">Editar</a>
+                            @endif
+                        </div>
+                    </article>
+                @empty
+                    <p class="empty">Ainda não existem materiais registados para esta UC.</p>
+                @endforelse
+            </div>
+        </section>
+
+        <section class="card wide">
+            <div class="card-head"><h3>Sumários e matéria lecionada</h3><span>{{ $course->lessonSummaries->count() }}</span></div>
+            @forelse($course->lessonSummaries as $summary)
+                <article class="lesson-summary">
+                    <div class="lesson-summary-head">
+                        <strong>{{ $summary->title }}</strong>
+                        @if($summary->occurred_at)
+                            <span>até {{ $summary->occurred_at->copy()->timezone(config('app.timezone'))->format('d/m/Y') }}</span>
+                        @endif
+                    </div>
+                    <p>{!! nl2br(e($summary->content)) !!}</p>
+                    <small>{{ $summary->source === 'inforestudante_audit' ? 'Fonte: InforEstudante auditado' : $summary->source }}</small>
+                </article>
+            @empty
+                <p class="empty">Ainda não existem sumários recolhidos para esta UC.</p>
             @endforelse
         </section>
 
