@@ -6,6 +6,7 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ManualCalendarEventController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\StudyController;
 use App\Http\Controllers\SystemStatusController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +20,11 @@ Route::post('/materials', [MaterialController::class, 'store'])->name('materials
 Route::get('/materials/{material}/edit', [MaterialController::class, 'edit'])->name('materials.edit');
 Route::put('/materials/{material}', [MaterialController::class, 'update'])->name('materials.update');
 Route::delete('/materials/{material}', [MaterialController::class, 'destroy'])->name('materials.destroy');
+
+Route::get('/study', [StudyController::class, 'index'])->name('study.index');
+Route::get('/study/create', [StudyController::class, 'create'])->name('study.create');
+Route::post('/study', [StudyController::class, 'store'])->name('study.store');
+Route::delete('/study/{studySession}', [StudyController::class, 'destroy'])->name('study.destroy');
 
 Route::get('/calendar/events/create', [ManualCalendarEventController::class, 'create'])->name('calendar-events.create');
 Route::post('/calendar/events', [ManualCalendarEventController::class, 'store'])->name('calendar-events.store');
