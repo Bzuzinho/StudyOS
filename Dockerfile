@@ -7,9 +7,9 @@ WORKDIR /app
 COPY composer.json ./
 RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --no-scripts
 COPY . .
-RUN composer dump-autoload --optimize --no-dev \
-    && mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache
+RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache \
+    && COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --optimize --no-dev
 ENV APP_ENV=production
 ENV APP_DEBUG=false
 CMD sh -c "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"
