@@ -27,7 +27,7 @@
                 $next = $mode === 'month' ? $anchor->copy()->addMonth() : $anchor->copy()->addWeek();
             @endphp
             <a class="button ghost" href="{{ route('calendar', ['mode' => $mode, 'date' => $previous->toDateString()]) }}">←</a>
-            <a class="button ghost" href="{{ route('calendar', ['mode' => $mode, 'date' => now()->toDateString()]) }}">Hoje</a>
+            <a class="button ghost" href="{{ route('calendar', ['mode' => $mode, 'date' => now()->timezone(config('app.timezone'))->toDateString()]) }}">Hoje</a>
             <a class="button ghost" href="{{ route('calendar', ['mode' => $mode, 'date' => $next->toDateString()]) }}">→</a>
             <a class="button {{ $mode === 'week' ? 'primary' : 'ghost' }}" href="{{ route('calendar', ['mode' => 'week', 'date' => $anchor->toDateString()]) }}">Semana</a>
             <a class="button {{ $mode === 'month' ? 'primary' : 'ghost' }}" href="{{ route('calendar', ['mode' => 'month', 'date' => $anchor->toDateString()]) }}">Mês</a>
@@ -45,8 +45,12 @@
 
                 <div class="calendar-events">
                     @forelse ($dayEvents as $event)
+                        @php
+                            $localStart = $event->localStartsAt();
+                            $localEnd = $event->localEndsAt();
+                        @endphp
                         <div class="calendar-event {{ $event->status === 'cancelled' ? 'cancelled' : '' }}">
-                            <div class="event-time">{{ $event->starts_at->format('H:i') }}@if($event->ends_at)–{{ $event->ends_at->format('H:i') }}@endif</div>
+                            <div class="event-time">{{ $localStart->format('H:i') }}@if($localEnd)–{{ $localEnd->format('H:i') }}@endif</div>
                             <strong>{{ $event->course?->name ?? $event->title }}</strong>
                             <span>{{ $event->location ?: 'Sala por confirmar' }}</span>
                             @if($event->course && $event->title !== $event->course->name)
