@@ -17,6 +17,7 @@
             <a class="active" href="/courses">UCs</a>
             <a href="/activities">Atividades</a>
             <a href="/materials">Materiais</a>
+            <a href="/study">Estudo</a>
         </div>
     </nav>
 
@@ -36,6 +37,7 @@
             <div><strong>{{ $course->assessments->count() }}</strong><span>avaliações</span></div>
             <div><strong>{{ $course->tasks->count() }}</strong><span>tarefas</span></div>
             <div><strong>{{ $course->materials->count() }}</strong><span>materiais</span></div>
+            <div><strong>{{ $course->topics->count() }}</strong><span>tópicos</span></div>
         </div>
     </header>
 
@@ -99,6 +101,37 @@
             @empty
                 <p class="empty">Sem tarefas registadas para esta UC.</p>
             @endforelse
+        </section>
+
+        <section class="card wide">
+            <div class="card-head"><h3>Tópicos e preparação</h3><a href="{{ route('study.create', ['course_id' => $course->id]) }}">Planear estudo</a></div>
+            <div class="topic-grid">
+                @forelse($course->topics as $topic)
+                    <article class="topic-card">
+                        <span class="topic-position">{{ str_pad((string) $topic->position, 2, '0', STR_PAD_LEFT) }}</span>
+                        <h3>{{ $topic->title }}</h3>
+                        <div class="topic-states">
+                            <span class="observed">Curricular · observado</span>
+                            <span>{{ $topic->study_sessions_count > 0 ? 'Estudo · planeado' : 'Estudo · por planear' }}</span>
+                            <span class="unknown">Domínio · sem evidência</span>
+                        </div>
+                    </article>
+                @empty
+                    <p class="empty">Ainda não foram identificados tópicos suportados pelas fontes desta UC.</p>
+                @endforelse
+            </div>
+
+            @if($course->studySessions->isNotEmpty())
+                <div class="course-study-sessions">
+                    @foreach($course->studySessions as $session)
+                        <article>
+                            <strong>{{ $session->localStartsAt()->format('d/m · H:i') }}</strong>
+                            <span>{{ $session->title ?: ucfirst($session->type) }} · {{ $session->planned_minutes }} min</span>
+                            <small>{{ $session->localEndsAt()->isPast() ? 'Janela decorrida — execução não confirmada' : 'Planeado' }}</small>
+                        </article>
+                    @endforeach
+                </div>
+            @endif
         </section>
 
         <section class="card wide">

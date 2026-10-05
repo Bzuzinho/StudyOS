@@ -17,11 +17,12 @@
             <a href="/courses">UCs</a>
             <a href="/activities">Atividades</a>
             <a href="/materials">Materiais</a>
+            <a href="/study">Estudo</a>
         </div>
     </nav>
 
     <header class="topbar">
-        <div><p class="eyebrow">StudyOS · Alpha 0.8</p><h1>Painel académico</h1></div>
+        <div><p class="eyebrow">StudyOS · Alpha 0.9</p><h1>Painel académico</h1></div>
         <div class="sync {{ $lastSync?->status === 'success' ? 'ok' : '' }}"><span></span>{{ $lastSync ? 'Última sincronização: '.$lastSync->started_at?->copy()->timezone(config('app.timezone'))->format('d/m H:i') : 'Sincronização ainda não configurada' }}</div>
     </header>
 
@@ -79,6 +80,25 @@
         </section>
 
         <section class="card">
+            <div class="card-head"><h3>Próximo estudo</h3><a href="/study">Plano de estudo</a></div>
+            <div class="learning-metrics">
+                <div><strong>{{ $topicCount }}</strong><span>tópicos</span></div>
+                <div><strong>{{ $plannedStudyMinutes }}</strong><span>min planeados</span></div>
+            </div>
+            @forelse($upcomingStudySessions as $session)
+                <article class="item">
+                    <div class="date">{{ $session->localStartsAt()->format('d/m') }}</div>
+                    <div>
+                        <strong>{{ $session->title ?: $session->course->name }}</strong>
+                        <p>{{ $session->localStartsAt()->format('H:i') }} · {{ $session->planned_minutes }} min · planeado</p>
+                    </div>
+                </article>
+            @empty
+                <p class="empty">Ainda não existem sessões futuras planeadas.</p>
+            @endforelse
+        </section>
+
+        <section class="card">
             <div class="card-head"><h3>Contexto de estudo</h3><a href="/materials">Ver materiais</a></div>
             <div class="learning-metrics">
                 <div><strong>{{ $materialCount }}</strong><span>materiais</span></div>
@@ -113,7 +133,7 @@
         </section>
 
         <section class="card wide">
-            <div class="card-head"><h3>Roadmap Alpha</h3><span>0.8</span></div>
+            <div class="card-head"><h3>Roadmap Alpha</h3><span>0.9</span></div>
             <div class="roadmap">
                 <div class="done"><b>01</b><span>Fundação de dados</span></div>
                 <div class="done"><b>02</b><span>iCalendar InforEstudante</span></div>
@@ -122,7 +142,8 @@
                 <div class="done"><b>05</b><span>Avaliações oficiais</span></div>
                 <div class="done"><b>06</b><span>Moodle e atividades</span></div>
                 <div class="done"><b>07</b><span>Fiabilidade da sincronização</span></div>
-                <div class="active"><b>08</b><span>Materiais e contexto de aprendizagem</span></div>
+                <div class="done"><b>08</b><span>Materiais e contexto de aprendizagem</span></div>
+                <div class="active"><b>09</b><span>Tópicos e planeamento de estudo</span></div>
             </div>
         </section>
     </main>

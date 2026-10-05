@@ -17,6 +17,7 @@
             <a href="/courses">UCs</a>
             <a href="/activities">Atividades</a>
             <a href="/materials">Materiais</a>
+            <a href="/study">Estudo</a>
         </div>
     </nav>
 
@@ -63,8 +64,9 @@
                             $isManual = $event->source === 'manual';
                             $isAssessment = $event->source === 'estg_assessment_calendar_2026_27';
                             $isMoodle = $event->source === 'moodle_audit';
+                            $isStudyPlan = $event->source === 'study_plan';
                         @endphp
-                        <div class="calendar-event {{ $event->status === 'cancelled' ? 'cancelled' : '' }} {{ $isManual ? 'manual' : '' }} {{ $isAssessment ? 'assessment-event' : '' }} {{ $isMoodle ? 'moodle-event' : '' }}">
+                        <div class="calendar-event {{ $event->status === 'cancelled' ? 'cancelled' : '' }} {{ $isManual ? 'manual' : '' }} {{ $isAssessment ? 'assessment-event' : '' }} {{ $isMoodle ? 'moodle-event' : '' }} {{ $isStudyPlan ? 'study-event' : '' }}">
                             <div class="event-topline">
                                 <div class="event-time">{{ $localStart->format('H:i') }}@if($localEnd)–{{ $localEnd->format('H:i') }}@endif</div>
                                 @if($isManual)
@@ -76,11 +78,13 @@
                             @else
                                 <strong>{{ $event->title }}</strong>
                             @endif
-                            <span>{{ $event->location ?: 'Sala por confirmar' }}</span>
+                            <span>{{ $isStudyPlan ? 'Sessão de estudo planeada' : ($event->location ?: 'Sala por confirmar') }}</span>
                             @if($event->course && $event->title !== $event->course->name)
                                 <small>{{ $event->title }}</small>
                             @endif
-                            @if($isMoodle)
+                            @if($isStudyPlan)
+                                <small class="study-label">Estudo planeado · execução não confirmada</small>
+                            @elseif($isMoodle)
                                 <small class="moodle-label">Moodle · prazo confirmado</small>
                             @elseif($isAssessment)
                                 <small class="assessment-label">Avaliação periódica · calendário oficial</small>
