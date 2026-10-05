@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>UCs · StudyOS</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="shell">
+    <nav class="nav">
+        <a class="brand" href="/">StudyOS</a>
+        <div class="nav-links">
+            <a href="/">Dashboard</a>
+            <a href="/calendar">Calendário</a>
+            <a class="active" href="/courses">UCs</a>
+        </div>
+    </nav>
+
+    <header class="calendar-header">
+        <div>
+            <p class="eyebrow">Licenciatura em Gestão · 2026/2027</p>
+            <h1>Unidades curriculares</h1>
+        </div>
+        <div class="course-stats">
+            <div><strong>{{ $activeCount }}</strong><span>ativas</span></div>
+            <div><strong>{{ $plannedCount }}</strong><span>2.º semestre</span></div>
+        </div>
+    </header>
+
+    @foreach ([1 => '1.º semestre', 2 => '2.º semestre'] as $semester => $label)
+        <section class="course-section">
+            <div class="section-heading">
+                <h2>{{ $label }}</h2>
+                <span>{{ ($coursesBySemester[$semester] ?? collect())->count() }} UCs</span>
+            </div>
+
+            <div class="course-grid">
+                @forelse ($coursesBySemester[$semester] ?? collect() as $course)
+                    @php $nextClass = $course->classOccurrences->first(); @endphp
+                    <a class="course-card" href="{{ route('courses.show', $course) }}">
+                        <div class="course-card-head">
+                            <span class="course-code">{{ $course->academic_code }}</span>
+                            <span class="status-pill {{ $course->status }}">{{ $course->status === 'active' ? 'Ativa' : 'Planeada' }}</span>
+                        </div>
+                        <h3>{{ $course->name }}</h3>
+                        <div class="course-meta">
+                            <span>{{ $course->class_occurrences_count }} ocorrências</span>
+                            <span>{{ $course->assessments_count }} avaliações</span>
+                            @if($course->ects)<span>{{ $course->ects }} ECTS</span>@endif
+                        </div>
+                        @if($nextClass)
+                            <div class="next-class">
+                                <small>Próxima aula</small>
+                                <strong>{{ $nextClass->localStartsAt()->translatedFormat('D, d/m · H:i') }}</strong>
+                                <span>{{ $nextClass->location ?: 'Sala por confirmar' }}</span>
+                            </div>
+                        @elseif($course->status === 'active')
+                            <div class="next-class muted-text">Sem próxima ocorrência ligada.</div>
+                        @endif
+                    </a>
+                @empty
+                    <p class="empty">Ainda não existem UCs neste semestre.</p>
+                @endforelse
+            </div>
+        </section>
+    @endforeach
+</div>
+</body>
+</html>
