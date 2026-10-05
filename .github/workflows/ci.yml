@@ -13,6 +13,8 @@ jobs:
           php-version: '8.3'
           extensions: pdo_pgsql, intl
           coverage: none
+      - name: Prepare Laravel writable directories
+        run: mkdir -p bootstrap/cache storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs
       - name: Validate composer
         run: composer validate --strict
       - name: Install dependencies
