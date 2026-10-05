@@ -33,6 +33,10 @@ class DashboardController
                 ->with('course')
                 ->whereNotNull('due_at')
                 ->where('due_at', '>=', $now)
+                ->where(function ($query) {
+                    $query->whereNull('metadata->conditional')
+                        ->orWhere('metadata->conditional', false);
+                })
                 ->orderBy('due_at')
                 ->limit(6)
                 ->get(),
