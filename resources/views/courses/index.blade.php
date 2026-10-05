@@ -15,6 +15,7 @@
             <a href="/">Dashboard</a>
             <a href="/calendar">Calendário</a>
             <a class="active" href="/courses">UCs</a>
+            <a href="/activities">Atividades</a>
         </div>
     </nav>
 
@@ -48,6 +49,7 @@
                         <div class="course-meta">
                             <span>{{ $course->class_occurrences_count }} ocorrências</span>
                             <span>{{ $course->assessments_count }} avaliações</span>
+                            <span>{{ $course->tasks_count }} tarefas</span>
                             @if($course->ects)<span>{{ $course->ects }} ECTS</span>@endif
                         </div>
                         @if($nextClass)
