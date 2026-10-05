@@ -7,8 +7,10 @@ use App\Models\ClassOccurrence;
 use App\Models\Course;
 use App\Models\LessonSummary;
 use App\Models\Material;
+use App\Models\StudySession;
 use App\Models\SyncRun;
 use App\Models\Task;
+use App\Models\Topic;
 use Illuminate\View\View;
 
 class DashboardController
@@ -57,6 +59,16 @@ class DashboardController
                 ->latest('updated_at')
                 ->limit(4)
                 ->get(),
+            'topicCount' => Topic::query()->where('status', 'active')->count(),
+            'upcomingStudySessions' => StudySession::query()
+                ->with(['course', 'topics'])
+                ->where('starts_at', '>=', now())
+                ->orderBy('starts_at')
+                ->limit(4)
+                ->get(),
+            'plannedStudyMinutes' => StudySession::query()
+                ->where('starts_at', '>=', now())
+                ->sum('planned_minutes'),
             'lastSync' => SyncRun::query()->latest('started_at')->first(),
         ]);
     }
