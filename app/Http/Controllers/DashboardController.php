@@ -6,6 +6,7 @@ use App\Models\Assessment;
 use App\Models\ClassOccurrence;
 use App\Models\Course;
 use App\Models\SyncRun;
+use App\Models\Task;
 use Illuminate\View\View;
 
 class DashboardController
@@ -39,6 +40,12 @@ class DashboardController
                 })
                 ->orderBy('due_at')
                 ->limit(6)
+                ->get(),
+            'pendingTasks' => Task::query()
+                ->with('course')
+                ->where('status', '!=', 'completed')
+                ->orderByRaw('due_at is null, due_at asc')
+                ->limit(4)
                 ->get(),
             'lastSync' => SyncRun::query()->latest('started_at')->first(),
         ]);
