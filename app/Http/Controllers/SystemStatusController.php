@@ -6,9 +6,11 @@ use App\Models\ClassOccurrence;
 use App\Models\Course;
 use App\Models\LessonSummary;
 use App\Models\Material;
+use App\Models\StudySession;
 use App\Models\SyncConnection;
 use App\Models\SyncRun;
 use App\Models\Task;
+use App\Models\Topic;
 use Illuminate\Http\JsonResponse;
 
 class SystemStatusController
@@ -32,6 +34,9 @@ class SystemStatusController
                 'materials' => Material::query()->where('status', 'active')->count(),
                 'lesson_summaries' => LessonSummary::count(),
                 'open_tasks' => Task::query()->where('status', '!=', 'completed')->count(),
+                'topics' => Topic::query()->where('status', 'active')->count(),
+                'study_sessions_planned' => StudySession::count(),
+                'study_minutes_planned' => StudySession::sum('planned_minutes'),
             ],
             'sync_connections' => SyncConnection::count(),
             'last_sync' => $lastRun ? [
