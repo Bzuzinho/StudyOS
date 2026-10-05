@@ -16,6 +16,7 @@
             <a href="/calendar">Calendário</a>
             <a href="/courses">UCs</a>
             <a class="active" href="/activities">Atividades</a>
+            <a href="/materials">Materiais</a>
         </div>
     </nav>
 
