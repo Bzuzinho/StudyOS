@@ -17,6 +17,7 @@
             <a class="active" href="/courses">UCs</a>
             <a href="/activities">Atividades</a>
             <a href="/materials">Materiais</a>
+            <a href="/study">Estudo</a>
         </div>
     </nav>
 
@@ -52,6 +53,10 @@
                             <span>{{ $course->assessments_count }} avaliações</span>
                             <span>{{ $course->tasks_count }} tarefas</span>
                             <span>{{ $course->materials_count }} materiais</span>
+                            <span>{{ $course->topics_count }} tópicos</span>
+                            @if($course->study_sessions_count > 0)
+                                <span>{{ $course->study_sessions_count }} sessão(ões) de estudo</span>
+                            @endif
                             @if($course->lesson_summaries_count > 0)
                                 <span>{{ $course->lesson_summaries_count }} sumário(s)</span>
                             @endif
