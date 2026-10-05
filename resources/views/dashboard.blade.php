@@ -18,7 +18,7 @@
 
     <header class="topbar">
         <div><p class="eyebrow">StudyOS · Alpha 0.3</p><h1>Painel académico</h1></div>
-        <div class="sync {{ $lastSync?->status === 'success' ? 'ok' : '' }}"><span></span>{{ $lastSync ? 'Última sincronização: '.$lastSync->started_at?->format('d/m H:i') : 'Sincronização ainda não configurada' }}</div>
+        <div class="sync {{ $lastSync?->status === 'success' ? 'ok' : '' }}"><span></span>{{ $lastSync ? 'Última sincronização: '.$lastSync->started_at?->copy()->timezone(config('app.timezone'))->format('d/m H:i') : 'Sincronização ainda não configurada' }}</div>
     </header>
 
     <section class="hero">
@@ -30,7 +30,7 @@
         <section class="card">
             <div class="card-head"><h3>Hoje</h3><a href="/calendar">Ver calendário</a></div>
             @forelse ($todayClasses as $class)
-                <article class="item"><div class="time">{{ $class->starts_at->format('H:i') }}</div><div><strong>{{ $class->course?->name ?? $class->title }}</strong><p>{{ $class->location ?: 'Sala por confirmar' }}</p></div></article>
+                <article class="item"><div class="time">{{ $class->localStartsAt()->format('H:i') }}</div><div><strong>{{ $class->course?->name ?? $class->title }}</strong><p>{{ $class->location ?: 'Sala por confirmar' }}</p></div></article>
             @empty
                 <p class="empty">Ainda não há ocorrências importadas para hoje.</p>
             @endforelse
@@ -39,7 +39,7 @@
         <section class="card">
             <div class="card-head"><h3>Próximas avaliações</h3><span>{{ $upcomingAssessments->count() }}</span></div>
             @forelse ($upcomingAssessments as $assessment)
-                <article class="item"><div class="date">{{ $assessment->due_at->format('d/m') }}</div><div><strong>{{ $assessment->title }}</strong><p>{{ $assessment->course?->name }} · {{ $assessment->confirmed ? 'Confirmada' : 'Por confirmar' }}</p></div></article>
+                <article class="item"><div class="date">{{ $assessment->due_at->copy()->timezone(config('app.timezone'))->format('d/m') }}</div><div><strong>{{ $assessment->title }}</strong><p>{{ $assessment->course?->name }} · {{ $assessment->confirmed ? 'Confirmada' : 'Por confirmar' }}</p></div></article>
             @empty
                 <p class="empty">Nenhuma avaliação importada.</p>
             @endforelse
