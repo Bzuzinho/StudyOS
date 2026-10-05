@@ -3,8 +3,9 @@
 use App\Models\SyncConnection;
 use App\Services\Academic\AcademicCatalogBootstrapper;
 use App\Services\Academic\AssessmentCalendarBootstrapper;
-use App\Services\Academic\MoodleAuditBootstrapper;
 use App\Services\Academic\LearningContextBootstrapper;
+use App\Services\Academic\MoodleAuditBootstrapper;
+use App\Services\Academic\TopicBootstrapper;
 use App\Services\Calendar\ICalendarSyncService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -40,6 +41,13 @@ Artisan::command('studyos:bootstrap-learning-context', function () {
 
     return 0;
 })->purpose('Bootstrap audited materials, versions and lesson summaries');
+
+Artisan::command('studyos:bootstrap-topics', function () {
+    $stats = app(TopicBootstrapper::class)->run();
+    $this->info('Topics ready: '.json_encode($stats, JSON_UNESCAPED_UNICODE));
+
+    return 0;
+})->purpose('Bootstrap topics explicitly supported by audited academic sources');
 
 Artisan::command('studyos:sync-ical {connection?}', function () {
     $connectionId = $this->argument('connection');
@@ -113,6 +121,9 @@ Artisan::command('studyos:deploy-prepare', function () {
 
     $learning = app(LearningContextBootstrapper::class)->run();
     $this->info('Learning context ready: '.json_encode($learning, JSON_UNESCAPED_UNICODE));
+
+    $topics = app(TopicBootstrapper::class)->run();
+    $this->info('Topics ready: '.json_encode($topics, JSON_UNESCAPED_UNICODE));
 
     return 0;
 })->purpose('Prepare StudyOS database and audited academic data before deployment');
