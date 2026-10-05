@@ -16,6 +16,7 @@
             <a href="/calendar">Calendário</a>
             <a class="active" href="/courses">UCs</a>
             <a href="/activities">Atividades</a>
+            <a href="/materials">Materiais</a>
         </div>
     </nav>
 
@@ -50,6 +51,10 @@
                             <span>{{ $course->class_occurrences_count }} ocorrências</span>
                             <span>{{ $course->assessments_count }} avaliações</span>
                             <span>{{ $course->tasks_count }} tarefas</span>
+                            <span>{{ $course->materials_count }} materiais</span>
+                            @if($course->lesson_summaries_count > 0)
+                                <span>{{ $course->lesson_summaries_count }} sumário(s)</span>
+                            @endif
                             @if($course->ects)<span>{{ $course->ects }} ECTS</span>@endif
                         </div>
                         @if($nextClass)
