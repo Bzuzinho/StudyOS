@@ -38,4 +38,14 @@ class Course extends Model
     {
         return $this->hasMany(LessonSummary::class);
     }
+
+    public function topics(): HasMany
+    {
+        return $this->hasMany(Topic::class)->orderBy('position');
+    }
+
+    public function studySessions(): HasMany
+    {
+        return $this->hasMany(StudySession::class)->orderBy('starts_at');
+    }
 }
