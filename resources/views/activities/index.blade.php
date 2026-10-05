@@ -44,8 +44,18 @@
                         <span class="activity-type">{{ strtoupper($assessment->type) }}</span>
                         <h3>{{ $assessment->title }}</h3>
                         <p>{{ $assessment->course?->name }}</p>
-                        @if(($assessment->metadata['duration_minutes'] ?? null))
-                            <small>{{ $assessment->metadata['duration_minutes'] }} min · {{ $assessment->metadata['attempts_allowed'] ?? '?' }} tentativa(s)@if($assessment->metadata['password_required'] ?? false) · palavra-passe necessária@endif</small>
+                        @php
+                            $durationMinutes = $assessment->metadata['duration_minutes'] ?? null;
+                            $attemptsAllowed = $assessment->metadata['attempts_allowed'] ?? null;
+                            $passwordRequired = (bool) ($assessment->metadata['password_required'] ?? false);
+                        @endphp
+                        @if($durationMinutes)
+                            <small>
+                                {{ $durationMinutes }} min · {{ $attemptsAllowed ?? '?' }} tentativa(s)
+                                @if($passwordRequired)
+                                    · palavra-passe necessária
+                                @endif
+                            </small>
                         @endif
                     </div>
                 </article>

@@ -83,8 +83,15 @@
                     <div class="date">{{ $task->due_at ? $task->due_at->copy()->timezone(config('app.timezone'))->format('d/m') : '—' }}</div>
                     <div>
                         <strong>{{ $task->title }}</strong>
-                        <p>{{ ucfirst($task->type) }} · {{ $task->status === 'completed' ? 'Concluída' : 'Pendente' }}@if(!$task->due_at) · prazo não publicado@endif</p>
-                        @if($task->description)<small class="task-description">{{ $task->description }}</small>@endif
+                        <p>
+                            {{ ucfirst($task->type) }} · {{ $task->status === 'completed' ? 'Concluída' : 'Pendente' }}
+                            @if(! $task->due_at)
+                                · prazo não publicado
+                            @endif
+                        </p>
+                        @if($task->description)
+                            <small class="task-description">{{ $task->description }}</small>
+                        @endif
                     </div>
                 </article>
             @empty
