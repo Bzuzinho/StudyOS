@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\SyncConnection;
+use App\Services\Academic\AcademicCatalogBootstrapper;
 use App\Services\Calendar\ICalendarSyncService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -8,6 +9,13 @@ use Illuminate\Support\Facades\Schedule;
 Artisan::command('studyos:status', function () {
     $this->info('StudyOS operational.');
 })->purpose('Show StudyOS application status');
+
+Artisan::command('studyos:bootstrap-academic-year', function () {
+    $stats = app(AcademicCatalogBootstrapper::class)->run();
+    $this->info('Academic catalogue ready: '.json_encode($stats, JSON_UNESCAPED_UNICODE));
+
+    return 0;
+})->purpose('Bootstrap the audited 2026/2027 InforEstudante course catalogue');
 
 Artisan::command('studyos:sync-ical {connection?}', function () {
     $connectionId = $this->argument('connection');
