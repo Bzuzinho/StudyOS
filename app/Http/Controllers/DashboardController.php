@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Assessment;
 use App\Models\ClassOccurrence;
 use App\Models\Course;
+use App\Models\LessonSummary;
+use App\Models\Material;
 use App\Models\SyncRun;
 use App\Models\Task;
 use Illuminate\View\View;
@@ -45,6 +47,14 @@ class DashboardController
                 ->with('course')
                 ->where('status', '!=', 'completed')
                 ->orderByRaw('due_at is null, due_at asc')
+                ->limit(4)
+                ->get(),
+            'materialCount' => Material::query()->where('status', 'active')->count(),
+            'summaryCount' => LessonSummary::query()->count(),
+            'recentMaterials' => Material::query()
+                ->with('course')
+                ->where('status', 'active')
+                ->latest('updated_at')
                 ->limit(4)
                 ->get(),
             'lastSync' => SyncRun::query()->latest('started_at')->first(),
