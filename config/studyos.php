@@ -9,6 +9,9 @@ return [
         ))),
         'past_days' => (int) env('STUDYOS_CALENDAR_PAST_DAYS', 120),
         'future_days' => (int) env('STUDYOS_CALENDAR_FUTURE_DAYS', 420),
-        'mark_missing_as_cancelled' => (bool) env('STUDYOS_CALENDAR_MARK_MISSING_CANCELLED', false),
+        'mark_missing_as_cancelled' => filter_var(
+            env('STUDYOS_CALENDAR_MARK_MISSING_CANCELLED', false),
+            FILTER_VALIDATE_BOOL
+        ),
     ],
 ];
