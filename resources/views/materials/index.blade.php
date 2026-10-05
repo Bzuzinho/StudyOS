@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Materiais · StudyOS</title>
+    @include('partials.app-identity')
+    <link rel="stylesheet" href="/css/app.css?v=brand-1">
+</head>
+<body>
+<div class="shell">
+    <nav class="nav">
+        <a class="brand" href="/" aria-label="StudyOS — Painel académico"><img src="/brand/studyos-mark.svg" width="36" height="36" alt=""><span>StudyOS</span></a>
+        <div class="nav-links">
+            <a href="/">Dashboard</a>
+            <a href="/calendar">Calendário</a>
+            <a href="/courses">UCs</a>
+            <a href="/activities">Atividades</a>
+            <a class="active" href="/materials">Materiais</a>
+        </div>
+    </nav>
+
+    @if(session('status'))
+        <div class="alert success">{{ session('status') }}</div>
+    @endif
+
+    <header class="calendar-header">
+        <div>
+            <p class="eyebrow">Conteúdo académico</p>
+            <h1>Materiais</h1>
+        </div>
+        <a class="button primary" href="{{ route('materials.create') }}">+ Adicionar material</a>
+    </header>
+
+    <section class="material-grid">
+        @forelse($materials as $material)
+            @php
+                $notes = $material->metadata['notes'] ?? null;
+                $latestVersion = $material->versions->first();
+            @endphp
+            <article class="material-card">
+                <div class="material-card-head">
+                    <span class="material-type">{{ strtoupper($material->type) }}</span>
+                    <span class="source-pill {{ $material->source === 'manual' ? 'manual' : '' }}">{{ $material->source === 'manual' ? 'Manual' : 'Fonte auditada' }}</span>
+                </div>
+                <h2>{{ $material->title }}</h2>
+                <a class="material-course" href="{{ route('courses.show', $material->course) }}">{{ $material->course?->name }}</a>
+
+                @if($notes)
+                    <p>{{ $notes }}</p>
+                @elseif(($material->metadata['change_observed'] ?? null))
+                    <p>{{ $material->metadata['change_observed'] }}</p>
+                @elseif(($material->metadata['observed_items'] ?? null))
+                    <p>{{ $material->metadata['observed_items'] }} ficheiros {{ $material->metadata['observed_format'] ?? '' }} observados.</p>
+                @endif
+
+                <div class="material-meta">
+                    @if($latestVersion)
+                        <span>Versão: {{ $latestVersion->version_label ?: 'observada' }}</span>
+                    @endif
+                    @if($material->url)
+                        <a href="{{ $material->url }}" target="_blank" rel="noopener noreferrer">Abrir ↗</a>
+                    @endif
+                    @if($material->source === 'manual')
+                        <a href="{{ route('materials.edit', $material) }}">Editar</a>
+                    @endif
+                </div>
+            </article>
+        @empty
+            <div class="card wide"><p class="empty">Ainda não existem materiais registados.</p></div>
+        @endforelse
+    </section>
+</div>
+</body>
+</html>
