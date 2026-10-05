@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 class ClassOccurrence extends Model
 {
@@ -23,5 +24,15 @@ class ClassOccurrence extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function localStartsAt(): Carbon
+    {
+        return $this->starts_at->copy()->timezone(config('app.timezone', 'Europe/Lisbon'));
+    }
+
+    public function localEndsAt(): ?Carbon
+    {
+        return $this->ends_at?->copy()->timezone(config('app.timezone', 'Europe/Lisbon'));
     }
 }

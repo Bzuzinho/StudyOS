@@ -11,8 +11,9 @@ class CalendarController
 {
     public function __invoke(Request $request): View
     {
+        $timezone = config('app.timezone', 'Europe/Lisbon');
         $mode = $request->string('mode')->value() === 'month' ? 'month' : 'week';
-        $anchor = $request->date('date') ?? now();
+        $anchor = ($request->date('date') ?? now())->timezone($timezone);
 
         if ($mode === 'month') {
             $start = $anchor->copy()->startOfMonth()->startOfWeek(Carbon::MONDAY);
@@ -27,7 +28,7 @@ class CalendarController
             ->whereBetween('starts_at', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
             ->orderBy('starts_at')
             ->get()
-            ->groupBy(fn (ClassOccurrence $event) => $event->starts_at->toDateString());
+            ->groupBy(fn (ClassOccurrence $event) => $event->localStartsAt()->toDateString());
 
         $days = collect();
         $cursor = $start->copy();
