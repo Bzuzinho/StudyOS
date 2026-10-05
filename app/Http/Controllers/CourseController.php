@@ -1,0 +1,53 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Course;
+use Illuminate\View\View;
+
+class CourseController
+{
+    public function index(): View
+    {
+        $courses = Course::query()
+            ->withCount(['classOccurrences', 'assessments'])
+            ->with(['classOccurrences' => fn ($query) => $query
+                ->where('starts_at', '>=', now())
+                ->orderBy('starts_at')
+                ->limit(1)])
+            ->orderBy('semester')
+            ->orderBy('name')
+            ->get()
+            ->groupBy('semester');
+
+        return view('courses.index', [
+            'coursesBySemester' => $courses,
+            'activeCount' => Course::query()->where('status', 'active')->count(),
+            'plannedCount' => Course::query()->where('status', 'planned')->count(),
+        ]);
+    }
+
+    public function show(Course $course): View
+    {
+        $course->load([
+            'sourceCourses',
+            'classOccurrences' => fn ($query) => $query->orderBy('starts_at'),
+            'assessments' => fn ($query) => $query->orderBy('due_at'),
+        ]);
+
+        $now = now();
+        $upcomingClasses = $course->classOccurrences
+            ->filter(fn ($event) => $event->starts_at->gte($now))
+            ->take(12);
+        $recentClasses = $course->classOccurrences
+            ->filter(fn ($event) => $event->starts_at->lt($now))
+            ->sortByDesc('starts_at')
+            ->take(8);
+
+        return view('courses.show', [
+            'course' => $course,
+            'upcomingClasses' => $upcomingClasses,
+            'recentClasses' => $recentClasses,
+        ]);
+    }
+}
