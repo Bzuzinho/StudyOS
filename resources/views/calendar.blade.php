@@ -17,6 +17,10 @@
         </div>
     </nav>
 
+    @if(session('status'))
+        <div class="alert success">{{ session('status') }}</div>
+    @endif
+
     <header class="calendar-header">
         <div>
             <p class="eyebrow">Agenda académica</p>
@@ -27,6 +31,7 @@
                 $previous = $mode === 'month' ? $anchor->copy()->subMonth() : $anchor->copy()->subWeek();
                 $next = $mode === 'month' ? $anchor->copy()->addMonth() : $anchor->copy()->addWeek();
             @endphp
+            <a class="button primary" href="{{ route('calendar-events.create', ['date' => $anchor->toDateString()]) }}">+ Novo evento</a>
             <a class="button ghost" href="{{ route('calendar', ['mode' => $mode, 'date' => $previous->toDateString()]) }}">←</a>
             <a class="button ghost" href="{{ route('calendar', ['mode' => $mode, 'date' => now()->timezone(config('app.timezone'))->toDateString()]) }}">Hoje</a>
             <a class="button ghost" href="{{ route('calendar', ['mode' => $mode, 'date' => $next->toDateString()]) }}">→</a>
@@ -41,7 +46,10 @@
             <article class="calendar-day {{ $day->isToday() ? 'today' : '' }} {{ $mode === 'month' && $day->month !== $anchor->month ? 'muted' : '' }}">
                 <header>
                     <span>{{ $day->translatedFormat('D') }}</span>
-                    <strong>{{ $day->format('d') }}</strong>
+                    <div class="day-head-actions">
+                        <a class="day-add" href="{{ route('calendar-events.create', ['date' => $day->toDateString()]) }}" title="Criar evento neste dia">+</a>
+                        <strong>{{ $day->format('d') }}</strong>
+                    </div>
                 </header>
 
                 <div class="calendar-events">
@@ -49,9 +57,15 @@
                         @php
                             $localStart = $event->localStartsAt();
                             $localEnd = $event->localEndsAt();
+                            $isManual = $event->source === 'manual';
                         @endphp
-                        <div class="calendar-event {{ $event->status === 'cancelled' ? 'cancelled' : '' }}">
-                            <div class="event-time">{{ $localStart->format('H:i') }}@if($localEnd)–{{ $localEnd->format('H:i') }}@endif</div>
+                        <div class="calendar-event {{ $event->status === 'cancelled' ? 'cancelled' : '' }} {{ $isManual ? 'manual' : '' }}">
+                            <div class="event-topline">
+                                <div class="event-time">{{ $localStart->format('H:i') }}@if($localEnd)–{{ $localEnd->format('H:i') }}@endif</div>
+                                @if($isManual)
+                                    <a class="event-edit" href="{{ route('calendar-events.edit', $event) }}">Editar</a>
+                                @endif
+                            </div>
                             @if($event->course)
                                 <a href="{{ route('courses.show', $event->course) }}"><strong>{{ $event->course->name }}</strong></a>
                             @else
@@ -60,6 +74,9 @@
                             <span>{{ $event->location ?: 'Sala por confirmar' }}</span>
                             @if($event->course && $event->title !== $event->course->name)
                                 <small>{{ $event->title }}</small>
+                            @endif
+                            @if($isManual)
+                                <small class="manual-label">Manual · {{ ucfirst($event->source_payload['event_type'] ?? 'evento') }}</small>
                             @endif
                         </div>
                     @empty
