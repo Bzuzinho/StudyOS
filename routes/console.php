@@ -81,6 +81,31 @@ Artisan::command('studyos:sync-ical {connection?}', function () {
     return $failed ? 1 : 0;
 })->purpose('Synchronize configured StudyOS iCalendar sources');
 
+Artisan::command('studyos:deploy-prepare', function () {
+    $migrationExit = $this->call('migrate', ['--force' => true]);
+
+    if ($migrationExit !== 0) {
+        return $migrationExit;
+    }
+
+    $catalogue = app(AcademicCatalogBootstrapper::class)->run();
+    $this->info('Academic catalogue ready: '.json_encode($catalogue, JSON_UNESCAPED_UNICODE));
+
+    $syncExit = $this->call('studyos:sync-ical');
+
+    if ($syncExit !== 0) {
+        return $syncExit;
+    }
+
+    $assessments = app(AssessmentCalendarBootstrapper::class)->run();
+    $this->info('Assessment calendar ready: '.json_encode($assessments, JSON_UNESCAPED_UNICODE));
+
+    $moodle = app(MoodleAuditBootstrapper::class)->run();
+    $this->info('Moodle audit data ready: '.json_encode($moodle, JSON_UNESCAPED_UNICODE));
+
+    return 0;
+})->purpose('Prepare StudyOS database and audited academic data before deployment');
+
 Schedule::command('studyos:sync-ical')
     ->everyThirtyMinutes()
     ->withoutOverlapping(20);
