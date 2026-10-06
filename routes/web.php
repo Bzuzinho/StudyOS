@@ -16,6 +16,11 @@ Route::get('/calendar', CalendarController::class)->name('calendar');
 Route::get('/activities', ActivityController::class)->name('activities.index');
 
 Route::get('/materials', [MaterialController::class, 'index'])->name('materials.index');
+Route::get('/moodle/sync', [\App\Http\Controllers\MoodleSyncController::class, 'index'])->name('moodle.sync');
+Route::post('/moodle/start', [\App\Http\Controllers\MoodleSyncController::class, 'start'])->middleware('throttle:6,1')->name('moodle.start');
+Route::get('/moodle/callback', [\App\Http\Controllers\MoodleSyncController::class, 'callback'])->name('moodle.callback');
+Route::post('/moodle/complete', [\App\Http\Controllers\MoodleSyncController::class, 'complete'])->middleware('throttle:6,1')->block(10, 10)->name('moodle.complete');
+Route::get('/moodle/status', [\App\Http\Controllers\MoodleSyncController::class, 'status'])->name('moodle.status');
 Route::get('/materials/create', [MaterialController::class, 'create'])->name('materials.create');
 Route::post('/materials', [MaterialController::class, 'store'])->name('materials.store');
 Route::get('/materials/{material}/versions/{version}/download', [MaterialController::class, 'download'])->name('materials.download');
