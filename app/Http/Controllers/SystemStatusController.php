@@ -17,6 +17,7 @@ use App\Models\Task;
 use App\Models\Topic;
 use App\Models\TopicMastery;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class SystemStatusController
 {
@@ -63,6 +64,10 @@ class SystemStatusController
                     ->where('status', 'active')
                     ->where('source', 'grounded_generator')
                     ->count(),
+            ],
+            'background_queue' => [
+                'pending_jobs' => DB::table('jobs')->count(),
+                'failed_jobs' => DB::table('failed_jobs')->count(),
             ],
             'sync_connections' => SyncConnection::count(),
             'last_sync' => $lastRun ? [
