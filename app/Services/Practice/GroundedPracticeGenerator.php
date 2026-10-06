@@ -36,6 +36,31 @@ class GroundedPracticeGenerator
         return $stats;
     }
 
+    public function generateForCourse(int $courseId, int $perTopic = 2): array
+    {
+        $stats = [
+            'topics_seen' => 0,
+            'eligible_source_chunks' => 0,
+            'created' => 0,
+            'updated' => 0,
+            'retired' => $this->retireSuperseded(),
+        ];
+
+        Topic::query()
+            ->where('course_id', $courseId)
+            ->where('status', 'active')
+            ->orderBy('position')
+            ->each(function (Topic $topic) use (&$stats, $perTopic) {
+                $result = $this->generateForTopic($topic, $perTopic);
+                $stats['topics_seen']++;
+                $stats['eligible_source_chunks'] += $result['eligible_source_chunks'];
+                $stats['created'] += $result['created'];
+                $stats['updated'] += $result['updated'];
+            });
+
+        return $stats;
+    }
+
     public function generateForTopic(Topic $topic, int $limit = 2): array
     {
         $chunks = $topic->sourceChunks()
