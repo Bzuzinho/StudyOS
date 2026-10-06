@@ -31,7 +31,10 @@
             <p class="eyebrow">Exercícios, tentativas e evidência</p>
             <h1>Prática</h1>
         </div>
-        <a class="button primary" href="{{ route('practice.create', $studySession ? ['course_id' => $studySession->course_id] : []) }}">+ Criar exercício</a>
+        <div class="calendar-actions">
+            <span class="corpus-badge">{{ $eligibleSourceChunkCount }} fragmento(s) apto(s) para geração</span>
+            <a class="button primary" href="{{ route('practice.create', $studySession ? ['course_id' => $studySession->course_id] : []) }}">+ Criar exercício</a>
+        </div>
     </header>
 
     @if($studySession)
@@ -84,11 +87,20 @@
                         <div class="mastery-status {{ $status }}">{{ $labels[$status] ?? $status }}</div>
                         <p>
                             {{ $mastery?->evidence_exercises ?? 0 }} exercício(s) distinto(s) ·
-                            {{ $mastery?->evidence_attempts ?? 0 }} tentativa(s) corrigida(s)
+                            {{ $mastery?->evidence_attempts ?? 0 }} tentativa(s) corrigida(s) ·
+                            {{ $topic->source_chunks_count }} fonte(s)
                         </p>
                         <div class="mastery-actions">
                             <a href="{{ route('practice.index', ['topic_id' => $topic->id]) }}">{{ $topic->exercises_count }} exercício(s)</a>
                             <a href="{{ route('practice.create', ['course_id' => $topic->course_id, 'topic_id' => $topic->id]) }}">Criar exercício</a>
+                            @if($topic->rich_source_chunks_count > 0)
+                                <form method="POST" action="{{ route('practice.generate-topic', $topic) }}">
+                                    @csrf
+                                    <button class="text-link" type="submit">Gerar da fonte ({{ $topic->rich_source_chunks_count }})</button>
+                                </form>
+                            @else
+                                <span class="source-thin">Fonte ainda insuficiente</span>
+                            @endif
                         </div>
                     </article>
                 @empty
@@ -103,7 +115,7 @@
             @forelse($exercises as $exercise)
                 <a class="practice-item" href="{{ route('practice.show', ['exercise' => $exercise, 'study_session_id' => $studySession?->id]) }}">
                     <div>
-                        <span class="activity-type">{{ strtoupper(str_replace('_', ' ', $exercise->type)) }}</span>
+                        <span class="activity-type">{{ strtoupper(str_replace('_', ' ', $exercise->type)) }}@if(($exercise->metadata['source_grounded'] ?? false)) · FONTE @endif</span>
                         <strong>{{ $exercise->title ?: \Illuminate\Support\Str::limit($exercise->prompt, 80) }}</strong>
                         <p>{{ $exercise->course->name }} · {{ $exercise->attempts->count() }} tentativa(s)</p>
                     </div>
