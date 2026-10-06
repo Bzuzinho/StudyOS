@@ -38,6 +38,8 @@ class SystemStatusController
             'learning_context' => [
                 'materials' => Material::query()->where('status', 'active')->count(),
                 'uploaded_files' => MaterialVersion::query()->whereNotNull('storage_path')->count(),
+                'files_queued' => MaterialVersion::query()->where('extraction_status', 'queued')->count(),
+                'files_processing' => MaterialVersion::query()->where('extraction_status', 'processing')->count(),
                 'files_extracted' => MaterialVersion::query()->where('extraction_status', 'extracted')->count(),
                 'files_without_searchable_text' => MaterialVersion::query()
                     ->whereIn('extraction_status', ['empty', 'empty_or_scanned'])
