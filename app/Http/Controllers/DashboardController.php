@@ -9,6 +9,7 @@ use App\Models\Exercise;
 use App\Models\ExerciseAttempt;
 use App\Models\LessonSummary;
 use App\Models\Material;
+use App\Models\SourceChunk;
 use App\Models\StudySession;
 use App\Models\SyncRun;
 use App\Models\Task;
@@ -75,6 +76,15 @@ class DashboardController
             'exerciseCount' => Exercise::query()->where('status', 'active')->count(),
             'gradedAttemptCount' => ExerciseAttempt::query()->where('grading_status', 'graded')->count(),
             'masteryEvidenceCount' => TopicMastery::query()->where('status', '!=', 'no_evidence')->count(),
+            'sourceChunkCount' => SourceChunk::query()->where('status', 'active')->count(),
+            'richSourceChunkCount' => SourceChunk::query()
+                ->where('status', 'active')
+                ->where('quality', 'content')
+                ->count(),
+            'groundedExerciseCount' => Exercise::query()
+                ->where('status', 'active')
+                ->where('source', 'grounded_generator')
+                ->count(),
             'recentAttempts' => ExerciseAttempt::query()
                 ->with(['exercise.course'])
                 ->latest('attempted_at')
