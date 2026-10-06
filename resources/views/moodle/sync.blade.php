@@ -13,27 +13,26 @@
     <a href="{{ route('materials.index', [], false) }}">← Materiais</a>
     <p class="eyebrow">Ligação à conta ULO</p>
     <h1>Sincronizar Moodle</h1>
-    <p>Inicia sessão na tua conta ULO. No fim, usa a ligação de regresso apresentada pelo Moodle para iniciar a recolha das 6 UCs.</p>
+    <p>Autentica-te no Moodle numa nova aba e cola aqui a ligação de regresso para recolher os documentos das 6 UCs.</p>
     <p>A sincronização só acontece quando a pedes. A palavra-passe Microsoft fica no site da instituição.</p>
     <section class="material-card">
-        <h2>Primeira ligação neste navegador</h2>
-        <p>Usa Chrome ou Edge no computador. Permite que o StudyOS receba o regresso da autenticação quando o navegador perguntar.</p>
-        @if(! $protocolReady)
-        <button class="button" id="register" type="button">Preparar regresso ao StudyOS</button>
-        <a class="button" id="check" href="web+studyos://check={{ $protocolCheck }}" hidden>Verificar regresso neste navegador</a>
-        <p id="protocol-help" hidden>Aceita o registo no navegador e clica em Verificar regresso. Se não regressares a esta página, a permissão ainda não está ativa. No Edge, consulta as permissões de protocolos em edge://settings/content/handlers.</p>
-        @else
-        <p>Regresso ao StudyOS verificado nesta sessão.</p>
-        @endif
-        @if($pendingAuth)
-        <p>Há uma autenticação por concluir. Retoma o Moodle com o botão abaixo; a ligação mantém-se válida durante 15 minutos desde o início. No Moodle, clica na ligação para abrir a aplicação.</p>
-        @endif
-        <form id="sync-form" method="POST" action="{{ route('moodle.start', [], false) }}">
+        <h2>1. Autenticar no Moodle</h2>
+        <form id="sync-form" method="POST" target="_blank" rel="noopener" action="{{ route('moodle.start', [], false) }}">
             @csrf
-            <button class="button primary" id="sync" type="submit" @disabled(! $protocolReady || $running)>{{ $pendingAuth ? 'Retomar autenticação e sincronizar' : 'Autenticar e sincronizar' }}</button>
+            <button class="button primary" id="sync" type="submit" @disabled($running)>Autenticar e sincronizar</button>
         </form>
+        <p>Mantém esta página aberta. Na nova aba, entra com a conta ULO. Depois, clica com o botão direito em «Clique aqui se a aplicação não abrir automaticamente» e escolhe Copiar ligação. Não precisas de a abrir.</p>
+        <p>Se o login terminar noutra página do Moodle, volta aqui e usa o mesmo botão para retomar. A ligação é válida durante 15 minutos desde o início.</p>
+    </section>
+    <section class="material-card">
+        <h2>2. Concluir a ligação</h2>
+        <form id="return-form" autocomplete="off">
+            <label for="return-link">Ligação copiada do Moodle</label>
+            <input id="return-link" type="password" autocomplete="off" spellcheck="false" required placeholder="Cola aqui a ligação copiada" style="width:100%">
+            <button class="button primary" id="complete" type="submit" @disabled($running)>Importar documentos</button>
+        </form>
+        <p>Cola a ligação apenas neste campo. É enviada por ligação segura para validar esta sessão e iniciar a recolha; não fica guardada neste formulário.</p>
         <p id="message" role="status" aria-live="polite"></p>
-        <p>Se o navegador do telemóvel não suportar esta ligação, inicia a recolha no computador. Os documentos recolhidos ficam disponíveis no telemóvel.</p>
     </section>
     <section class="material-card">
         <h2>Resultado desta sessão</h2>
@@ -43,47 +42,44 @@
 </main>
 <script>
 (() => {
-    const register = document.getElementById('register');
     const sync = document.getElementById('sync');
-    let preparing = false;
+    const complete = document.getElementById('complete');
+    const input = document.getElementById('return-link');
     const message = document.getElementById('message');
     let running = @json($running);
-    // Only an actual protocol callback verifies the return in this session.
-    const registered = @json($protocolReady);
-    sync.disabled = !registered || running;
-    window.addEventListener('pageshow', () => {
-        // Back/forward cache restores the page after navigation, including its
-        // disabled button and the previous in-memory submission flag.
-        preparing = false;
-        sync.disabled = !registered || running;
-        if (!running) message.textContent = registered
-            ? 'Regresso verificado. Podes iniciar ou retomar a autenticação.'
-            : 'Primeiro permite o regresso ao StudyOS neste navegador.';
+    let submitting = false;
+    window.addEventListener('pageshow', () => { input.value = ''; });
+    window.addEventListener('pagehide', () => { input.value = ''; });
+    document.getElementById('sync-form').addEventListener('submit', () => {
+        message.textContent = 'Conclui a autenticação na aba do Moodle e cola aqui a ligação de regresso.';
     });
-    if (register && (!window.isSecureContext || !navigator.registerProtocolHandler)) {
-        register.disabled = true;
-        message.textContent = 'Este navegador não permite concluir a ligação. Usa Chrome ou Edge no computador.';
-    }
-    register?.addEventListener('click', () => {
-        try {
-            navigator.registerProtocolHandler('web+studyos', location.origin + '/moodle/callback#%s');
-            document.getElementById('check').hidden = false;
-            document.getElementById('protocol-help').hidden = false;
-            message.textContent = 'Aceita o pedido do navegador e clica em Verificar regresso. A autenticação fica disponível depois da verificação.';
-        } catch (_) {
-            message.textContent = 'O navegador bloqueou o regresso ao StudyOS. Verifica as permissões ou usa Chrome/Edge no computador.';
-        }
-    });
-    document.getElementById('sync-form').addEventListener('submit', (event) => {
-        if (!registered || preparing || running) {
-            event.preventDefault();
+    document.getElementById('return-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (submitting || running) return;
+        const payload = input.value.trim();
+        input.value = '';
+        if (!/^(?:moodlemobile|web\+studyos):\/\/token=[A-Za-z0-9+/=]+$/.test(payload) || payload.length > 2048) {
+            message.textContent = 'Copia a ligação completa usando o botão direito na ligação azul do Moodle.';
             return;
         }
-        preparing = true;
-        sync.disabled = true;
-        message.textContent = 'A abrir o Moodle…';
-        // A normal form navigation preserves the browser's navigation flow.
-        // The response redirects directly to Moodle, without an async fetch.
+        submitting = true;
+        sync.disabled = complete.disabled = true;
+        message.textContent = 'A validar a ligação e a iniciar a recolha…';
+        try {
+            const response = await fetch({{ Illuminate\Support\Js::from(route('moodle.complete', [], false)) }}, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content},
+                body: JSON.stringify({payload}),
+                cache: 'no-store',
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Não foi possível concluir a ligação. Volta a autenticar.');
+            location.replace(data.url);
+        } catch (_) {
+            message.textContent = 'Não foi possível validar a ligação. Atualiza a página, autentica-te e copia a nova ligação do Moodle.';
+            submitting = false;
+            sync.disabled = complete.disabled = running;
+        }
     });
     async function poll() {
         try {
@@ -91,7 +87,7 @@
             if (!response.ok) throw new Error();
             const data = await response.json();
             running = ['queued', 'running'].includes(data.status);
-            sync.disabled = !registered || running || preparing;
+            sync.disabled = complete.disabled = running || submitting;
             const stats = data.stats || {};
             const labels = {idle: 'Ainda não foi iniciada uma recolha nesta sessão.', queued: 'Pedido na fila de recolha.', running: 'A recolher os documentos do Moodle…', failed: 'A recolha falhou. Confirma a conta ULO e volta a autenticar.'};
             document.getElementById('result').textContent = labels[data.status] ||

@@ -8,7 +8,7 @@ class MoodleSsoPayload
 {
     public function token(string $uri, string $baseUrl, string $passport): string
     {
-        if (strlen($uri) > 2048 || ! preg_match('/\Aweb\+studyos:\/\/token=([A-Za-z0-9+\/=]+)\z/', $uri, $matches)) {
+        if (strlen($uri) > 2048 || ! preg_match('/\A(?:web\+studyos|moodlemobile):\/\/token=([A-Za-z0-9+\/=]+)\z/', $uri, $matches)) {
             throw new InvalidArgumentException('Resposta de autenticação inválida.');
         }
 

@@ -17,6 +17,15 @@ class MoodleSsoPayloadTest extends TestCase
         $this->assertSame($token, (new MoodleSsoPayload())->token($uri, $this->baseUrl, 'passport'));
     }
 
+    public function test_moodle_mobile_return_is_accepted_with_the_same_site_and_passport_checks(): void
+    {
+        $token = str_repeat('b', 32);
+        $uri = 'moodlemobile://token='.base64_encode(md5($this->baseUrl.'passport').':::'.$token);
+        $this->assertSame($token, (new MoodleSsoPayload())->token($uri, $this->baseUrl, 'passport'));
+        $this->expectException(InvalidArgumentException::class);
+        (new MoodleSsoPayload())->token($uri, $this->baseUrl, 'another-passport');
+    }
+
     public function test_a_payload_from_another_site_is_rejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -34,7 +43,7 @@ class MoodleSsoPayloadTest extends TestCase
     public function test_invalid_payloads_are_rejected_without_echoing_secrets(): void
     {
         $parser = new MoodleSsoPayload();
-        foreach (['', 'https://evil.example', 'moodlemobile://token=abc', 'web+studyos://token=!!!',
+        foreach (['', 'https://evil.example', 'unknown://token=abc', 'web+studyos://token=!!!',
             'web+studyos://token='.base64_encode(md5($this->baseUrl.'passport').':::secret'),
             'web+studyos://token='.str_repeat('A', 2048)] as $uri) {
             try {
