@@ -194,7 +194,7 @@
                             <span>{{ $chunk->quality === 'content' ? 'Detalhado' : 'Esquema' }}</span>
                         </div>
                         <small>{{ $chunk->locator }}</small>
-                        <p>{{ IlluminateSupportStr::limit($chunk->content, 240) }}</p>
+                        <p>{{ \Illuminate\Support\Str::limit($chunk->content, 240) }}</p>
                         <div class="topic-chips">
                             @foreach($chunk->topics as $linkedTopic)
                                 <span>{{ $linkedTopic->title }}</span>
@@ -223,7 +223,18 @@
                         @if($latestVersion)
                             <small>{{ $latestVersion->version_label ?: 'Versão observada' }}</small>
                             @if($latestVersion->storage_path)
-                                <small>{{ $latestVersion->original_filename }} · {{ $latestVersion->extraction_status }}</small>
+                                @php
+                                    $courseExtractionLabels = [
+                                        'queued' => 'na fila',
+                                        'processing' => 'a extrair',
+                                        'extracted' => 'texto extraído',
+                                        'empty_or_scanned' => 'sem texto pesquisável',
+                                        'empty' => 'sem texto extraível',
+                                        'failed' => 'extração falhou',
+                                        'manual_text' => 'texto manual',
+                                    ];
+                                @endphp
+                                <small>{{ $latestVersion->original_filename }} · {{ $courseExtractionLabels[$latestVersion->extraction_status] ?? $latestVersion->extraction_status }}</small>
                             @endif
                         @endif
                         <div class="material-meta">

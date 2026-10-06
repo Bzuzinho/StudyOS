@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\MaterialVersion;
 use App\Models\SyncConnection;
 use App\Services\Academic\AcademicCatalogBootstrapper;
 use App\Services\Academic\AssessmentCalendarBootstrapper;
@@ -18,6 +19,18 @@ use Illuminate\Support\Str;
 Artisan::command('studyos:status', function () {
     $this->info('StudyOS operational.');
 })->purpose('Show StudyOS application status');
+
+Artisan::command('studyos:queue-status', function () {
+    $this->info('Queue: '.json_encode([
+        'pending_jobs' => DB::table('jobs')->count(),
+        'failed_jobs' => DB::table('failed_jobs')->count(),
+        'files_queued' => MaterialVersion::query()->where('extraction_status', 'queued')->count(),
+        'files_processing' => MaterialVersion::query()->where('extraction_status', 'processing')->count(),
+        'files_failed' => MaterialVersion::query()->where('extraction_status', 'failed')->count(),
+    ], JSON_UNESCAPED_UNICODE));
+
+    return 0;
+})->purpose('Show background academic document extraction queue status');
 
 Artisan::command('studyos:bootstrap-academic-year', function () {
     $stats = app(AcademicCatalogBootstrapper::class)->run();

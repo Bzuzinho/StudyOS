@@ -17,6 +17,7 @@ use App\Models\Task;
 use App\Models\Topic;
 use App\Models\TopicMastery;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class SystemStatusController
 {
@@ -38,6 +39,8 @@ class SystemStatusController
             'learning_context' => [
                 'materials' => Material::query()->where('status', 'active')->count(),
                 'uploaded_files' => MaterialVersion::query()->whereNotNull('storage_path')->count(),
+                'files_queued' => MaterialVersion::query()->where('extraction_status', 'queued')->count(),
+                'files_processing' => MaterialVersion::query()->where('extraction_status', 'processing')->count(),
                 'files_extracted' => MaterialVersion::query()->where('extraction_status', 'extracted')->count(),
                 'files_without_searchable_text' => MaterialVersion::query()
                     ->whereIn('extraction_status', ['empty', 'empty_or_scanned'])
@@ -61,6 +64,10 @@ class SystemStatusController
                     ->where('status', 'active')
                     ->where('source', 'grounded_generator')
                     ->count(),
+            ],
+            'background_queue' => [
+                'pending_jobs' => DB::table('jobs')->count(),
+                'failed_jobs' => DB::table('failed_jobs')->count(),
             ],
             'sync_connections' => SyncConnection::count(),
             'last_sync' => $lastRun ? [

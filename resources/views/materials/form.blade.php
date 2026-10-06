@@ -27,7 +27,7 @@
     <header class="form-header">
         <p class="eyebrow">Conteúdo académico</p>
         <h1>{{ $material->exists ? 'Editar material' : 'Adicionar material' }}</h1>
-        <p>Carrega o documento académico diretamente. O StudyOS guarda-o em armazenamento privado, extrai o texto e preserva página/slide sempre que o formato o permite.</p>
+        <p>Carrega o documento académico diretamente. O StudyOS guarda-o de imediato em armazenamento privado e faz a extração em segundo plano, preservando página/slide sempre que o formato o permite.</p>
     </header>
 
     @if($errors->any())
@@ -69,7 +69,7 @@
             <label class="field span-2 upload-field">
                 <span>Ficheiro académico <small>PDF, PPTX, DOCX, TXT ou MD · máximo 25 MB</small></span>
                 <input type="file" name="file" accept=".pdf,.pptx,.docx,.txt,.md">
-                <small class="field-hint">O ficheiro fica privado no armazenamento cloud do StudyOS. PDFs mantêm referência de página e apresentações PPTX mantêm referência de slide.</small>
+                <small class="field-hint">O ficheiro fica privado no armazenamento cloud do StudyOS. A extração continua no servidor mesmo que saias da página. PDFs mantêm referência de página e PPTX mantêm referência de slide.</small>
                 @if($latestVersion?->storage_path)
                     <div class="current-file">
                         <div>

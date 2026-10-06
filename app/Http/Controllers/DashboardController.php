@@ -60,6 +60,7 @@ class DashboardController
             'summaryCount' => LessonSummary::query()->count(),
             'uploadedFileCount' => MaterialVersion::query()->whereNotNull('storage_path')->count(),
             'extractedFileCount' => MaterialVersion::query()->where('extraction_status', 'extracted')->count(),
+            'queuedFileCount' => MaterialVersion::query()->whereIn('extraction_status', ['queued', 'processing'])->count(),
             'recentMaterials' => Material::query()
                 ->with(['course', 'versions'])
                 ->where('status', 'active')

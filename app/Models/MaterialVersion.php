@@ -16,6 +16,10 @@ class MaterialVersion extends Model
             'observed_at' => 'datetime',
             'metadata' => 'array',
             'size_bytes' => 'integer',
+            'extraction_queued_at' => 'datetime',
+            'extraction_started_at' => 'datetime',
+            'extraction_finished_at' => 'datetime',
+            'extraction_attempts' => 'integer',
         ];
     }
 
