@@ -11,6 +11,8 @@ use App\Services\Calendar\ICalendarSyncService;
 use App\Services\Learning\CorpusBuilder;
 use App\Services\Moodle\MoodleAuthenticatedClient;
 use App\Services\Moodle\MoodleSyncService;
+use App\Services\Moodle\MoodleWebServiceClient;
+use App\Services\Moodle\MoodleWebServiceSyncService;
 use App\Services\Practice\GroundedPracticeGenerator;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -90,50 +92,88 @@ Artisan::command('studyos:sync-moodle', function () {
         return 0;
     }
 
+    $webServiceClient = app(MoodleWebServiceClient::class);
+
+    if ($webServiceClient->isConfigured()) {
+        $connection = SyncConnection::query()->firstOrCreate(
+            ['source' => 'moodle_webservice', 'name' => 'Moodle EAD 2026/27 · Microsoft SSO'],
+            [
+                'secret' => null,
+                'config' => [
+                    'base_url' => config('studyos.moodle.base_url'),
+                    'read_only' => true,
+                    'auth_mode' => 'microsoft_sso_moodle_token',
+                    'credentials_source' => 'environment_secret',
+                ],
+                'status' => 'pending',
+                'enabled' => true,
+            ],
+        );
+
+        $run = app(MoodleWebServiceSyncService::class)->sync($connection);
+
+        if (in_array($run->status, ['success', 'success_with_warnings'], true)) {
+            $this->info('Moodle SSO sync '.strtoupper($run->status).': '.json_encode($run->stats, JSON_UNESCAPED_UNICODE));
+
+            return 0;
+        }
+
+        $this->error($run->error ?: 'Moodle SSO synchronization failed.');
+
+        return 1;
+    }
+
+    // Fallback retained only for Moodle accounts that genuinely use a local password.
+    $legacyClient = app(MoodleAuthenticatedClient::class);
+
+    if ($legacyClient->isConfigured()) {
+        $connection = SyncConnection::query()->firstOrCreate(
+            ['source' => 'moodle_authenticated', 'name' => 'Moodle EAD 2026/27 · local login'],
+            [
+                'secret' => null,
+                'config' => [
+                    'base_url' => config('studyos.moodle.base_url'),
+                    'read_only' => true,
+                    'credentials_source' => 'environment_secret',
+                ],
+                'status' => 'pending',
+                'enabled' => true,
+            ],
+        );
+
+        $run = app(MoodleSyncService::class)->sync($connection);
+
+        if (in_array($run->status, ['success', 'success_with_warnings'], true)) {
+            $this->info('Moodle legacy sync '.strtoupper($run->status).': '.json_encode($run->stats, JSON_UNESCAPED_UNICODE));
+
+            return 0;
+        }
+
+        $this->error($run->error ?: 'Moodle legacy synchronization failed.');
+
+        return 1;
+    }
+
     $connection = SyncConnection::query()->firstOrCreate(
-        ['source' => 'moodle_authenticated', 'name' => 'Moodle EAD 2026/27'],
+        ['source' => 'moodle_webservice', 'name' => 'Moodle EAD 2026/27 · Microsoft SSO'],
         [
             'secret' => null,
             'config' => [
                 'base_url' => config('studyos.moodle.base_url'),
                 'read_only' => true,
-                'credentials_source' => 'environment',
+                'auth_mode' => 'microsoft_sso_moodle_token',
+                'credentials_source' => 'environment_secret',
             ],
-            'status' => 'pending_credentials',
+            'status' => 'pending_microsoft_sso',
             'enabled' => true,
         ],
     );
 
-    $client = app(MoodleAuthenticatedClient::class);
+    $connection->update(['status' => 'pending_microsoft_sso']);
+    $this->warn('Moodle synchronization is waiting for a one-time Microsoft/ULO SSO token.');
 
-    if (! $client->isConfigured()) {
-        $connection->update([
-            'status' => 'pending_credentials',
-            'config' => [
-                ...($connection->config ?? []),
-                'base_url' => config('studyos.moodle.base_url'),
-                'read_only' => true,
-                'credentials_source' => 'environment',
-            ],
-        ]);
-
-        $this->warn('Moodle synchronization is ready but credentials are not configured.');
-
-        return 0;
-    }
-
-    $run = app(MoodleSyncService::class)->sync($connection);
-
-    if (in_array($run->status, ['success', 'success_with_warnings'], true)) {
-        $this->info('Moodle sync '.strtoupper($run->status).': '.json_encode($run->stats, JSON_UNESCAPED_UNICODE));
-
-        return 0;
-    }
-
-    $this->error($run->error ?: 'Moodle synchronization failed.');
-
-    return 1;
-})->purpose('Synchronize Moodle documents through authenticated read-only access');
+    return 0;
+})->purpose('Synchronize Moodle documents through read-only Microsoft/ULO SSO');
 
 Artisan::command('studyos:sync-ical {connection?}', function () {
     $connectionId = $this->argument('connection');
