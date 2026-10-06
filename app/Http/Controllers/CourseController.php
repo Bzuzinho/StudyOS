@@ -10,7 +10,7 @@ class CourseController
     public function index(): View
     {
         $courses = Course::query()
-            ->withCount(['classOccurrences', 'assessments', 'tasks', 'materials', 'lessonSummaries', 'topics', 'studySessions', 'exercises'])
+            ->withCount(['classOccurrences', 'assessments', 'tasks', 'materials', 'lessonSummaries', 'topics', 'studySessions', 'exercises', 'sourceChunks'])
             ->with(['classOccurrences' => fn ($query) => $query
                 ->where('starts_at', '>=', now())
                 ->orderBy('starts_at')
@@ -39,13 +39,26 @@ class CourseController
             'topics' => fn ($query) => $query
                 ->where('status', 'active')
                 ->with('mastery')
-                ->withCount(['studySessions', 'exercises'])
+                ->withCount([
+                    'studySessions',
+                    'exercises',
+                    'sourceChunks',
+                    'sourceChunks as rich_source_chunks_count' => fn ($sourceQuery) => $sourceQuery
+                        ->where('source_chunks.status', 'active')
+                        ->where('source_chunks.quality', 'content'),
+                ])
                 ->orderBy('position'),
             'studySessions' => fn ($query) => $query->with('topics')->orderBy('starts_at'),
             'exercises' => fn ($query) => $query
                 ->where('status', 'active')
+                ->with(['sourceChunks' => fn ($sourceQuery) => $sourceQuery->where('source_chunks.status', 'active')])
                 ->withCount('attempts')
                 ->latest('updated_at'),
+            'sourceChunks' => fn ($query) => $query
+                ->where('status', 'active')
+                ->with(['materialVersion.material', 'lessonSummary'])
+                ->orderBy('title')
+                ->orderBy('ordinal'),
         ]);
 
         $now = now();
