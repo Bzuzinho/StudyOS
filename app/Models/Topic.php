@@ -42,6 +42,12 @@ class Topic extends Model
         return $this->belongsToMany(Exercise::class);
     }
 
+    public function sourceChunks(): BelongsToMany
+    {
+        return $this->belongsToMany(SourceChunk::class)
+            ->withPivot(['match_method', 'confidence']);
+    }
+
     public function mastery(): HasOne
     {
         return $this->hasOne(TopicMastery::class);
