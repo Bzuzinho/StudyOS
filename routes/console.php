@@ -223,7 +223,7 @@ Artisan::command('studyos:sync-ical {connection?}', function () {
     return $failed ? 1 : 0;
 })->purpose('Synchronize configured StudyOS iCalendar sources');
 
-Artisan::command('studyos:deploy-prepare', function () {
+Artisan::command('studyos:deploy-prepare {--rebuild-learning : Rebuild all source chunks and grounded practice}', function () {
     $advisoryLockKey = 2026100601;
     $advisoryLockHeld = false;
 
@@ -267,11 +267,17 @@ Artisan::command('studyos:deploy-prepare', function () {
         $topics = app(TopicBootstrapper::class)->run();
         $this->info('Topics ready: '.json_encode($topics, JSON_UNESCAPED_UNICODE));
 
-        $corpus = app(CorpusBuilder::class)->rebuildAll();
-        $this->info('Grounded corpus ready: '.json_encode($corpus, JSON_UNESCAPED_UNICODE));
+        // Imported documents already rebuild their own corpus in the worker.
+        // Reprocessing every document here can exhaust Railway's pre-deploy timeout.
+        if ($this->option('rebuild-learning')) {
+            $corpus = app(CorpusBuilder::class)->rebuildAll();
+            $this->info('Grounded corpus ready: '.json_encode($corpus, JSON_UNESCAPED_UNICODE));
 
-        $groundedPractice = app(GroundedPracticeGenerator::class)->generateAll();
-        $this->info('Grounded practice ready: '.json_encode($groundedPractice, JSON_UNESCAPED_UNICODE));
+            $groundedPractice = app(GroundedPracticeGenerator::class)->generateAll();
+            $this->info('Grounded practice ready: '.json_encode($groundedPractice, JSON_UNESCAPED_UNICODE));
+        } else {
+            $this->info('Existing learning corpus preserved; document updates are processed by the worker.');
+        }
 
         return 0;
     } finally {
