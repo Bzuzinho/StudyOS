@@ -89,6 +89,15 @@ class MoodleAuthenticatedClient
         }
 
         $this->authenticated = true;
+
+        $courses = $this->get($this->url('/my/courses.php'));
+
+        if (! str_contains($courses->body(), '/course/view.php?id=')) {
+            $this->authenticated = false;
+            throw new RuntimeException(
+                'Moodle login succeeded but the courses page is not available. An interactive policy or SSO step may still be required.'
+            );
+        }
     }
 
     public function get(string $url, bool $authenticate = true): Response
