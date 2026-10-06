@@ -57,6 +57,7 @@ class MoodleManualFlowTest extends TestCase
         parse_str(parse_url($response->json('url'), PHP_URL_QUERY), $parameters);
         $this->assertSame('web+studyos', $parameters['urlscheme']);
         $this->assertSame('moodle_mobile_app', $parameters['service']);
+        $this->assertSame('1', $parameters['confirmed']);
         $this->assertArrayNotHasKey('oauthsso', $parameters);
         $response->assertSessionHas('moodle_sso.passport', $parameters['passport']);
         $this->assertStringNotContainsString('token=', $response->json('url'));
@@ -96,6 +97,36 @@ class MoodleManualFlowTest extends TestCase
         $this->assertNull(SyncConnection::first()->secret);
         $this->postJson('/moodle/complete', ['payload' => $uri])->assertStatus(422);
         Queue::assertPushed(SyncMoodleOnDemand::class, 1);
+    }
+
+    public function test_protocol_setup_requires_a_real_session_bound_callback(): void
+    {
+        $page = $this->get('/moodle/sync')->assertOk();
+        $page->assertSessionHas('moodle_protocol_check');
+        $page->assertSessionMissing('moodle_protocol_ready');
+        $check = session('moodle_protocol_check');
+        $this->postJson('/moodle/protocol-check', ['check' => 'wrong'])->assertStatus(422);
+        $this->postJson('/moodle/protocol-check', ['check' => $check])
+            ->assertOk()->assertSessionHas('moodle_protocol_ready', true)
+            ->assertSessionMissing('moodle_protocol_check');
+        $this->postJson('/moodle/protocol-check', ['check' => $check])->assertStatus(422);
+        $this->get('/moodle/sync')->assertOk()->assertSee('Regresso ao StudyOS verificado nesta sessão.');
+        Queue::assertNothingPushed();
+    }
+
+    public function test_resuming_login_preserves_the_passport_and_original_expiry(): void
+    {
+        $first = $this->postJson('/moodle/start')->assertOk();
+        $challenge = session('moodle_sso');
+        $this->travel(2)->minutes();
+        $second = $this->postJson('/moodle/start')->assertOk();
+        $this->assertSame($first->json('url'), $second->json('url'));
+        $this->assertSame($challenge, session('moodle_sso'));
+        $this->get('/moodle/sync')->assertOk()->assertSee('Retomar autenticação e sincronizar');
+        $this->travel(14)->minutes();
+        $third = $this->postJson('/moodle/start')->assertOk();
+        $this->assertNotSame($second->json('url'), $third->json('url'));
+        Queue::assertNothingPushed();
     }
 
     public function test_expired_or_missing_challenges_do_not_create_jobs(): void

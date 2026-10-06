@@ -7,20 +7,30 @@
     <title>Sincronizar Moodle · StudyOS</title>
     @include('partials.app-identity')
     <link rel="stylesheet" href="/css/app.css?v=brand-1">
+    <style>[hidden] { display: none !important; }</style>
 </head>
 <body><main class="shell">
     <a href="{{ route('materials.index', [], false) }}">← Materiais</a>
     <p class="eyebrow">Ligação à conta ULO</p>
     <h1>Sincronizar Moodle</h1>
-    <p>Inicia sessão na tua conta ULO. Após a autenticação, regressas ao StudyOS e começa a recolha das 6 UCs.</p>
+    <p>Inicia sessão na tua conta ULO. No fim, usa a ligação de regresso apresentada pelo Moodle para iniciar a recolha das 6 UCs.</p>
     <p>A sincronização só acontece quando a pedes. A palavra-passe Microsoft fica no site da instituição.</p>
     <section class="material-card">
         <h2>Primeira ligação neste navegador</h2>
         <p>Usa Chrome ou Edge no computador. Permite que o StudyOS receba o regresso da autenticação quando o navegador perguntar.</p>
-        <button class="button" id="register" type="button">Permitir regresso ao StudyOS</button>
+        @if(! $protocolReady)
+        <button class="button" id="register" type="button">Preparar regresso ao StudyOS</button>
+        <a class="button" id="check" href="web+studyos://check={{ $protocolCheck }}" hidden>Verificar regresso neste navegador</a>
+        <p id="protocol-help" hidden>Aceita o registo no navegador e clica em Verificar regresso. Se não regressares a esta página, a permissão ainda não está ativa. No Edge, consulta as permissões de protocolos em edge://settings/content/handlers.</p>
+        @else
+        <p>Regresso ao StudyOS verificado nesta sessão.</p>
+        @endif
+        @if($pendingAuth)
+        <p>Há uma autenticação por concluir. Retoma o Moodle com o botão abaixo; a ligação mantém-se válida durante 15 minutos desde o início. No Moodle, clica na ligação para abrir a aplicação.</p>
+        @endif
         <form id="sync-form" method="POST" action="{{ route('moodle.start', [], false) }}">
             @csrf
-            <button class="button primary" id="sync" type="submit" disabled>Autenticar e sincronizar</button>
+            <button class="button primary" id="sync" type="submit" @disabled(! $protocolReady || $running)>{{ $pendingAuth ? 'Retomar autenticação e sincronizar' : 'Autenticar e sincronizar' }}</button>
         </form>
         <p id="message" role="status" aria-live="polite"></p>
         <p>Se o navegador do telemóvel não suportar esta ligação, inicia a recolha no computador. Os documentos recolhidos ficam disponíveis no telemóvel.</p>
@@ -38,9 +48,8 @@
     let preparing = false;
     const message = document.getElementById('message');
     let running = @json($running);
-    // This records an attempted setup, not proof that permission was accepted.
-    let registered = false;
-    try { registered = sessionStorage.getItem('studyos-protocol-requested') === '1'; } catch (_) {}
+    // Only an actual protocol callback verifies the return in this session.
+    const registered = @json($protocolReady);
     sync.disabled = !registered || running;
     window.addEventListener('pageshow', () => {
         // Back/forward cache restores the page after navigation, including its
@@ -48,20 +57,19 @@
         preparing = false;
         sync.disabled = !registered || running;
         if (!running) message.textContent = registered
-            ? 'Podes retomar a ligação. Confirma que aceitaste o regresso ao StudyOS no navegador.'
+            ? 'Regresso verificado. Podes iniciar ou retomar a autenticação.'
             : 'Primeiro permite o regresso ao StudyOS neste navegador.';
     });
-    if (!window.isSecureContext || !navigator.registerProtocolHandler) {
+    if (register && (!window.isSecureContext || !navigator.registerProtocolHandler)) {
         register.disabled = true;
         message.textContent = 'Este navegador não permite concluir a ligação. Usa Chrome ou Edge no computador.';
     }
-    register.addEventListener('click', () => {
+    register?.addEventListener('click', () => {
         try {
             navigator.registerProtocolHandler('web+studyos', location.origin + '/moodle/callback#%s');
-            registered = true;
-            try { sessionStorage.setItem('studyos-protocol-requested', '1'); } catch (_) {}
-            sync.disabled = running;
-            message.textContent = 'Aceita o pedido do navegador, se aparecer, e inicia a autenticação. Se recusares, o Moodle não conseguirá regressar ao StudyOS.';
+            document.getElementById('check').hidden = false;
+            document.getElementById('protocol-help').hidden = false;
+            message.textContent = 'Aceita o pedido do navegador e clica em Verificar regresso. A autenticação fica disponível depois da verificação.';
         } catch (_) {
             message.textContent = 'O navegador bloqueou o regresso ao StudyOS. Verifica as permissões ou usa Chrome/Edge no computador.';
         }
