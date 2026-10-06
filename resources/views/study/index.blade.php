@@ -133,10 +133,22 @@
                                                 · {{ number_format((float) $mastery->score_percent, 0) }}%
                                             @endif
                                         </span>
+                                        <span class="{{ $topic->rich_source_chunks_count > 0 ? 'source-ready' : 'unknown' }}">
+                                            Fonte · {{ $topic->source_chunks_count }} fragmento(s)
+                                            @if($topic->rich_source_chunks_count > 0)
+                                                · {{ $topic->rich_source_chunks_count }} detalhado(s)
+                                            @endif
+                                        </span>
                                     </div>
                                     <div class="topic-card-actions">
                                         <a href="{{ route('practice.index', ['topic_id' => $topic->id]) }}">Praticar ({{ $topic->exercises_count }})</a>
                                         <a href="{{ route('study.create', ['course_id' => $course->id]) }}">Planear estudo</a>
+                                        @if($topic->rich_source_chunks_count > 0)
+                                            <form method="POST" action="{{ route('practice.generate-topic', $topic) }}">
+                                                @csrf
+                                                <button class="text-link" type="submit">Gerar da fonte</button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </article>
                             @endforeach
