@@ -141,7 +141,7 @@
                         <strong>{{ $material->title }}</strong>
                         @php $materialVersion = $material->versions->first(); @endphp
                         <p>
-                            {{ $material->course?->name }} · {{ $material->source === 'manual' ? 'Manual' : ($material->source === 'moodle' ? 'Moodle automático' : 'Fonte auditada') }}
+                            {{ $material->course?->name }} · {{ $material->source === 'manual' ? 'Manual' : ($material->source === 'moodle' ? 'Moodle' : 'Fonte auditada') }}
                             @if($materialVersion?->storage_path)
                                 · ficheiro guardado
                             @endif

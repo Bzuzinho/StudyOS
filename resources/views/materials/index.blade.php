@@ -31,7 +31,8 @@
             <p class="eyebrow">Conteúdo académico</p>
             <h1>Materiais</h1>
         </div>
-        <a class="button primary" href="{{ route('materials.create') }}">+ Adicionar material</a>
+        <div><a class="button" href="{{ route('moodle.sync') }}">Sincronizar Moodle</a>
+        <a class="button primary" href="{{ route('materials.create') }}">+ Adicionar material</a></div>
     </header>
 
     <section class="material-grid">
@@ -57,7 +58,7 @@
                 <div class="material-card-head">
                     <span class="material-type">{{ strtoupper($material->type) }}</span>
                     <span class="source-pill {{ $material->source === 'manual' ? 'manual' : '' }}">
-                        {{ $material->source === 'manual' ? 'Manual' : ($material->source === 'moodle' ? 'Moodle automático' : 'Fonte auditada') }}
+                        {{ $material->source === 'manual' ? 'Manual' : ($material->source === 'moodle' ? 'Moodle' : 'Fonte auditada') }}
                     </span>
                 </div>
                 <h2>{{ $material->title }}</h2>

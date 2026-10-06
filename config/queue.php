@@ -4,6 +4,14 @@ return [
     'default' => env('QUEUE_CONNECTION', 'database'),
 
     'connections' => [
+        'moodle' => [
+            'driver' => 'database',
+            'connection' => null,
+            'table' => 'jobs',
+            'queue' => 'moodle',
+            'retry_after' => 1860,
+            'after_commit' => false,
+        ],
         'sync' => [
             'driver' => 'sync',
         ],

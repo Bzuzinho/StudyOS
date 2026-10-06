@@ -152,7 +152,8 @@ class MoodleWebServiceClient
             ];
         } catch (Throwable $exception) {
             @unlink($path);
-            throw $exception;
+            // HTTP download errors may contain the token-bearing request URL.
+            throw new RuntimeException('Moodle file download failed.');
         }
     }
 

@@ -18,13 +18,14 @@ class MoodleWebServiceSyncService
         private readonly MoodleApiFileSynchronizer $files,
     ) {}
 
-    public function sync(SyncConnection $connection): SyncRun
+    public function sync(SyncConnection $connection, ?SyncRun $run = null): SyncRun
     {
-        $run = $connection->runs()->create([
+        $run ??= $connection->runs()->create([
             'status' => 'running',
             'started_at' => now(),
             'stats' => [],
         ]);
+        $run->update(['status' => 'running', 'started_at' => now()]);
 
         $lockKey = 2026100615;
         $lockHeld = false;

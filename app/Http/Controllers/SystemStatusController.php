@@ -25,8 +25,8 @@ class SystemStatusController
     {
         $lastRun = SyncRun::query()->latest('started_at')->first();
         $moodleConnection = SyncConnection::query()
-            ->whereIn('source', ['moodle_webservice', 'moodle_authenticated'])
-            ->orderByRaw("case when source = 'moodle_webservice' then 0 else 1 end")
+            ->whereIn('source', ['moodle_manual', 'moodle_webservice', 'moodle_authenticated'])
+            ->orderByRaw("case when source = 'moodle_manual' then 0 when source = 'moodle_webservice' then 1 else 2 end")
             ->first();
         $moodleRun = $moodleConnection?->runs()->latest('started_at')->first();
 
