@@ -31,7 +31,7 @@
             <p class="eyebrow">Conteúdo académico</p>
             <h1>Materiais</h1>
         </div>
-        <div><a class="button" href="{{ route('moodle.sync') }}">Sincronizar Moodle</a>
+        <div><a class="button" href="{{ route('moodle.sync', [], false) }}">Sincronizar Moodle</a>
         <a class="button primary" href="{{ route('materials.create') }}">+ Adicionar material</a></div>
     </header>
 

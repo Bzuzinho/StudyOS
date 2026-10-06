@@ -63,8 +63,10 @@ class MoodleManualFlowTest extends TestCase
 
     public function test_sync_and_callback_pages_render_successfully(): void
     {
-        $this->get('/moodle/sync')->assertOk()->assertSee('Autenticar e sincronizar');
-        $this->get('/moodle/callback')->assertOk()->assertSee('Ligação ao Moodle');
+        $this->get('/moodle/sync')->assertOk()->assertSee('Autenticar e sincronizar')
+            ->assertDontSee('http://localhost/moodle/status', false)->assertDontSee('http://localhost/moodle/start', false);
+        $this->get('/moodle/callback')->assertOk()->assertSee('Ligação ao Moodle')
+            ->assertDontSee('http://localhost/moodle/complete', false);
     }
 
     public function test_callback_consumes_challenge_and_queues_one_encrypted_job(): void

@@ -82,7 +82,7 @@ class MoodleSyncController
             return response()->json(['message' => 'Não foi possível iniciar a recolha. Tenta novamente.'], 503);
         }
 
-        return response()->json(['url' => route('moodle.sync')])->header('Cache-Control', 'no-store');
+        return response()->json(['url' => route('moodle.sync', [], false)])->header('Cache-Control', 'no-store');
     }
 
     public function status(Request $request)

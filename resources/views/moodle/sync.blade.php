@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/css/app.css?v=brand-1">
 </head>
 <body><main class="shell">
-    <a href="{{ route('materials.index') }}">← Materiais</a>
+    <a href="{{ route('materials.index', [], false) }}">← Materiais</a>
     <p class="eyebrow">Ligação à conta ULO</p>
     <h1>Sincronizar Moodle</h1>
     <p>Inicia sessão na tua conta ULO. Após a autenticação, regressas ao StudyOS e começa a recolha das 6 UCs.</p>
@@ -25,7 +25,7 @@
     <section class="material-card">
         <h2>Resultado desta sessão</h2>
         <p id="result" role="status" aria-live="polite">{{ $run ? 'A consultar a sincronização…' : 'Ainda não foi iniciada uma recolha nesta sessão.' }}</p>
-        <a class="button" href="{{ route('materials.index') }}">Ver materiais</a>
+        <a class="button" href="{{ route('materials.index', [], false) }}">Ver materiais</a>
     </section>
 </main>
 <script>
@@ -58,7 +58,7 @@
         }
         sync.disabled = true;
         try {
-            const response = await fetch(@json(route('moodle.start')), {
+            const response = await fetch({{ Illuminate\Support\Js::from(route('moodle.start', [], false)) }}, {
                 method: 'POST', headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json'},
             });
             const data = await response.json();
@@ -74,7 +74,7 @@
     });
     async function poll() {
         try {
-            const response = await fetch(@json(route('moodle.status')), {headers: {'Accept': 'application/json'}, cache: 'no-store'});
+            const response = await fetch({{ Illuminate\Support\Js::from(route('moodle.status', [], false)) }}, {headers: {'Accept': 'application/json'}, cache: 'no-store'});
             if (!response.ok) throw new Error();
             const data = await response.json();
             running = ['queued', 'running'].includes(data.status);
@@ -84,7 +84,7 @@
             document.getElementById('result').textContent = labels[data.status] ||
                 `${data.status === 'success_with_warnings' ? 'Concluída com avisos' : 'Concluída'}: ${stats.courses_scanned || 0} UCs, ${stats.files_seen || 0} ficheiros encontrados, ${stats.versions_created || 0} versões novas/atualizadas, ${stats.unchanged || 0} sem alterações, ${stats.unsupported || 0} formatos não suportados e ${stats.file_errors || 0} erros.`;
         } catch (_) {
-            document.getElementById('result').textContent = 'Não foi possível consultar o estado. A recolha já iniciada continua no servidor.';
+            document.getElementById('result').textContent = 'Não foi possível consultar o estado. Se iniciaste uma recolha, ela continua no servidor.';
         }
         setTimeout(poll, 5000);
     }
