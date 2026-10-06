@@ -140,7 +140,7 @@ class MaterialController
                 manualText: $data['content_text'] ?? null,
             );
 
-            [$version, $courseId] = DB::transaction(function () use ($material, $data, $versionPlan) {
+            [$version, $courseId, $versionCreated] = DB::transaction(function () use ($material, $data, $versionPlan) {
                 $material->update([
                     'course_id' => $data['course_id'],
                     'type' => $data['type'],
@@ -166,12 +166,20 @@ class MaterialController
                     ->where('source_hash', $attributes['source_hash'])
                     ->first();
 
+                $versionCreated = false;
+
                 if (! $version) {
                     $version = MaterialVersion::query()->create($attributes);
+                    $versionCreated = true;
                 }
 
-                return [$version, $material->course_id];
+                return [$version, $material->course_id, $versionCreated];
             });
+
+            if ($ingestion && ! $versionCreated) {
+                $ingestor->delete($ingestion);
+                $ingestion = null;
+            }
         } catch (Throwable $exception) {
             $ingestor->delete($ingestion);
             throw $exception;
