@@ -6,17 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Carbon;
 
-class StudySession extends Model
+class Exercise extends Model
 {
     protected $guarded = [];
 
     protected function casts(): array
     {
         return [
-            'starts_at' => 'datetime',
+            'answer_config' => 'array',
             'metadata' => 'array',
+            'max_points' => 'decimal:2',
         ];
     }
 
@@ -32,16 +32,6 @@ class StudySession extends Model
 
     public function attempts(): HasMany
     {
-        return $this->hasMany(ExerciseAttempt::class);
-    }
-
-    public function localStartsAt(): Carbon
-    {
-        return $this->starts_at->copy()->timezone(config('app.timezone', 'Europe/Lisbon'));
-    }
-
-    public function localEndsAt(): Carbon
-    {
-        return $this->localStartsAt()->addMinutes($this->planned_minutes);
+        return $this->hasMany(ExerciseAttempt::class)->orderByDesc('attempted_at');
     }
 }

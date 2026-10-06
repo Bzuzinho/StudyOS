@@ -18,6 +18,7 @@
             <a href="/activities">Atividades</a>
             <a href="/materials">Materiais</a>
             <a href="/study">Estudo</a>
+            <a href="/practice">Prática</a>
         </div>
     </nav>
 
@@ -38,6 +39,7 @@
             <div><strong>{{ $course->tasks->count() }}</strong><span>tarefas</span></div>
             <div><strong>{{ $course->materials->count() }}</strong><span>materiais</span></div>
             <div><strong>{{ $course->topics->count() }}</strong><span>tópicos</span></div>
+            <div><strong>{{ $course->exercises->count() }}</strong><span>exercícios</span></div>
         </div>
     </header>
 
@@ -110,10 +112,31 @@
                     <article class="topic-card">
                         <span class="topic-position">{{ str_pad((string) $topic->position, 2, '0', STR_PAD_LEFT) }}</span>
                         <h3>{{ $topic->title }}</h3>
+                        @php
+                            $mastery = $topic->mastery;
+                            $masteryStatus = $mastery?->status ?? 'no_evidence';
+                            $masteryLabels = [
+                                'no_evidence' => 'sem evidência',
+                                'insufficient_evidence' => 'evidência insuficiente',
+                                'fragile' => 'frágil',
+                                'developing' => 'em desenvolvimento',
+                                'competent' => 'competente',
+                                'strong' => 'forte',
+                            ];
+                        @endphp
                         <div class="topic-states">
                             <span class="observed">Curricular · observado</span>
                             <span>{{ $topic->study_sessions_count > 0 ? 'Estudo · planeado' : 'Estudo · por planear' }}</span>
-                            <span class="unknown">Domínio · sem evidência</span>
+                            <span class="{{ $masteryStatus === 'no_evidence' ? 'unknown' : 'mastery-evidence' }}">
+                                Domínio · {{ $masteryLabels[$masteryStatus] ?? $masteryStatus }}
+                                @if($mastery?->score_percent !== null)
+                                    · {{ number_format((float) $mastery->score_percent, 0) }}%
+                                @endif
+                            </span>
+                        </div>
+                        <div class="topic-card-actions">
+                            <a href="{{ route('practice.index', ['topic_id' => $topic->id]) }}">Praticar ({{ $topic->exercises_count }})</a>
+                            <a href="{{ route('practice.create', ['course_id' => $course->id, 'topic_id' => $topic->id]) }}">Criar exercício</a>
                         </div>
                     </article>
                 @empty
@@ -132,6 +155,21 @@
                     @endforeach
                 </div>
             @endif
+        </section>
+
+        <section class="card wide">
+            <div class="card-head"><h3>Exercícios</h3><a href="{{ route('practice.create', ['course_id' => $course->id]) }}">+ Criar exercício</a></div>
+            <div class="practice-course-grid">
+                @forelse($course->exercises as $exercise)
+                    <a class="practice-course-card" href="{{ route('practice.show', $exercise) }}">
+                        <span class="activity-type">{{ strtoupper(str_replace('_', ' ', $exercise->type)) }}</span>
+                        <strong>{{ $exercise->title ?: 'Exercício' }}</strong>
+                        <p>{{ $exercise->attempts_count }} tentativa(s)</p>
+                    </a>
+                @empty
+                    <p class="empty">Ainda não existem exercícios para esta UC.</p>
+                @endforelse
+            </div>
         </section>
 
         <section class="card wide">

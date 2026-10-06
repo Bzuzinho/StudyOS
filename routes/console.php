@@ -8,6 +8,7 @@ use App\Services\Academic\MoodleAuditBootstrapper;
 use App\Services\Academic\TopicBootstrapper;
 use App\Services\Calendar\ICalendarSyncService;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('studyos:status', function () {
@@ -98,34 +99,48 @@ Artisan::command('studyos:sync-ical {connection?}', function () {
 })->purpose('Synchronize configured StudyOS iCalendar sources');
 
 Artisan::command('studyos:deploy-prepare', function () {
-    $migrationExit = $this->call('migrate', ['--force' => true]);
+    $advisoryLockKey = 2026100601;
+    $advisoryLockHeld = false;
 
-    if ($migrationExit !== 0) {
-        return $migrationExit;
+    try {
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::select('select pg_advisory_lock(?)', [$advisoryLockKey]);
+            $advisoryLockHeld = true;
+        }
+
+        $migrationExit = $this->call('migrate', ['--force' => true]);
+
+        if ($migrationExit !== 0) {
+            return $migrationExit;
+        }
+
+        $catalogue = app(AcademicCatalogBootstrapper::class)->run();
+        $this->info('Academic catalogue ready: '.json_encode($catalogue, JSON_UNESCAPED_UNICODE));
+
+        $syncExit = $this->call('studyos:sync-ical');
+
+        if ($syncExit !== 0) {
+            return $syncExit;
+        }
+
+        $assessments = app(AssessmentCalendarBootstrapper::class)->run();
+        $this->info('Assessment calendar ready: '.json_encode($assessments, JSON_UNESCAPED_UNICODE));
+
+        $moodle = app(MoodleAuditBootstrapper::class)->run();
+        $this->info('Moodle audit data ready: '.json_encode($moodle, JSON_UNESCAPED_UNICODE));
+
+        $learning = app(LearningContextBootstrapper::class)->run();
+        $this->info('Learning context ready: '.json_encode($learning, JSON_UNESCAPED_UNICODE));
+
+        $topics = app(TopicBootstrapper::class)->run();
+        $this->info('Topics ready: '.json_encode($topics, JSON_UNESCAPED_UNICODE));
+
+        return 0;
+    } finally {
+        if ($advisoryLockHeld) {
+            DB::select('select pg_advisory_unlock(?)', [$advisoryLockKey]);
+        }
     }
-
-    $catalogue = app(AcademicCatalogBootstrapper::class)->run();
-    $this->info('Academic catalogue ready: '.json_encode($catalogue, JSON_UNESCAPED_UNICODE));
-
-    $syncExit = $this->call('studyos:sync-ical');
-
-    if ($syncExit !== 0) {
-        return $syncExit;
-    }
-
-    $assessments = app(AssessmentCalendarBootstrapper::class)->run();
-    $this->info('Assessment calendar ready: '.json_encode($assessments, JSON_UNESCAPED_UNICODE));
-
-    $moodle = app(MoodleAuditBootstrapper::class)->run();
-    $this->info('Moodle audit data ready: '.json_encode($moodle, JSON_UNESCAPED_UNICODE));
-
-    $learning = app(LearningContextBootstrapper::class)->run();
-    $this->info('Learning context ready: '.json_encode($learning, JSON_UNESCAPED_UNICODE));
-
-    $topics = app(TopicBootstrapper::class)->run();
-    $this->info('Topics ready: '.json_encode($topics, JSON_UNESCAPED_UNICODE));
-
-    return 0;
 })->purpose('Prepare StudyOS database and audited academic data before deployment');
 
 Schedule::command('studyos:sync-ical')

@@ -48,4 +48,9 @@ class Course extends Model
     {
         return $this->hasMany(StudySession::class)->orderBy('starts_at');
     }
+
+    public function exercises(): HasMany
+    {
+        return $this->hasMany(Exercise::class);
+    }
 }

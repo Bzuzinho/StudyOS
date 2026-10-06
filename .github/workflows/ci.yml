@@ -23,5 +23,5 @@ jobs:
         run: find app bootstrap config database routes tests -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Compile Blade views
         run: php artisan view:cache
-      - name: Calendar parser tests
-        run: vendor/bin/phpunit tests/Unit/ICalendarParserTest.php
+      - name: Unit tests
+        run: vendor/bin/phpunit tests/Unit

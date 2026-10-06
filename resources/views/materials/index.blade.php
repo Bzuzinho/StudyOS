@@ -18,6 +18,7 @@
             <a href="/activities">Atividades</a>
             <a class="active" href="/materials">Materiais</a>
             <a href="/study">Estudo</a>
+            <a href="/practice">Prática</a>
         </div>
     </nav>
 

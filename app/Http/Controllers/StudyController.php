@@ -24,7 +24,8 @@ class StudyController
             ->with([
                 'topics' => fn ($query) => $query
                     ->where('status', 'active')
-                    ->withCount('studySessions')
+                    ->with('mastery')
+                    ->withCount(['studySessions', 'exercises'])
                     ->orderBy('position'),
             ])
             ->orderBy('name')

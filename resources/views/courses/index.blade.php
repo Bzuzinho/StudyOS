@@ -18,6 +18,7 @@
             <a href="/activities">Atividades</a>
             <a href="/materials">Materiais</a>
             <a href="/study">Estudo</a>
+            <a href="/practice">Prática</a>
         </div>
     </nav>
 
@@ -54,6 +55,7 @@
                             <span>{{ $course->tasks_count }} tarefas</span>
                             <span>{{ $course->materials_count }} materiais</span>
                             <span>{{ $course->topics_count }} tópicos</span>
+                            <span>{{ $course->exercises_count }} exercícios</span>
                             @if($course->study_sessions_count > 0)
                                 <span>{{ $course->study_sessions_count }} sessão(ões) de estudo</span>
                             @endif

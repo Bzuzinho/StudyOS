@@ -26,7 +26,14 @@ class ICalendarSyncService
             'stats' => [],
         ]);
 
+        $advisoryLockKey = 2026100602;
+        $advisoryLockHeld = false;
+
         try {
+            if (DB::connection()->getDriverName() === 'pgsql') {
+                DB::select('select pg_advisory_lock(?)', [$advisoryLockKey]);
+                $advisoryLockHeld = true;
+            }
             $feed = $this->client->fetch($connection);
 
             if ($feed['not_modified'] ?? false) {
@@ -165,6 +172,10 @@ class ICalendarSyncService
             report($exception);
 
             return $run->fresh();
+        } finally {
+            if ($advisoryLockHeld) {
+                DB::select('select pg_advisory_unlock(?)', [$advisoryLockKey]);
+            }
         }
     }
 

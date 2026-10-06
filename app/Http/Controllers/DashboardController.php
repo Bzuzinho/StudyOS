@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Assessment;
 use App\Models\ClassOccurrence;
 use App\Models\Course;
+use App\Models\Exercise;
+use App\Models\ExerciseAttempt;
 use App\Models\LessonSummary;
 use App\Models\Material;
 use App\Models\StudySession;
 use App\Models\SyncRun;
 use App\Models\Task;
 use App\Models\Topic;
+use App\Models\TopicMastery;
 use Illuminate\View\View;
 
 class DashboardController
@@ -69,6 +72,14 @@ class DashboardController
             'plannedStudyMinutes' => StudySession::query()
                 ->where('starts_at', '>=', now())
                 ->sum('planned_minutes'),
+            'exerciseCount' => Exercise::query()->where('status', 'active')->count(),
+            'gradedAttemptCount' => ExerciseAttempt::query()->where('grading_status', 'graded')->count(),
+            'masteryEvidenceCount' => TopicMastery::query()->where('status', '!=', 'no_evidence')->count(),
+            'recentAttempts' => ExerciseAttempt::query()
+                ->with(['exercise.course'])
+                ->latest('attempted_at')
+                ->limit(4)
+                ->get(),
             'lastSync' => SyncRun::query()->latest('started_at')->first(),
         ]);
     }
