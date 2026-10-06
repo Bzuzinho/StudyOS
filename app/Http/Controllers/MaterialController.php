@@ -75,10 +75,8 @@ class MaterialController
             return [$material, $version];
         });
 
-        if ($version->content_text) {
-            $corpusBuilder->rebuildMaterialVersion($version);
-            $generator->generateForCourse($material->course_id);
-        }
+        $corpusBuilder->rebuildMaterialVersion($version);
+        $generator->generateForCourse($material->course_id);
 
         return redirect()->route('materials.index')->with(
             'status',
@@ -148,10 +146,7 @@ class MaterialController
             return [$version, $material->course_id];
         });
 
-        if ($version->content_text) {
-            $corpusBuilder->rebuildMaterialVersion($version);
-        }
-
+        $corpusBuilder->rebuildMaterialVersion($version);
         $generator->generateForCourse($courseId);
 
         return redirect()->route('materials.index')->with(
