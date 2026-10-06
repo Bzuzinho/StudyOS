@@ -328,6 +328,18 @@ class PracticeController
             ]);
         }
 
+        if ($data['type'] === 'true_false' && ! $this->isBooleanAnswer((string) $data['expected_answer'])) {
+            throw ValidationException::withMessages([
+                'expected_answer' => 'Em verdadeiro/falso, usa “verdadeiro” ou “falso” como resposta correta.',
+            ]);
+        }
+
+        if ($data['type'] === 'numeric' && ! $this->isNumericAnswer((string) $data['expected_answer'])) {
+            throw ValidationException::withMessages([
+                'expected_answer' => 'A resposta correta tem de ser numérica.',
+            ]);
+        }
+
         return $data;
     }
 
@@ -375,6 +387,20 @@ class PracticeController
             ->with(['topics' => fn ($query) => $query->where('status', 'active')->orderBy('position')])
             ->orderBy('name')
             ->get();
+    }
+
+    private function isBooleanAnswer(string $value): bool
+    {
+        return in_array(
+            mb_strtolower(trim($value)),
+            ['true', 'false', '1', '0', 'v', 'f', 'verdadeiro', 'falso', 'sim', 'não', 'nao'],
+            true,
+        );
+    }
+
+    private function isNumericAnswer(string $value): bool
+    {
+        return is_numeric(str_replace([' ', ','], ['', '.'], trim($value)));
     }
 
     private function types(): array
