@@ -14,4 +14,17 @@ return [
             FILTER_VALIDATE_BOOL
         ),
     ],
+
+    'moodle' => [
+        'base_url' => rtrim(env('MOODLE_BASE_URL', 'https://ead.ulo.pt/2026-27'), '/'),
+        'username' => env('MOODLE_USERNAME'),
+        'password' => env('MOODLE_PASSWORD'),
+        'enabled' => filter_var(env('MOODLE_ENABLED', true), FILTER_VALIDATE_BOOL),
+        'max_file_bytes' => (int) env('MOODLE_MAX_FILE_BYTES', 26214400),
+        'missing_threshold' => (int) env('MOODLE_MISSING_THRESHOLD', 2),
+        'allowed_extensions' => array_values(array_filter(array_map(
+            fn ($value) => strtolower(trim($value)),
+            explode(',', env('MOODLE_ALLOWED_EXTENSIONS', 'pdf,pptx,docx,txt,md'))
+        ))),
+    ],
 ];
