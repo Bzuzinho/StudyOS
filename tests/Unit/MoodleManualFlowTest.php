@@ -56,6 +56,7 @@ class MoodleManualFlowTest extends TestCase
         parse_str(parse_url($response->json('url'), PHP_URL_QUERY), $parameters);
         $this->assertSame('web+studyos', $parameters['urlscheme']);
         $this->assertSame('moodle_mobile_app', $parameters['service']);
+        $this->assertArrayNotHasKey('oauthsso', $parameters);
         $response->assertSessionHas('moodle_sso.passport', $parameters['passport']);
         $this->assertStringNotContainsString('token=', $response->json('url'));
         Queue::assertNothingPushed();

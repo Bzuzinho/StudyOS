@@ -37,7 +37,6 @@ class MoodleSyncController
             'service' => 'moodle_mobile_app',
             'passport' => $passport,
             'urlscheme' => 'web+studyos',
-            'oauthsso' => 3,
         ])])->header('Cache-Control', 'no-store');
     }
 
