@@ -38,7 +38,19 @@
     let preparing = false;
     const message = document.getElementById('message');
     let running = @json($running);
+    // This records an attempted setup, not proof that permission was accepted.
     let registered = false;
+    try { registered = sessionStorage.getItem('studyos-protocol-requested') === '1'; } catch (_) {}
+    sync.disabled = !registered || running;
+    window.addEventListener('pageshow', () => {
+        // Back/forward cache restores the page after navigation, including its
+        // disabled button and the previous in-memory submission flag.
+        preparing = false;
+        sync.disabled = !registered || running;
+        if (!running) message.textContent = registered
+            ? 'Podes retomar a ligação. Confirma que aceitaste o regresso ao StudyOS no navegador.'
+            : 'Primeiro permite o regresso ao StudyOS neste navegador.';
+    });
     if (!window.isSecureContext || !navigator.registerProtocolHandler) {
         register.disabled = true;
         message.textContent = 'Este navegador não permite concluir a ligação. Usa Chrome ou Edge no computador.';
@@ -47,6 +59,7 @@
         try {
             navigator.registerProtocolHandler('web+studyos', location.origin + '/moodle/callback#%s');
             registered = true;
+            try { sessionStorage.setItem('studyos-protocol-requested', '1'); } catch (_) {}
             sync.disabled = running;
             message.textContent = 'Aceita o pedido do navegador, se aparecer, e inicia a autenticação. Se recusares, o Moodle não conseguirá regressar ao StudyOS.';
         } catch (_) {
@@ -78,8 +91,8 @@
         } catch (_) {
             document.getElementById('result').textContent = 'Não foi possível consultar o estado. Se iniciaste uma recolha, ela continua no servidor.';
         }
-        setTimeout(poll, 5000);
+        if (running) setTimeout(poll, 5000);
     }
-    poll();
+    if (@json((bool) $run)) poll();
 })();
 </script></body></html>
