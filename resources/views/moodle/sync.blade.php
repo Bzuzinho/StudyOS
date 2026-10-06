@@ -128,9 +128,10 @@
             const response=await fetch(urls.run,{headers:{'Accept':'application/json'},cache:'no-store'});
             if (!response.ok) throw new Error();
             const data=await response.json(); running=['queued','running'].includes(data.status); sync.disabled=running||authenticating;
+            if (!authenticating) message.textContent = running ? 'Há uma recolha em curso.' : ({success:'Recolha concluída.',success_with_warnings:'Recolha concluída com avisos.',failed:'A recolha terminou com erro.'}[data.status] || 'A sincronização só acontece quando a pedes.');
             const stats=data.stats||{};
             const labels={idle:'Ainda não foi iniciada uma recolha nesta sessão.',queued:'Pedido na fila de recolha.',running:'A recolher os documentos do Moodle…',failed:'A recolha falhou. Confirma a conta ULO e volta a autenticar.'};
-            document.getElementById('result').textContent=labels[data.status]||`${data.status==='success_with_warnings'?'Concluída com avisos':'Concluída'}: ${stats.courses_scanned||0} UCs, ${stats.files_seen||0} ficheiros encontrados, ${stats.versions_created||0} versões novas/atualizadas, ${stats.unchanged||0} sem alterações e ${stats.file_errors||0} erros.`;
+            document.getElementById('result').textContent=labels[data.status]||`${data.status==='success_with_warnings'?'Concluída com avisos':'Concluída'}: ${stats.courses_scanned||0} UCs, ${stats.files_seen||0} ficheiros encontrados, ${stats.versions_created||0} versões novas/atualizadas, ${stats.unchanged||0} sem alterações, ${stats.unsupported||0} ignorados por formato e ${stats.file_errors||0} erros.`;
         } catch (_) { document.getElementById('result').textContent='Não foi possível consultar o estado. A recolha iniciada continua no servidor.'; }
         if (running) setTimeout(pollRun,5000);
     }
