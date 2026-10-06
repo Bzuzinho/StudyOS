@@ -9,6 +9,7 @@ use ZipArchive;
 
 class AcademicFileExtractor
 {
+    private const MAX_OFFICE_XML_BYTES = 20_000_000;
     /**
      * @return array{
      *   status:string,
@@ -103,8 +104,17 @@ class AcademicFileExtractor
 
         ksort($slides, SORT_NUMERIC);
         $sections = [];
+        $uncompressedBytes = 0;
 
         foreach ($slides as $number => $name) {
+            $stat = $zip->statName($name);
+            $uncompressedBytes += (int) ($stat['size'] ?? 0);
+
+            if ($uncompressedBytes > self::MAX_OFFICE_XML_BYTES) {
+                $zip->close();
+                throw new RuntimeException('A apresentação excede o limite seguro de texto descomprimido.');
+            }
+
             $xml = $zip->getFromName($name);
 
             if ($xml === false) {
@@ -132,6 +142,13 @@ class AcademicFileExtractor
     private function docxSections(string $path): array
     {
         $zip = $this->openZip($path);
+        $stat = $zip->statName('word/document.xml');
+
+        if ((int) ($stat['size'] ?? 0) > self::MAX_OFFICE_XML_BYTES) {
+            $zip->close();
+            throw new RuntimeException('O documento excede o limite seguro de texto descomprimido.');
+        }
+
         $xml = $zip->getFromName('word/document.xml');
         $zip->close();
 
