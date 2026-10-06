@@ -27,7 +27,7 @@
     <header class="form-header">
         <p class="eyebrow">Conteúdo académico</p>
         <h1>{{ $material->exists ? 'Editar material' : 'Adicionar material' }}</h1>
-        <p>Associa ligações, documentos de referência ou notas à UC correta. Se adicionares texto do material, o StudyOS cria um corpus com proveniência e só gera prática quando houver conteúdo suficiente.</p>
+        <p>Carrega o documento académico diretamente. O StudyOS guarda-o em armazenamento privado, extrai o texto e preserva página/slide sempre que o formato o permite.</p>
     </header>
 
     @if($errors->any())
@@ -37,7 +37,7 @@
         </div>
     @endif
 
-    <form class="event-form card" method="POST" action="{{ $material->exists ? route('materials.update', $material) : route('materials.store') }}">
+    <form class="event-form card" method="POST" enctype="multipart/form-data" action="{{ $material->exists ? route('materials.update', $material) : route('materials.store') }}">
         @csrf
         @if($material->exists) @method('PUT') @endif
 
@@ -66,6 +66,24 @@
                 <input type="text" name="title" maxlength="255" required value="{{ old('title', $material->title) }}">
             </label>
 
+            <label class="field span-2 upload-field">
+                <span>Ficheiro académico <small>PDF, PPTX, DOCX, TXT ou MD · máximo 25 MB</small></span>
+                <input type="file" name="file" accept=".pdf,.pptx,.docx,.txt,.md">
+                <small class="field-hint">O ficheiro fica privado no armazenamento cloud do StudyOS. PDFs mantêm referência de página e apresentações PPTX mantêm referência de slide.</small>
+                @if($latestVersion?->storage_path)
+                    <div class="current-file">
+                        <div>
+                            <strong>{{ $latestVersion->original_filename }}</strong>
+                            <span>
+                                {{ $latestVersion->size_bytes ? number_format($latestVersion->size_bytes / 1024 / 1024, 2).' MB' : 'tamanho não disponível' }}
+                                · {{ $latestVersion->extraction_status }}
+                            </span>
+                        </div>
+                        <a href="{{ route('materials.download', ['material' => $material, 'version' => $latestVersion]) }}">Descarregar atual</a>
+                    </div>
+                @endif
+            </label>
+
             <label class="field span-2">
                 <span>Ligação <small>opcional</small></span>
                 <input type="url" name="url" maxlength="2000" value="{{ old('url', $material->url) }}" placeholder="https://…">
@@ -77,9 +95,15 @@
             </label>
 
             <label class="field span-2">
-                <span>Texto / conteúdo extraído <small>opcional · até 200 000 caracteres</small></span>
-                <textarea name="content_text" rows="12" maxlength="200000" placeholder="Texto do material, apontamentos ou conteúdo extraído do documento…">{{ old('content_text', $contentText) }}</textarea>
-                <small class="field-hint">Este texto é versionado. Fragmentos curtos ou meros títulos ficam classificados como esquema e não são usados para gerar exercícios automaticamente.</small>
+                <span>Texto adicional / conteúdo colado <small>opcional · até 200 000 caracteres</small></span>
+                <textarea name="content_text" rows="10" maxlength="200000" placeholder="Usa este campo para apontamentos ou quando não tens um ficheiro para carregar…">{{ old('content_text', $contentText) }}</textarea>
+                <small class="field-hint">
+                    @if($latestVersion?->storage_path)
+                        O texto extraído do ficheiro atual não é repetido aqui. Se escreveres neste campo, será acrescentado como uma nova secção com proveniência própria.
+                    @else
+                        Este texto é versionado. Meros títulos ou esquemas continuam excluídos da geração automática até existir detalhe suficiente.
+                    @endif
+                </small>
             </label>
         </div>
 
