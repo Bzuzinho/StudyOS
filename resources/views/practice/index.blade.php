@@ -31,8 +31,16 @@
             <p class="eyebrow">Exercícios, tentativas e evidência</p>
             <h1>Prática</h1>
         </div>
-        <a class="button primary" href="{{ route('practice.create') }}">+ Criar exercício</a>
+        <a class="button primary" href="{{ route('practice.create', $studySession ? ['course_id' => $studySession->course_id] : []) }}">+ Criar exercício</a>
     </header>
+
+    @if($studySession)
+        <div class="study-context-banner">
+            Sessão de estudo de {{ $studySession->localStartsAt()->format('d/m H:i') }} ·
+            {{ $studySession->course->name }}.
+            As tentativas iniciadas daqui ficam associadas a esta sessão como evidência de atividade.
+        </div>
+    @endif
 
     <form method="GET" class="practice-filters card">
         <label class="field">
@@ -93,7 +101,7 @@
         <section class="card">
             <div class="card-head"><h3>Exercícios</h3><span>{{ $exercises->count() }}</span></div>
             @forelse($exercises as $exercise)
-                <a class="practice-item" href="{{ route('practice.show', $exercise) }}">
+                <a class="practice-item" href="{{ route('practice.show', ['exercise' => $exercise, 'study_session_id' => $studySession?->id]) }}">
                     <div>
                         <span class="activity-type">{{ strtoupper(str_replace('_', ' ', $exercise->type)) }}</span>
                         <strong>{{ $exercise->title ?: Str::limit($exercise->prompt, 80) }}</strong>
