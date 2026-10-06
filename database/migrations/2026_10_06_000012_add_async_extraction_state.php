@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -17,6 +18,11 @@ return new class extends Migration
 
             $table->index(['extraction_status', 'extraction_queued_at']);
         });
+
+        DB::table('material_versions')
+            ->where('extraction_status', 'manual_text')
+            ->whereNotNull('content_text')
+            ->update(['manual_text' => DB::raw('content_text')]);
     }
 
     public function down(): void
