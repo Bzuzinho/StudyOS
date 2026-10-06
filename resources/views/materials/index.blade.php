@@ -42,6 +42,8 @@
                 $activeChunks = $latestVersion?->sourceChunks?->where('status', 'active') ?? collect();
                 $richChunks = $activeChunks->where('quality', 'content')->count();
                 $extractionLabels = [
+                    'queued' => 'Na fila de extração',
+                    'processing' => 'A extrair no servidor',
                     'extracted' => 'Texto extraído',
                     'empty_or_scanned' => 'PDF sem texto pesquisável',
                     'empty' => 'Sem texto extraível',
@@ -67,7 +69,11 @@
                     <p>{{ $material->metadata['observed_items'] }} ficheiros {{ $material->metadata['observed_format'] ?? '' }} observados.</p>
                 @endif
 
-                @if($latestVersion?->extraction_status === 'empty_or_scanned')
+                @if($latestVersion?->extraction_status === 'queued')
+                    <p class="extraction-pending">Ficheiro guardado. A extração está na fila e continua mesmo que feches esta página.</p>
+                @elseif($latestVersion?->extraction_status === 'processing')
+                    <p class="extraction-pending">O servidor está a extrair e indexar este documento.</p>
+                @elseif($latestVersion?->extraction_status === 'empty_or_scanned')
                     <p class="extraction-warning">Este PDF parece não ter texto pesquisável. O ficheiro foi guardado, mas não entra na geração de exercícios.</p>
                 @elseif($latestVersion?->extraction_status === 'failed')
                     <p class="extraction-warning">O ficheiro foi guardado, mas a extração automática falhou. O StudyOS não usará conteúdo não extraído como fonte.</p>
@@ -90,6 +96,12 @@
                     @endif
                     @if($material->url)
                         <a href="{{ $material->url }}" target="_blank" rel="noopener noreferrer">Abrir ↗</a>
+                    @endif
+                    @if($latestVersion?->storage_path && in_array($latestVersion->extraction_status, ['failed', 'empty', 'empty_or_scanned'], true))
+                        <form method="POST" action="{{ route('materials.reprocess', ['material' => $material, 'version' => $latestVersion]) }}">
+                            @csrf
+                            <button class="text-link" type="submit">Tentar extrair novamente</button>
+                        </form>
                     @endif
                     @if($material->source === 'manual')
                         <a href="{{ route('materials.edit', $material) }}">Editar</a>
