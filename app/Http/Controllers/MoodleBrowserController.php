@@ -15,7 +15,7 @@ class MoodleBrowserController
             return response()->json(['message' => 'O navegador de autenticação está a ser preparado. Tenta novamente dentro de instantes.'], 503);
         }
         if ($id = $request->session()->get('moodle_browser_id')) $browser->close($id);
-        $request->session()->forget('moodle_browser_id');
+        $request->session()->forget(['moodle_browser_id', 'moodle_sso']);
         // Reuse the existing session challenge and concurrent-run protection.
         $request->headers->set('Accept', 'application/json');
         $launch = $sync->start($request);
