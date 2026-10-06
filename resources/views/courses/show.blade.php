@@ -222,8 +222,14 @@
                         <strong>{{ $material->title }}</strong>
                         @if($latestVersion)
                             <small>{{ $latestVersion->version_label ?: 'Versão observada' }}</small>
+                            @if($latestVersion->storage_path)
+                                <small>{{ $latestVersion->original_filename }} · {{ $latestVersion->extraction_status }}</small>
+                            @endif
                         @endif
                         <div class="material-meta">
+                            @if($latestVersion?->storage_path)
+                                <a href="{{ route('materials.download', ['material' => $material, 'version' => $latestVersion]) }}">Descarregar</a>
+                            @endif
                             @if($material->url)
                                 <a href="{{ $material->url }}" target="_blank" rel="noopener noreferrer">Abrir ↗</a>
                             @endif
