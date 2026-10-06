@@ -4,6 +4,6 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 COPY . .
 ENV NODE_ENV=production
-ENV BROWSER_HEADLESS=false
+ENV BROWSER_HEADLESS=true
 USER pwuser
-CMD ["xvfb-run", "--auto-servernum", "node", "server.mjs"]
+CMD ["node", "server.mjs"]
