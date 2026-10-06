@@ -30,7 +30,7 @@
 
     <header class="practice-hero">
         <div>
-            <span class="activity-type">{{ strtoupper(str_replace('_', ' ', $exercise->type)) }} · {{ $exercise->source === 'manual' ? 'MANUAL' : strtoupper($exercise->source) }}</span>
+            <span class="activity-type">{{ strtoupper(str_replace('_', ' ', $exercise->type)) }} · {{ $exercise->source === 'manual' ? 'MANUAL' : strtoupper($exercise->source) }}@if(($exercise->metadata['source_grounded'] ?? false)) · FUNDAMENTADO @endif</span>
             <h1>{{ $exercise->title ?: 'Exercício' }}</h1>
             <p>{{ $exercise->course->name }} · {{ number_format((float) $exercise->max_points, 1) }} ponto(s)</p>
         </div>
@@ -47,6 +47,25 @@
         </div>
         <p>{!! nl2br(e($exercise->prompt)) !!}</p>
     </section>
+
+    @if($exercise->sourceChunks->isNotEmpty())
+        <section class="card source-evidence-card">
+            <div class="card-head"><h3>Fontes do exercício</h3><span>{{ $exercise->sourceChunks->count() }} fragmento(s)</span></div>
+            @foreach($exercise->sourceChunks as $chunk)
+                <article class="source-evidence">
+                    <div>
+                        <strong>{{ $chunk->sourceLabel() }}</strong>
+                        <span>{{ $chunk->locator }} · {{ $chunk->quality === 'content' ? 'conteúdo detalhado' : 'esquema' }}</span>
+                    </div>
+                    @if($exercise->attempts->isNotEmpty())
+                        <p>{!! nl2br(e($chunk->content)) !!}</p>
+                    @else
+                        <p class="source-hidden">O excerto é mostrado depois da primeira tentativa para não antecipar a resposta.</p>
+                    @endif
+                </article>
+            @endforeach
+        </section>
+    @endif
 
     @if($studySession)
         <div class="study-context-banner">Esta tentativa ficará associada à sessão de estudo de {{ $studySession->localStartsAt()->format('d/m H:i') }}.</div>
