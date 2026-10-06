@@ -123,7 +123,7 @@ class MoodleFileSynchronizer
                 if ($existing->extraction_status === 'queued') {
                     $lastDispatch = $existing->metadata['moodle_last_dispatch_at'] ?? null;
                     $dispatchAgain = ! $lastDispatch
-                        || now()->diffInMinutes(\Illuminate\Support\Carbon::parse($lastDispatch)) >= 10;
+                        || \Illuminate\Support\Carbon::parse($lastDispatch)->lte(now()->subMinutes(10));
 
                     if ($dispatchAgain) {
                         $versionMetadata = $existing->metadata ?? [];
