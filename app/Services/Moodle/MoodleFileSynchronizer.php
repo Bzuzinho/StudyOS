@@ -73,6 +73,7 @@ class MoodleFileSynchronizer
                 $download['content_disposition'],
                 $downloadUrl,
                 $item['title'],
+                $download['content_type'],
             );
             $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
@@ -214,7 +215,12 @@ class MoodleFileSynchronizer
         return in_array($extension, config('studyos.moodle.allowed_extensions', []), true);
     }
 
-    private function filename(?string $contentDisposition, string $url, string $fallback): string
+    private function filename(
+        ?string $contentDisposition,
+        string $url,
+        string $fallback,
+        string $contentType,
+    ): string
     {
         if ($contentDisposition) {
             if (preg_match('/filename\*=UTF-8\'\'([^;]+)/i', $contentDisposition, $matches) === 1) {
@@ -232,7 +238,22 @@ class MoodleFileSynchronizer
             return $fromUrl;
         }
 
-        return trim($fallback) !== '' ? trim($fallback) : 'moodle-file';
+        $fallback = trim($fallback) !== '' ? trim($fallback) : 'moodle-file';
+
+        if (pathinfo($fallback, PATHINFO_EXTENSION) !== '') {
+            return $fallback;
+        }
+
+        $extension = match (strtolower($contentType)) {
+            'application/pdf' => 'pdf',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'text/plain' => 'txt',
+            'text/markdown' => 'md',
+            default => null,
+        };
+
+        return $extension ? $fallback.'.'.$extension : $fallback;
     }
 
     private function filenameFromUrl(string $url): string
