@@ -30,6 +30,12 @@ class Exercise extends Model
         return $this->belongsToMany(Topic::class);
     }
 
+    public function sourceChunks(): BelongsToMany
+    {
+        return $this->belongsToMany(SourceChunk::class)
+            ->withPivot('role');
+    }
+
     public function attempts(): HasMany
     {
         return $this->hasMany(ExerciseAttempt::class)->orderByDesc('attempted_at');
