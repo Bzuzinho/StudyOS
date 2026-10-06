@@ -18,6 +18,7 @@
             <a href="/activities">Atividades</a>
             <a href="/materials">Materiais</a>
             <a class="active" href="/study">Estudo</a>
+            <a href="/practice">Prática</a>
         </div>
     </nav>
 
@@ -64,7 +65,18 @@
                                 @endforeach
                             </div>
                         @endif
-                        <small>{{ $elapsed ? 'Janela de estudo decorrida — execução ainda não confirmada.' : 'Planeada — não conta como estudo realizado.' }}</small>
+                        <small>
+                            @if(($session->metadata['execution_evidence'] ?? false))
+                                Atividade observada no StudyOS · sessão iniciada, não assumida como concluída.
+                            @elseif($elapsed)
+                                Janela de estudo decorrida — execução ainda não confirmada.
+                            @else
+                                Planeada — não conta como estudo realizado.
+                            @endif
+                        </small>
+                        <div class="study-session-actions">
+                            <a href="{{ route('practice.index', ['study_session_id' => $session->id]) }}">Praticar nesta sessão →</a>
+                        </div>
                     </div>
                     <form method="POST" action="{{ route('study.destroy', $session) }}" onsubmit="return confirm('Eliminar esta sessão planeada?')">
                         @csrf
@@ -82,7 +94,7 @@
             <div class="progress-explainer">
                 <div><strong>Curricular</strong><p>Indica apenas se o tópico foi observado em fontes académicas.</p></div>
                 <div><strong>Estudo</strong><p>Por agora mostra planeamento. Não assume que uma sessão decorrida foi realizada.</p></div>
-                <div><strong>Domínio</strong><p>Permanece “sem evidência” até existirem exercícios, tentativas ou resultados observáveis.</p></div>
+                <div><strong>Domínio</strong><p>É calculado apenas com tentativas corrigidas. Menos de 3 exercícios distintos continua a ser evidência insuficiente.</p></div>
             </div>
         </section>
 
@@ -100,12 +112,32 @@
                                 <article class="topic-card">
                                     <span class="topic-position">{{ str_pad((string) $topic->position, 2, '0', STR_PAD_LEFT) }}</span>
                                     <h3>{{ $topic->title }}</h3>
+                                    @php
+                                        $mastery = $topic->mastery;
+                                        $masteryStatus = $mastery?->status ?? 'no_evidence';
+                                        $masteryLabels = [
+                                            'no_evidence' => 'sem evidência',
+                                            'insufficient_evidence' => 'evidência insuficiente',
+                                            'fragile' => 'frágil',
+                                            'developing' => 'em desenvolvimento',
+                                            'competent' => 'competente',
+                                            'strong' => 'forte',
+                                        ];
+                                    @endphp
                                     <div class="topic-states">
                                         <span class="observed">Curricular · observado</span>
                                         <span>{{ $topic->study_sessions_count > 0 ? 'Estudo · planeado' : 'Estudo · por planear' }}</span>
-                                        <span class="unknown">Domínio · sem evidência</span>
+                                        <span class="{{ $masteryStatus === 'no_evidence' ? 'unknown' : 'mastery-evidence' }}">
+                                            Domínio · {{ $masteryLabels[$masteryStatus] ?? $masteryStatus }}
+                                            @if($mastery?->score_percent !== null)
+                                                · {{ number_format((float) $mastery->score_percent, 0) }}%
+                                            @endif
+                                        </span>
                                     </div>
-                                    <a href="{{ route('study.create', ['course_id' => $course->id]) }}">Planear estudo →</a>
+                                    <div class="topic-card-actions">
+                                        <a href="{{ route('practice.index', ['topic_id' => $topic->id]) }}">Praticar ({{ $topic->exercises_count }})</a>
+                                        <a href="{{ route('study.create', ['course_id' => $course->id]) }}">Planear estudo</a>
+                                    </div>
                                 </article>
                             @endforeach
                         </div>
