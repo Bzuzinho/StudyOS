@@ -19,6 +19,7 @@ class MoodleSyncController
         return response()->view('moodle.sync', [
             'run' => $run,
             'running' => in_array($run?->status, ['queued', 'running'], true),
+            'authenticating' => $request->session()->has('moodle_browser_id'),
         ])->header('Cache-Control', 'no-store')->header('Referrer-Policy', 'no-referrer');
     }
 

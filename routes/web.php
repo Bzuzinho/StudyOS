@@ -17,6 +17,11 @@ Route::get('/activities', ActivityController::class)->name('activities.index');
 
 Route::get('/materials', [MaterialController::class, 'index'])->name('materials.index');
 Route::get('/moodle/sync', [\App\Http\Controllers\MoodleSyncController::class, 'index'])->name('moodle.sync');
+Route::post('/moodle/browser/start', [\App\Http\Controllers\MoodleBrowserController::class, 'start'])->middleware('throttle:6,1')->block(60, 60)->name('moodle.browser.start');
+Route::get('/moodle/browser/status', [\App\Http\Controllers\MoodleBrowserController::class, 'status'])->block(40, 40)->name('moodle.browser.status');
+Route::get('/moodle/browser/frame', [\App\Http\Controllers\MoodleBrowserController::class, 'frame'])->block(40, 40)->name('moodle.browser.frame');
+Route::post('/moodle/browser/input', [\App\Http\Controllers\MoodleBrowserController::class, 'input'])->middleware('throttle:240,1')->block(40, 40)->name('moodle.browser.input');
+Route::post('/moodle/browser/cancel', [\App\Http\Controllers\MoodleBrowserController::class, 'cancel'])->block(40, 40)->name('moodle.browser.cancel');
 Route::post('/moodle/start', [\App\Http\Controllers\MoodleSyncController::class, 'start'])->middleware('throttle:6,1')->name('moodle.start');
 Route::get('/moodle/callback', [\App\Http\Controllers\MoodleSyncController::class, 'callback'])->name('moodle.callback');
 Route::post('/moodle/complete', [\App\Http\Controllers\MoodleSyncController::class, 'complete'])->middleware('throttle:6,1')->block(10, 10)->name('moodle.complete');

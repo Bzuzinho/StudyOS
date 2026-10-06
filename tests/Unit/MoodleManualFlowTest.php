@@ -104,8 +104,63 @@ class MoodleManualFlowTest extends TestCase
     public function test_web_flow_keeps_studyos_open_and_does_not_require_protocol_registration(): void
     {
         $page = $this->get('/moodle/sync')->assertOk();
-        $page->assertSee('target="_blank"', false)->assertSee('Importar documentos');
+        $page->assertSee('Janela de autenticação ULO')->assertSee('auth-screen', false);
         $this->assertStringNotContainsString('registerProtocolHandler', $page->getContent());
+        $this->assertStringNotContainsString('return-link', $page->getContent());
+        Queue::assertNothingPushed();
+    }
+
+    public function test_managed_browser_is_bound_to_the_session_and_automatically_starts_one_import(): void
+    {
+        config(['studyos.moodle.browser_url' => 'http://browser.internal:3000', 'studyos.moodle.browser_secret' => str_repeat('s', 64)]);
+        $id = str_repeat('c', 64);
+        Http::fake(['http://browser.internal:3000/sessions' => Http::response(['id' => $id], 201)]);
+        $this->postJson('/moodle/browser/start')->assertOk()->assertSessionHas('moodle_browser_id', $id);
+        $challenge = session('moodle_sso');
+        $token = str_repeat('a', 32);
+        $return = 'moodlemobile://token='.base64_encode(md5('https://ead.ulo.pt/2026-27'.$challenge['passport']).':::'.$token);
+        Http::fake([
+            'http://browser.internal:3000/sessions/'.$id.'/status' => Http::response(['phase' => 'ready', 'payload' => $return]),
+            'http://browser.internal:3000/sessions/'.$id => Http::response(['status' => 'closed']),
+        ]);
+        $response = $this->getJson('/moodle/browser/status')->assertOk()->assertJsonPath('url', '/moodle/sync');
+        $response->assertSessionMissing('moodle_browser_id')->assertSessionMissing('moodle_sso');
+        $this->assertStringNotContainsString($return, $response->getContent());
+        $this->assertStringNotContainsString($token, $response->getContent());
+        Queue::assertPushed(SyncMoodleOnDemand::class, 1);
+        $this->getJson('/moodle/browser/status')->assertOk()->assertJsonPath('status', 'idle');
+        Queue::assertPushed(SyncMoodleOnDemand::class, 1);
+    }
+
+    public function test_managed_browser_frames_and_input_require_this_sessions_browser(): void
+    {
+        $this->get('/moodle/browser/frame')->assertNotFound();
+        $this->postJson('/moodle/browser/input', ['type' => 'text', 'text' => 'fixture'])->assertNotFound();
+        Http::assertNothingSent();
+    }
+
+    public function test_managed_browser_can_be_cancelled_without_importing(): void
+    {
+        config(['studyos.moodle.browser_url' => 'http://browser.internal:3000', 'studyos.moodle.browser_secret' => str_repeat('s', 64)]);
+        $id = str_repeat('c', 64);
+        Http::fake(['*' => Http::response(['status' => 'closed'])]);
+        $this->withSession(['moodle_browser_id' => $id, 'moodle_sso' => ['passport' => 'fixture']])
+            ->postJson('/moodle/browser/cancel')->assertOk()->assertSessionMissing('moodle_browser_id')->assertSessionMissing('moodle_sso');
+        Queue::assertNothingPushed();
+        Http::assertSent(fn ($request) => $request->method() === 'DELETE' && $request->hasHeader('Authorization', 'Bearer '.str_repeat('s', 64)));
+    }
+
+    public function test_managed_browser_rejects_a_return_for_another_passport_and_closes_the_context(): void
+    {
+        config(['studyos.moodle.browser_url' => 'http://browser.internal:3000', 'studyos.moodle.browser_secret' => str_repeat('s', 64)]);
+        $id = str_repeat('d', 64);
+        $return = 'moodlemobile://token='.base64_encode(md5('https://ead.ulo.pt/2026-27another').':::'.str_repeat('b', 32));
+        Http::fake([
+            'http://browser.internal:3000/sessions/'.$id.'/status' => Http::response(['phase' => 'ready', 'payload' => $return]),
+            'http://browser.internal:3000/sessions/'.$id => Http::response(['status' => 'closed']),
+        ]);
+        $this->withSession(['moodle_browser_id' => $id, 'moodle_sso' => ['passport' => 'current', 'expires' => now()->addMinute()->timestamp]])
+            ->getJson('/moodle/browser/status')->assertStatus(422)->assertSessionMissing('moodle_browser_id');
         Queue::assertNothingPushed();
     }
 

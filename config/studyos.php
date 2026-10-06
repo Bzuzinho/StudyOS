@@ -16,6 +16,8 @@ return [
     ],
 
     'moodle' => [
+        'browser_url' => env('MOODLE_BROWSER_URL'),
+        'browser_secret' => env('MOODLE_BROWSER_SECRET'),
         'expected_username' => env('MOODLE_EXPECTED_USERNAME', ''),
         'base_url' => rtrim(env('MOODLE_BASE_URL', 'https://ead.ulo.pt/2026-27'), '/'),
         'token' => env('MOODLE_TOKEN'),
