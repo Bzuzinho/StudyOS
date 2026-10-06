@@ -50,23 +50,18 @@
         }
     });
     sync.addEventListener('click', async () => {
-        // Open immediately inside the click to avoid popup blocking after fetch.
-        const popup = window.open('about:blank', 'studyos-moodle');
-        if (!popup) {
-            message.textContent = 'Permite a abertura da janela de autenticação e tenta novamente.';
-            return;
-        }
         sync.disabled = true;
+        message.textContent = 'A abrir o Moodle…';
         try {
             const response = await fetch({{ Illuminate\Support\Js::from(route('moodle.start', [], false)) }}, {
                 method: 'POST', headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json'},
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || 'Não foi possível iniciar a ligação.');
-            popup.location.href = data.url;
-            message.textContent = 'Conclui a autenticação na janela aberta. Se já tens sessão iniciada, o Moodle pode não pedir novamente a palavra-passe ou MFA.';
+            // Top-level navigation lets Moodle reuse its existing session and
+            // request institutional authentication only when it is necessary.
+            location.assign(data.url);
         } catch (error) {
-            popup.close();
             message.textContent = error.message;
         } finally {
             sync.disabled = running;
