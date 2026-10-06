@@ -12,6 +12,8 @@ use App\Services\Practice\GroundedPracticeGenerator;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 Artisan::command('studyos:status', function () {
     $this->info('StudyOS operational.');
@@ -128,6 +130,13 @@ Artisan::command('studyos:deploy-prepare', function () {
 
         if ($migrationExit !== 0) {
             return $migrationExit;
+        }
+
+        if (config('filesystems.default') === 's3' && env('AWS_BUCKET')) {
+            $storageCheckPath = 'healthchecks/'.Str::uuid().'.txt';
+            Storage::disk('s3')->put($storageCheckPath, 'StudyOS storage check');
+            Storage::disk('s3')->delete($storageCheckPath);
+            $this->info('Academic cloud storage ready.');
         }
 
         $catalogue = app(AcademicCatalogBootstrapper::class)->run();

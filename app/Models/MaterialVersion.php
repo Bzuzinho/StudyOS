@@ -15,6 +15,7 @@ class MaterialVersion extends Model
         return [
             'observed_at' => 'datetime',
             'metadata' => 'array',
+            'size_bytes' => 'integer',
         ];
     }
 

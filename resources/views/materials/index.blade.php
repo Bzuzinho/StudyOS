@@ -41,6 +41,15 @@
                 $latestVersion = $material->versions->first();
                 $activeChunks = $latestVersion?->sourceChunks?->where('status', 'active') ?? collect();
                 $richChunks = $activeChunks->where('quality', 'content')->count();
+                $extractionLabels = [
+                    'extracted' => 'Texto extraído',
+                    'empty_or_scanned' => 'PDF sem texto pesquisável',
+                    'empty' => 'Sem texto extraível',
+                    'failed' => 'Extração falhou',
+                    'manual_text' => 'Texto colado',
+                    'not_applicable' => 'Sem extração',
+                ];
+                $extractionLabel = $latestVersion ? ($extractionLabels[$latestVersion->extraction_status] ?? $latestVersion->extraction_status) : null;
             @endphp
             <article class="material-card">
                 <div class="material-card-head">
@@ -58,9 +67,21 @@
                     <p>{{ $material->metadata['observed_items'] }} ficheiros {{ $material->metadata['observed_format'] ?? '' }} observados.</p>
                 @endif
 
+                @if($latestVersion?->extraction_status === 'empty_or_scanned')
+                    <p class="extraction-warning">Este PDF parece não ter texto pesquisável. O ficheiro foi guardado, mas não entra na geração de exercícios.</p>
+                @elseif($latestVersion?->extraction_status === 'failed')
+                    <p class="extraction-warning">O ficheiro foi guardado, mas a extração automática falhou. O StudyOS não usará conteúdo não extraído como fonte.</p>
+                @endif
+
                 <div class="material-meta">
                     @if($latestVersion)
                         <span>Versão: {{ $latestVersion->version_label ?: 'observada' }}</span>
+                    @endif
+                    @if($latestVersion?->storage_path)
+                        <a href="{{ route('materials.download', ['material' => $material, 'version' => $latestVersion]) }}">⬇ {{ $latestVersion->original_filename }}</a>
+                        <span>{{ $extractionLabel }}</span>
+                    @elseif($extractionLabel)
+                        <span>{{ $extractionLabel }}</span>
                     @endif
                     @if($activeChunks->isNotEmpty())
                         <span>{{ $activeChunks->count() }} fragmento(s) · {{ $richChunks }} apto(s) para prática</span>

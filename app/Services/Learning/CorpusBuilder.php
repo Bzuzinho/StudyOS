@@ -61,6 +61,7 @@ class CorpusBuilder
                 'observed_at' => $summary->occurred_at?->toIso8601String(),
             ],
             topics: $summary->course?->topics ?? collect(),
+            sectionMap: null,
         );
     }
 
@@ -88,8 +89,12 @@ class CorpusBuilder
                 'external_id' => $version->material?->external_id,
                 'version_label' => $version->version_label,
                 'observed_at' => $version->observed_at?->toIso8601String(),
+                'original_filename' => $version->original_filename,
+                'file_sha256' => $version->file_sha256,
+                'extraction_status' => $version->extraction_status,
             ],
             topics: $version->material?->course?->topics ?? collect(),
+            sectionMap: $version->metadata['sections'] ?? null,
         );
     }
 
@@ -104,8 +109,9 @@ class CorpusBuilder
         string $text,
         array $sourceMetadata,
         Collection $topics,
+        ?array $sectionMap = null,
     ): array {
-        $chunks = $this->chunker->chunk($text);
+        $chunks = $this->chunksWithLocators($text, $sectionMap);
 
         $baseQuery = SourceChunk::query();
 
@@ -125,7 +131,8 @@ class CorpusBuilder
             'topic_links' => 0,
         ];
 
-        foreach ($chunks as $index => $content) {
+        foreach ($chunks as $index => $fragment) {
+            $content = $fragment['content'];
             $ordinal = $index + 1;
             $hash = hash('sha256', $content);
             $quality = $this->classifier->classify($content);
@@ -136,7 +143,7 @@ class CorpusBuilder
                 'lesson_summary_id' => $sourceType === 'lesson_summary' ? $sourceId : null,
                 'ordinal' => $ordinal,
                 'title' => $title,
-                'locator' => 'Fragmento '.$ordinal,
+                'locator' => $fragment['locator'],
                 'content' => $content,
                 'content_hash' => $hash,
                 'quality' => $quality,
@@ -169,6 +176,64 @@ class CorpusBuilder
         }
 
         return $stats;
+    }
+
+    /**
+     * @return list<array{content:string,locator:string}>
+     */
+    private function chunksWithLocators(string $text, ?array $sectionMap): array
+    {
+        if ($sectionMap === null || $sectionMap === []) {
+            $fallback = $this->chunker->chunk($text);
+
+            return array_map(
+                fn (string $content, int $index) => [
+                    'content' => $content,
+                    'locator' => 'Fragmento '.($index + 1),
+                ],
+                $fallback,
+                array_keys($fallback),
+            );
+        }
+
+        $fragments = [];
+
+        foreach ($sectionMap as $section) {
+            $start = isset($section['start']) ? (int) $section['start'] : null;
+            $length = isset($section['length']) ? (int) $section['length'] : null;
+            $locator = trim((string) ($section['locator'] ?? 'Secção'));
+
+            if ($start === null || $length === null || $start < 0 || $length <= 0) {
+                continue;
+            }
+
+            $sectionText = mb_substr($text, $start, $length);
+            $sectionChunks = $this->chunker->chunk($sectionText);
+
+            foreach ($sectionChunks as $chunkIndex => $content) {
+                $fragments[] = [
+                    'content' => $content,
+                    'locator' => count($sectionChunks) === 1
+                        ? $locator
+                        : $locator.' · fragmento '.($chunkIndex + 1),
+                ];
+            }
+        }
+
+        if ($fragments !== []) {
+            return $fragments;
+        }
+
+        $fallback = $this->chunker->chunk($text);
+
+        return array_map(
+            fn (string $content, int $index) => [
+                'content' => $content,
+                'locator' => 'Fragmento '.($index + 1),
+            ],
+            $fallback,
+            array_keys($fallback),
+        );
     }
 
     /**

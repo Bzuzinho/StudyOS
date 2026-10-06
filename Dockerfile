@@ -1,6 +1,6 @@
 FROM php:8.3-cli
-RUN apt-get update && apt-get install -y --no-install-recommends git unzip libpq-dev libicu-dev \
-    && docker-php-ext-install pdo_pgsql intl pcntl \
+RUN apt-get update && apt-get install -y --no-install-recommends git unzip libpq-dev libicu-dev libzip-dev \
+    && docker-php-ext-install pdo_pgsql intl pcntl zip \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
@@ -9,6 +9,7 @@ RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --no-
 COPY . .
 RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \
+    && printf "upload_max_filesize=25M\npost_max_size=30M\nmemory_limit=512M\nmax_execution_time=120\n" > /usr/local/etc/php/conf.d/studyos.ini \
     && COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --optimize --no-dev
 ENV APP_ENV=production
 ENV APP_DEBUG=false
