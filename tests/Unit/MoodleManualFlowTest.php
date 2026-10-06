@@ -55,7 +55,7 @@ class MoodleManualFlowTest extends TestCase
         $response = $this->postJson('/moodle/start')->assertOk();
         $response->assertSessionHas('_token', $response->json('csrf_token'));
         parse_str(parse_url($response->json('url'), PHP_URL_QUERY), $parameters);
-        $this->assertSame('web+studyos', $parameters['urlscheme']);
+        $this->assertSame('moodlemobile', $parameters['urlscheme']);
         $this->assertSame('moodle_mobile_app', $parameters['service']);
         $this->assertSame('1', $parameters['confirmed']);
         $this->assertArrayNotHasKey('oauthsso', $parameters);
@@ -66,12 +66,14 @@ class MoodleManualFlowTest extends TestCase
 
     public function test_browser_form_redirects_to_moodle_with_a_session_bound_challenge(): void
     {
+        $this->withSession(['_token' => 'original-csrf']);
         $response = $this->post('/moodle/start')->assertStatus(302);
+        $response->assertSessionHas('_token', 'original-csrf');
         $url = $response->headers->get('Location');
         $this->assertStringStartsWith('https://ead.ulo.pt/2026-27/admin/tool/mobile/launch.php?', $url);
         parse_str(parse_url($url, PHP_URL_QUERY), $parameters);
         $response->assertSessionHas('moodle_sso.passport', $parameters['passport']);
-        $this->assertSame('web+studyos', $parameters['urlscheme']);
+        $this->assertSame('moodlemobile', $parameters['urlscheme']);
         Queue::assertNothingPushed();
     }
 
@@ -87,7 +89,7 @@ class MoodleManualFlowTest extends TestCase
     public function test_callback_consumes_challenge_and_queues_one_encrypted_job(): void
     {
         $challenge = ['passport' => 'passport', 'expires' => now()->addMinutes(15)->timestamp];
-        $uri = 'web+studyos://token='.base64_encode(md5('https://ead.ulo.pt/2026-27passport').':::'.str_repeat('a', 32));
+        $uri = 'moodlemobile://token='.base64_encode(md5('https://ead.ulo.pt/2026-27passport').':::'.str_repeat('a', 32));
         $this->withSession(['moodle_sso' => $challenge])->postJson('/moodle/complete', ['payload' => $uri])
             ->assertOk()->assertJsonPath('url', '/moodle/sync')->assertSessionMissing('moodle_sso')->assertSessionHas('moodle_run_id');
         Queue::assertPushed(SyncMoodleOnDemand::class, function ($job) {
@@ -99,18 +101,11 @@ class MoodleManualFlowTest extends TestCase
         Queue::assertPushed(SyncMoodleOnDemand::class, 1);
     }
 
-    public function test_protocol_setup_requires_a_real_session_bound_callback(): void
+    public function test_web_flow_keeps_studyos_open_and_does_not_require_protocol_registration(): void
     {
         $page = $this->get('/moodle/sync')->assertOk();
-        $page->assertSessionHas('moodle_protocol_check');
-        $page->assertSessionMissing('moodle_protocol_ready');
-        $check = session('moodle_protocol_check');
-        $this->postJson('/moodle/protocol-check', ['check' => 'wrong'])->assertStatus(422);
-        $this->postJson('/moodle/protocol-check', ['check' => $check])
-            ->assertOk()->assertSessionHas('moodle_protocol_ready', true)
-            ->assertSessionMissing('moodle_protocol_check');
-        $this->postJson('/moodle/protocol-check', ['check' => $check])->assertStatus(422);
-        $this->get('/moodle/sync')->assertOk()->assertSee('Regresso ao StudyOS verificado nesta sessão.');
+        $page->assertSee('target="_blank"', false)->assertSee('Importar documentos');
+        $this->assertStringNotContainsString('registerProtocolHandler', $page->getContent());
         Queue::assertNothingPushed();
     }
 
@@ -122,7 +117,7 @@ class MoodleManualFlowTest extends TestCase
         $second = $this->postJson('/moodle/start')->assertOk();
         $this->assertSame($first->json('url'), $second->json('url'));
         $this->assertSame($challenge, session('moodle_sso'));
-        $this->get('/moodle/sync')->assertOk()->assertSee('Retomar autenticação e sincronizar');
+        $this->get('/moodle/sync')->assertOk()->assertSee('Autenticar e sincronizar');
         $this->travel(14)->minutes();
         $third = $this->postJson('/moodle/start')->assertOk();
         $this->assertNotSame($second->json('url'), $third->json('url'));
