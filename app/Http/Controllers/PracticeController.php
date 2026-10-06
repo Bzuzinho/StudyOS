@@ -25,6 +25,27 @@ class PracticeController
             ->with(['course', 'topics', 'attempts'])
             ->where('status', 'active');
 
+        $studySession = null;
+
+        if ($request->integer('study_session_id')) {
+            $studySession = StudySession::query()
+                ->with('topics')
+                ->find($request->integer('study_session_id'));
+
+            if ($studySession) {
+                $exerciseQuery->where('course_id', $studySession->course_id);
+
+                $sessionTopicIds = $studySession->topics->pluck('id');
+
+                if ($sessionTopicIds->isNotEmpty()) {
+                    $exerciseQuery->whereHas(
+                        'topics',
+                        fn ($query) => $query->whereIn('topics.id', $sessionTopicIds),
+                    );
+                }
+            }
+        }
+
         if ($request->integer('course_id')) {
             $exerciseQuery->where('course_id', $request->integer('course_id'));
         }
@@ -52,6 +73,7 @@ class PracticeController
             'courses' => Course::query()->where('status', 'active')->orderBy('name')->get(),
             'selectedCourseId' => $request->integer('course_id') ?: null,
             'selectedTopicId' => $request->integer('topic_id') ?: null,
+            'studySession' => $studySession,
         ]);
     }
 
@@ -203,6 +225,17 @@ class PracticeController
                 'exercise_source' => $exercise->source,
             ],
         ]);
+
+        if ($studySession) {
+            $metadata = $studySession->metadata ?? [];
+            $metadata['execution_evidence'] = true;
+            $metadata['activity_observed_at'] = now()->toIso8601String();
+
+            $studySession->update([
+                'status' => $studySession->status === 'planned' ? 'started' : $studySession->status,
+                'metadata' => $metadata,
+            ]);
+        }
 
         if ($attempt->grading_status === 'graded') {
             $masteryService->recalculateForAttempt($attempt);
