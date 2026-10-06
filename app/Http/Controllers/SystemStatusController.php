@@ -8,6 +8,7 @@ use App\Models\Exercise;
 use App\Models\ExerciseAttempt;
 use App\Models\LessonSummary;
 use App\Models\Material;
+use App\Models\MaterialVersion;
 use App\Models\SourceChunk;
 use App\Models\StudySession;
 use App\Models\SyncConnection;
@@ -36,6 +37,12 @@ class SystemStatusController
             ],
             'learning_context' => [
                 'materials' => Material::query()->where('status', 'active')->count(),
+                'uploaded_files' => MaterialVersion::query()->whereNotNull('storage_path')->count(),
+                'files_extracted' => MaterialVersion::query()->where('extraction_status', 'extracted')->count(),
+                'files_without_searchable_text' => MaterialVersion::query()
+                    ->whereIn('extraction_status', ['empty', 'empty_or_scanned'])
+                    ->count(),
+                'file_extraction_failures' => MaterialVersion::query()->where('extraction_status', 'failed')->count(),
                 'lesson_summaries' => LessonSummary::count(),
                 'open_tasks' => Task::query()->where('status', '!=', 'completed')->count(),
                 'topics' => Topic::query()->where('status', 'active')->count(),
