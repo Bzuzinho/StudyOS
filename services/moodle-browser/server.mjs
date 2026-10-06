@@ -70,7 +70,7 @@ async function inspect(session) {
 }
 
 const server = http.createServer(async (req, res) => {
-  if (req.url === '/health' && req.method === 'GET') return json(res, 200, { status: 'ok' });
+  if ((req.url === '/health' || req.url === '/up') && req.method === 'GET') return json(res, 200, { status: 'ok' });
   if (!authorized(req.headers.authorization, secret)) return json(res, 401, { error: 'Unauthorized' });
   try {
     if (req.url === '/sessions' && req.method === 'POST') {
@@ -145,7 +145,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 server.requestTimeout = 60000;
-server.listen(Number(process.env.PORT || 3000), '::');
+server.listen(Number(process.env.PORT || 3000), '::', () => console.log('Managed Moodle browser ready'));
 async function shutdown() {
   server.close();
   for (const id of sessions.keys()) await destroy(id);
