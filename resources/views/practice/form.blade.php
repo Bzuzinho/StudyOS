@@ -15,6 +15,8 @@
             <a href="/">Dashboard</a>
             <a href="/calendar">Calendário</a>
             <a href="/courses">UCs</a>
+            <a href="/activities">Atividades</a>
+            <a href="/materials">Materiais</a>
             <a href="/study">Estudo</a>
             <a class="active" href="/practice">Prática</a>
         </div>
