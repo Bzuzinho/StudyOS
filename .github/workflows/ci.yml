@@ -4,6 +4,21 @@ on:
     branches: [main]
   pull_request:
 jobs:
+  moodle-browser:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/moodle-browser
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: services/moodle-browser/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: node --check server.mjs && npm test
   php:
     runs-on: ubuntu-latest
     steps:
