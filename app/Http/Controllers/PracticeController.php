@@ -61,7 +61,8 @@ class PracticeController
             ->withCount([
                 'exercises',
                 'studySessions',
-                'sourceChunks',
+                'sourceChunks as source_chunks_count' => fn ($query) => $query
+                    ->where('source_chunks.status', 'active'),
                 'sourceChunks as rich_source_chunks_count' => fn ($query) => $query
                     ->where('source_chunks.status', 'active')
                     ->where('source_chunks.quality', 'content'),
