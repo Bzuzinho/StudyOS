@@ -72,7 +72,7 @@ class CorpusBuilder
             SourceChunk::query()
                 ->whereHas('materialVersion', fn ($query) => $query
                     ->where('material_id', $version->material_id)
-                    ->whereKeyNot($version->id))
+                    ->where('id', '!=', $version->id))
                 ->where('status', 'active')
                 ->update(['status' => 'superseded']);
         }
