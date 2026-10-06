@@ -12,10 +12,6 @@ class AcademicFileIngestor
 {
     public const ALLOWED_EXTENSIONS = ['pdf', 'pptx', 'docx', 'txt', 'md'];
 
-    public function __construct(
-        private readonly AcademicFileExtractor $extractor,
-    ) {}
-
     /**
      * @return array{
      *   disk:string,
@@ -24,8 +20,7 @@ class AcademicFileIngestor
      *   mime_type:string,
      *   size_bytes:int,
      *   sha256:string,
-     *   extension:string,
-     *   extraction:array
+     *   extension:string
      * }
      */
     public function ingest(UploadedFile $file, int $courseId): array
@@ -44,7 +39,6 @@ class AcademicFileIngestor
             throw new RuntimeException('O ficheiro temporário do upload não está disponível.');
         }
 
-        $extraction = $this->extractor->extract($realPath, $extension);
         $disk = config('filesystems.default', 'local');
         $uuid = (string) Str::uuid();
         $base = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
@@ -74,7 +68,6 @@ class AcademicFileIngestor
             'size_bytes' => (int) $file->getSize(),
             'sha256' => hash_file('sha256', $realPath) ?: hash('sha256', $uuid),
             'extension' => $extension,
-            'extraction' => $extraction,
         ];
     }
 
