@@ -25,7 +25,8 @@ class SystemStatusController
     {
         $lastRun = SyncRun::query()->latest('started_at')->first();
         $moodleConnection = SyncConnection::query()
-            ->where('source', 'moodle_authenticated')
+            ->whereIn('source', ['moodle_webservice', 'moodle_authenticated'])
+            ->orderByRaw("case when source = 'moodle_webservice' then 0 else 1 end")
             ->first();
         $moodleRun = $moodleConnection?->runs()->latest('started_at')->first();
 
@@ -74,7 +75,8 @@ class SystemStatusController
                 'failed_jobs' => DB::table('failed_jobs')->count(),
             ],
             'moodle_sync' => [
-                'configured' => $moodleConnection?->status !== 'pending_credentials',
+                'configured' => $moodleConnection
+                    && ! in_array($moodleConnection->status, ['pending_credentials', 'pending_microsoft_sso'], true),
                 'status' => $moodleConnection?->status ?? 'not_configured',
                 'last_synced_at' => $moodleConnection?->last_synced_at?->toIso8601String(),
                 'last_run' => $moodleRun ? [
