@@ -2,6 +2,10 @@
 
 O botão em Materiais abre `/moodle/sync`. No Chrome/Edge de computador, o utilizador regista o protocolo `web+studyos` para receber a resposta do fluxo mobile SSO do Moodle. O browser pode pedir confirmação do registo. Não se deve considerar que o registo foi aceite apenas porque a chamada JavaScript retornou.
 
+A preparação exige agora um regresso de teste pelo próprio protocolo, com desafio aleatório ligado à sessão, CSRF e consumo único. Só depois desse regresso a interface ativa a autenticação. O teste não contém um token Moodle nem cria uma recolha. No Edge, se o teste não regressar, consultar `edge://settings/content/handlers` e aceitar o registo do StudyOS.
+
+O lançamento usa `confirmed=1`, suportado pelo Moodle, para apresentar uma ligação explícita de regresso em vez de depender apenas de um redirecionamento para protocolo. Se o SSO terminar na página inicial do Moodle, voltar ao StudyOS e usar o mesmo botão para retomar: o passport e a expiração originais são preservados durante 15 minutos. Pedidos depois da expiração criam um novo desafio. Esta alteração ainda exige validação na conta ULO e no Edge do utilizador.
+
 Cada pedido cria um passport de 15 minutos na sessão. O Moodle abre a autenticação Microsoft/ULO e devolve o token pelo protocolo. O callback recebe-o no fragmento da URL, remove esse fragmento imediatamente e envia-o por POST com CSRF. O servidor verifica o site e o passport, consome a ligação uma única vez e coloca a recolha numa fila cifrada. O token privado é descartado; não se guarda a palavra-passe Microsoft nem um token permanente na ligação. O token emitido pelo Moodle continua sujeito à validade/revogação do próprio Moodle.
 
 O job verifica o username `MOODLE_EXPECTED_USERNAME` antes de alterar materiais. Configurar este valor apenas no ambiente de execução, sem o publicar no repositório; sem esta configuração a recolha é recusada. Também admite o sufixo `@ulo.pt`. As 6 UCs são as correspondências já configuradas em `source_courses`.

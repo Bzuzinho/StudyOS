@@ -16,9 +16,16 @@ class MoodleSyncController
     public function index(Request $request)
     {
         $run = $this->sessionRun($request);
+        if (! $request->session()->has('moodle_protocol_check')) {
+            $request->session()->put('moodle_protocol_check', Str::random(40));
+        }
+        $challenge = $request->session()->get('moodle_sso');
         return response()->view('moodle.sync', [
             'run' => $run,
             'running' => in_array($run?->status, ['queued', 'running'], true),
+            'protocolReady' => (bool) $request->session()->get('moodle_protocol_ready', false),
+            'protocolCheck' => $request->session()->get('moodle_protocol_check'),
+            'pendingAuth' => is_array($challenge) && ($challenge['expires'] ?? 0) >= now()->timestamp,
         ])->header('Cache-Control', 'no-store')->header('Referrer-Policy', 'no-referrer');
     }
 
@@ -29,14 +36,19 @@ class MoodleSyncController
             return response()->json(['message' => 'Já existe uma sincronização em curso.'], 409);
         }
 
-        $passport = Str::random(64);
-        $request->session()->regenerate();
-        $request->session()->put('moodle_sso', ['passport' => $passport, 'expires' => now()->addMinutes(15)->timestamp]);
+        $challenge = $request->session()->get('moodle_sso');
+        if (! is_array($challenge) || ($challenge['expires'] ?? 0) < now()->timestamp) {
+            $challenge = ['passport' => Str::random(64), 'expires' => now()->addMinutes(15)->timestamp];
+            $request->session()->regenerate();
+            $request->session()->put('moodle_sso', $challenge);
+        }
 
         $url = config('studyos.moodle.base_url').'/admin/tool/mobile/launch.php?'.http_build_query([
             'service' => 'moodle_mobile_app',
-            'passport' => $passport,
+            'passport' => $challenge['passport'],
             'urlscheme' => 'web+studyos',
+            // Moodle renders a clickable return link instead of only a protocol redirect.
+            'confirmed' => 1,
         ]);
 
         if ($request->expectsJson()) {
@@ -51,6 +63,19 @@ class MoodleSyncController
         return response()->view('moodle.callback')
             ->header('Cache-Control', 'no-store')
             ->header('Referrer-Policy', 'no-referrer');
+    }
+
+    public function verifyProtocol(Request $request)
+    {
+        $expected = $request->session()->get('moodle_protocol_check');
+        $check = $request->input('check');
+        if (! is_string($expected) || ! is_string($check) || ! hash_equals($expected, $check)) {
+            return response()->json(['message' => 'A verificação expirou. Volta à sincronização.'], 422);
+        }
+        $request->session()->forget('moodle_protocol_check');
+        $request->session()->put('moodle_protocol_ready', true);
+
+        return response()->json(['url' => route('moodle.sync', [], false)])->header('Cache-Control', 'no-store');
     }
 
     public function complete(Request $request, MoodleSsoPayload $payload)

@@ -19,10 +19,15 @@
 (async () => {
     try {
         if (!moodleCallbackFragment) throw new Error('A resposta do Moodle não chegou. Volta a iniciar a ligação.');
-        const response = await fetch({{ Illuminate\Support\Js::from(route('moodle.complete', [], false)) }}, {
+        const payload = decodeURIComponent(moodleCallbackFragment);
+        const check = /^web\+studyos:\/\/check=([A-Za-z0-9]{40})$/.exec(payload);
+        const endpoint = check
+            ? {{ Illuminate\Support\Js::from(route('moodle.protocol-check', [], false)) }}
+            : {{ Illuminate\Support\Js::from(route('moodle.complete', [], false)) }};
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content},
-            body: JSON.stringify({payload: decodeURIComponent(moodleCallbackFragment)}),
+            body: JSON.stringify(check ? {check: check[1]} : {payload}),
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Não foi possível concluir a ligação.');
