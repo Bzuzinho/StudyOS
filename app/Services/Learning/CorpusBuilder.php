@@ -184,13 +184,15 @@ class CorpusBuilder
     private function chunksWithLocators(string $text, ?array $sectionMap): array
     {
         if ($sectionMap === null || $sectionMap === []) {
+            $fallback = $this->chunker->chunk($text);
+
             return array_map(
                 fn (string $content, int $index) => [
                     'content' => $content,
                     'locator' => 'Fragmento '.($index + 1),
                 ],
-                $this->chunker->chunk($text),
-                array_keys($this->chunker->chunk($text)),
+                $fallback,
+                array_keys($fallback),
             );
         }
 
