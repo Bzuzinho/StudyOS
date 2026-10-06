@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>StudyOS</title>
     @include('partials.app-identity')
-    <link rel="stylesheet" href="/css/app.css?v=brand-1">
+    <link rel="stylesheet" href="/css/app.css?v=inline-assessments-1">
 </head>
 <body>
 <div class="shell">
@@ -40,10 +40,12 @@
     <main class="grid">
         <section class="card">
             <div class="card-head"><h3>Hoje</h3><a href="/calendar">Ver calendário</a></div>
-            @forelse ($todayEvents as $class)
-                <article class="item">
+            @forelse ($todayRows as $row)
+                @php $class = $row['event']; @endphp
+                <article class="item daily-event {{ $class->eventType() === 'assessment' ? 'assessment-event' : '' }} {{ $row['assessments']->isNotEmpty() ? 'with-assessment' : '' }}">
                     <div class="time">{{ $class->localStartsAt()->format('H:i') }}</div>
-                    <div>
+                    <div class="daily-event-content">
+                        <div class="daily-event-details">
                         @if($class->course)
                             <a href="{{ route('courses.show', $class->course) }}"><strong>{{ $class->course->name }}</strong></a>
                         @else
@@ -53,6 +55,8 @@
                         @if($class->course && $class->title !== $class->course->name)
                             <small>{{ $class->title }}</small>
                         @endif
+                        </div>
+                        @include('partials.inline-assessments', ['owner' => $class, 'assessments' => $row['assessments']])
                     </div>
                 </article>
             @empty

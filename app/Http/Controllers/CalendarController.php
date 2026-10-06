@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClassOccurrence;
+use App\Services\Calendar\CalendarEventPresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class CalendarController
 {
+    public function __construct(private readonly CalendarEventPresenter $presenter) {}
+
     public function __invoke(Request $request): View
     {
         $timezone = config('app.timezone', 'Europe/Lisbon');
@@ -25,7 +28,7 @@ class CalendarController
 
         $events = ClassOccurrence::query()
             ->with('course')
-            ->whereBetween('starts_at', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
+            ->whereBetween('starts_at', [$start->copy()->startOfDay()->utc(), $end->copy()->endOfDay()->utc()])
             ->orderBy('starts_at')
             ->get()
             ->groupBy(fn (ClassOccurrence $event) => $event->localStartsAt()->toDateString());
@@ -45,6 +48,7 @@ class CalendarController
             'end' => $end,
             'days' => $days,
             'events' => $events,
+            'eventRows' => $events->map(fn ($dayEvents) => $this->presenter->rows($dayEvents)),
         ]);
     }
 }

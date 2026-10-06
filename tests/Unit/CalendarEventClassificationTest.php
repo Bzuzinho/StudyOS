@@ -55,12 +55,17 @@ class CalendarEventClassificationTest extends TestCase
             ->assertViewHas('todayClasses', fn ($events) => $events->count() === 3)
             ->assertViewHas('todayEvents', fn ($events) => $events->count() === 4)
             ->assertViewHas('todayAssessmentCount', 1)
+            ->assertViewHas('todayRows', fn ($rows) => $rows->count() === 3
+                && $rows->last()['event']->title === 'Aula 18:00'
+                && $rows->last()['assessments']->pluck('title')->all() === ['Relatório'])
             ->assertSee('Relatório')
             ->assertSee('Avaliação');
 
         foreach (['week', 'month'] as $mode) {
             $this->get('/calendar?date=2026-10-06&mode='.$mode)->assertOk()
                 ->assertViewHas('events', fn ($days) => $days->get('2026-10-06')->count() === 4)
+                ->assertViewHas('eventRows', fn ($days) => $days->get('2026-10-06')->count() === 3
+                    && $days->get('2026-10-06')->last()['assessments']->count() === 1)
                 ->assertSee('Relatório')->assertSee('assessment-event')->assertSee('Avaliação');
         }
     }
@@ -86,7 +91,7 @@ class CalendarEventClassificationTest extends TestCase
         $this->get('/courses/'.$course->id)->assertOk()
             ->assertViewHas('upcomingClasses', fn ($events) => $events->pluck('id')->all() === [$class->id]);
         $this->get('/calendar?date=2026-10-06')->assertOk()
-            ->assertSee('Manual · Avaliação')->assertSee('Estudo')->assertSee('Cancelada');
+            ->assertSee('Editar avaliação Teste manual')->assertSee('Estudo')->assertSee('Cancelada');
     }
 
     public function test_existing_source_only_rows_are_classified_without_resynchronising(): void
@@ -112,6 +117,63 @@ class CalendarEventClassificationTest extends TestCase
 
         $this->get('/')->assertOk()
             ->assertViewHas('todayClasses', fn ($events) => $events->pluck('id')->all() === [$early->id]);
+    }
+
+    public function test_an_assessment_without_a_class_of_its_uc_keeps_a_full_amber_card(): void
+    {
+        $statistics = Course::create(['name' => 'Estatística']);
+        $english = Course::create(['name' => 'Inglês']);
+        $this->event($english, 'inforestudante_ical', 'Aula de Inglês', '18:00');
+        $report = $this->event($statistics, 'manual', 'Relatório autónomo', '18:00', 'assessment');
+        $this->event($statistics, 'inforestudante_ical', 'Aula cancelada', '18:00', null, 'cancelled');
+
+        $response = $this->get('/')->assertOk()->assertViewHas('todayRows', fn ($rows) =>
+            $rows->count() === 3 && $rows->every(fn ($row) => $row['assessments']->isEmpty()));
+        self::assertStringContainsString('daily-event assessment-event', $response->getContent());
+        self::assertStringNotContainsString('data-assessment-id="'.$report->id.'"', $response->getContent());
+        $this->get('/calendar?date=2026-10-06')->assertOk()
+            ->assertViewHas('eventRows', fn ($days) => $days->get('2026-10-06')->count() === 3)
+            ->assertSee('Relatório autónomo')->assertSee('assessment-event');
+    }
+
+    public function test_multiple_assessments_share_the_class_and_only_different_details_are_repeated(): void
+    {
+        $course = Course::create(['name' => 'Estatística']);
+        $class = $this->event($course, 'inforestudante_ical', 'Aula de Estatística', '18:00');
+        $class->update(['location' => 'Sala 1']);
+        $report = $this->event($course, 'manual', 'Relatório', '18:00', 'assessment');
+        $report->update(['location' => 'Sala 1']);
+        $quiz = $this->event($course, 'manual', 'Quiz', '19:00', 'assessment');
+        $quiz->update(['location' => 'Sala 2']);
+
+        $response = $this->get('/')->assertOk()->assertViewHas('todayRows', fn ($rows) =>
+            $rows->count() === 1 && $rows->first()['event']->id === $class->id
+            && $rows->first()['assessments']->count() === 2);
+        $today = explode('</section>', explode('<h3>Hoje</h3>', $response->getContent())[1])[0];
+        self::assertSame(1, substr_count($today, 'class="item daily-event'));
+        self::assertSame(2, substr_count($today, 'data-assessment-id='));
+        self::assertSame(1, substr_count($today, '18:00'));
+        self::assertSame(1, substr_count($today, 'Sala 1'));
+        self::assertStringContainsString('19:00', $today);
+        self::assertStringContainsString('Sala 2', $today);
+        self::assertStringContainsString(route('calendar-events.edit', $report), $today);
+    }
+
+    public function test_ambiguous_sessions_and_other_days_do_not_hide_assessments(): void
+    {
+        $course = Course::create(['name' => 'Macroeconomia']);
+        $this->event($course, 'inforestudante_ical', 'Aula manhã', '10:00');
+        $this->event($course, 'inforestudante_ical', 'Aula tarde', '18:00');
+        $this->event($course, 'manual', 'Teste com sessão por confirmar', '14:00', 'assessment');
+        $nextDay = $this->event($course, 'manual', 'Prova amanhã', '18:00', 'assessment');
+        $nextDay->update(['starts_at' => Carbon::parse('2026-10-07 18:00', 'Europe/Lisbon')->utc()]);
+
+        $this->get('/calendar?date=2026-10-06')->assertOk()
+            ->assertViewHas('eventRows', fn ($days) =>
+                $days->get('2026-10-06')->count() === 3
+                && $days->get('2026-10-06')->every(fn ($row) => $row['assessments']->isEmpty())
+                && $days->get('2026-10-07')->count() === 1
+                && $days->get('2026-10-07')->first()['event']->id === $nextDay->id);
     }
 
     private function event(Course $course, string $source, string $title, string $time,
