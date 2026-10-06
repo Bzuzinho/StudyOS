@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ClassOccurrence;
 use App\Models\Course;
+use App\Models\Exercise;
+use App\Models\ExerciseAttempt;
 use App\Models\LessonSummary;
 use App\Models\Material;
 use App\Models\StudySession;
@@ -11,6 +13,7 @@ use App\Models\SyncConnection;
 use App\Models\SyncRun;
 use App\Models\Task;
 use App\Models\Topic;
+use App\Models\TopicMastery;
 use Illuminate\Http\JsonResponse;
 
 class SystemStatusController
@@ -37,6 +40,10 @@ class SystemStatusController
                 'topics' => Topic::query()->where('status', 'active')->count(),
                 'study_sessions_planned' => StudySession::count(),
                 'study_minutes_planned' => StudySession::sum('planned_minutes'),
+                'exercises' => Exercise::query()->where('status', 'active')->count(),
+                'attempts' => ExerciseAttempt::count(),
+                'graded_attempts' => ExerciseAttempt::query()->where('grading_status', 'graded')->count(),
+                'topics_with_mastery_evidence' => TopicMastery::query()->where('status', '!=', 'no_evidence')->count(),
             ],
             'sync_connections' => SyncConnection::count(),
             'last_sync' => $lastRun ? [
