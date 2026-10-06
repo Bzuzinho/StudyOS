@@ -104,7 +104,7 @@
                 <a class="practice-item" href="{{ route('practice.show', ['exercise' => $exercise, 'study_session_id' => $studySession?->id]) }}">
                     <div>
                         <span class="activity-type">{{ strtoupper(str_replace('_', ' ', $exercise->type)) }}</span>
-                        <strong>{{ $exercise->title ?: Str::limit($exercise->prompt, 80) }}</strong>
+                        <strong>{{ $exercise->title ?: \Illuminate\Support\Str::limit($exercise->prompt, 80) }}</strong>
                         <p>{{ $exercise->course->name }} · {{ $exercise->attempts->count() }} tentativa(s)</p>
                     </div>
                     <span>→</span>
@@ -122,7 +122,7 @@
                         {{ $attempt->percentage !== null ? number_format((float) $attempt->percentage, 0).'%' : '…' }}
                     </div>
                     <div>
-                        <a href="{{ route('practice.show', $attempt->exercise) }}"><strong>{{ $attempt->exercise->title ?: Str::limit($attempt->exercise->prompt, 70) }}</strong></a>
+                        <a href="{{ route('practice.show', $attempt->exercise) }}"><strong>{{ $attempt->exercise->title ?: \Illuminate\Support\Str::limit($attempt->exercise->prompt, 70) }}</strong></a>
                         <p>{{ $attempt->exercise->course->name }} · {{ $attempt->attempted_at->copy()->timezone(config('app.timezone'))->format('d/m H:i') }}</p>
                         <small>{{ $attempt->grading_status === 'graded' ? 'Corrigida · '.$attempt->grading_method : 'Aguarda revisão' }}</small>
                     </div>
