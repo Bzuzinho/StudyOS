@@ -179,7 +179,7 @@ class MaterialController
                     );
                     $shouldQueue = true;
                 } elseif ($latestVersion?->storage_path) {
-                    $shouldQueue = in_array($latestVersion->extraction_status, ['queued', 'processing'], true);
+                    $shouldQueue = false;
 
                     return [$latestVersion, $material->course_id, false];
                 } else {
@@ -200,15 +200,19 @@ class MaterialController
                 if (! $version) {
                     $version = MaterialVersion::query()->create($attributes);
                     $versionCreated = true;
-                } elseif ($version->storage_path && ! in_array($version->extraction_status, ['extracted', 'processing'], true)) {
-                    $version->update([
-                        'extraction_status' => 'queued',
-                        'extraction_error' => null,
-                        'extraction_queued_at' => now(),
-                        'extraction_started_at' => null,
-                        'extraction_finished_at' => null,
-                    ]);
-                    $shouldQueue = true;
+                } elseif ($version->storage_path) {
+                    if (in_array($version->extraction_status, ['extracted', 'processing'], true)) {
+                        $shouldQueue = false;
+                    } else {
+                        $version->update([
+                            'extraction_status' => 'queued',
+                            'extraction_error' => null,
+                            'extraction_queued_at' => now(),
+                            'extraction_started_at' => null,
+                            'extraction_finished_at' => null,
+                        ]);
+                        $shouldQueue = true;
+                    }
                 }
 
                 return [$version, $material->course_id, $versionCreated];
