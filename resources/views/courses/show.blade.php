@@ -34,7 +34,7 @@
             <p>{{ $course->semester }}.º semestre@if($course->ects) · {{ $course->ects }} ECTS@endif</p>
         </div>
         <div class="course-hero-metrics">
-            <div><strong>{{ $course->classOccurrences->count() }}</strong><span>ocorrências</span></div>
+            <div><strong>{{ $course->classOccurrences->count() }}</strong><span>aulas</span></div>
             <div><strong>{{ $course->assessments->count() }}</strong><span>avaliações</span></div>
             <div><strong>{{ $course->tasks->count() }}</strong><span>tarefas</span></div>
             <div><strong>{{ $course->materials->count() }}</strong><span>materiais</span></div>

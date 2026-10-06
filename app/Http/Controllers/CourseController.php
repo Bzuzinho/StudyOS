@@ -22,7 +22,8 @@ class CourseController
                 'sourceChunks as source_chunks_count' => fn ($query) => $query->where('status', 'active'),
             ])
             ->with(['classOccurrences' => fn ($query) => $query
-                ->where('starts_at', '>=', now())
+                ->scheduledClasses()
+                ->where('starts_at', '>=', now()->utc())
                 ->orderBy('starts_at')
                 ->limit(1)])
             ->orderBy('semester')
@@ -41,7 +42,7 @@ class CourseController
     {
         $course->load([
             'sourceCourses',
-            'classOccurrences' => fn ($query) => $query->orderBy('starts_at'),
+            'classOccurrences' => fn ($query) => $query->scheduledClasses()->orderBy('starts_at'),
             'assessments' => fn ($query) => $query->orderBy('due_at'),
             'tasks' => fn ($query) => $query->orderByRaw('due_at is null, due_at asc'),
             'materials' => fn ($query) => $query->with('versions')->where('status', 'active')->orderByDesc('updated_at'),
