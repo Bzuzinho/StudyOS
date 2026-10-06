@@ -30,6 +30,7 @@ Route::delete('/study/{studySession}', [StudyController::class, 'destroy'])->nam
 Route::get('/practice', [PracticeController::class, 'index'])->name('practice.index');
 Route::get('/practice/create', [PracticeController::class, 'create'])->name('practice.create');
 Route::post('/practice', [PracticeController::class, 'store'])->name('practice.store');
+Route::post('/practice/generate/topic/{topic}', [PracticeController::class, 'generateForTopic'])->name('practice.generate-topic');
 Route::get('/practice/{exercise}', [PracticeController::class, 'show'])->name('practice.show');
 Route::get('/practice/{exercise}/edit', [PracticeController::class, 'edit'])->name('practice.edit');
 Route::put('/practice/{exercise}', [PracticeController::class, 'update'])->name('practice.update');

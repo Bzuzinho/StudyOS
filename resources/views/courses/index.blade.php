@@ -56,6 +56,9 @@
                             <span>{{ $course->materials_count }} materiais</span>
                             <span>{{ $course->topics_count }} tópicos</span>
                             <span>{{ $course->exercises_count }} exercícios</span>
+                            @if($course->source_chunks_count > 0)
+                                <span>{{ $course->source_chunks_count }} fragmento(s) de fonte</span>
+                            @endif
                             @if($course->study_sessions_count > 0)
                                 <span>{{ $course->study_sessions_count }} sessão(ões) de estudo</span>
                             @endif

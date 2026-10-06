@@ -25,7 +25,15 @@ class StudyController
                 'topics' => fn ($query) => $query
                     ->where('status', 'active')
                     ->with('mastery')
-                    ->withCount(['studySessions', 'exercises'])
+                    ->withCount([
+                        'studySessions',
+                        'exercises',
+                        'sourceChunks as source_chunks_count' => fn ($sourceQuery) => $sourceQuery
+                            ->where('source_chunks.status', 'active'),
+                        'sourceChunks as rich_source_chunks_count' => fn ($sourceQuery) => $sourceQuery
+                            ->where('source_chunks.status', 'active')
+                            ->where('source_chunks.quality', 'content'),
+                    ])
                     ->orderBy('position'),
             ])
             ->orderBy('name')

@@ -8,6 +8,7 @@ use App\Models\Exercise;
 use App\Models\ExerciseAttempt;
 use App\Models\LessonSummary;
 use App\Models\Material;
+use App\Models\SourceChunk;
 use App\Models\StudySession;
 use App\Models\SyncConnection;
 use App\Models\SyncRun;
@@ -44,6 +45,15 @@ class SystemStatusController
                 'attempts' => ExerciseAttempt::count(),
                 'graded_attempts' => ExerciseAttempt::query()->where('grading_status', 'graded')->count(),
                 'topics_with_mastery_evidence' => TopicMastery::query()->where('status', '!=', 'no_evidence')->count(),
+                'source_chunks_active' => SourceChunk::query()->where('status', 'active')->count(),
+                'source_chunks_rich' => SourceChunk::query()
+                    ->where('status', 'active')
+                    ->where('quality', 'content')
+                    ->count(),
+                'grounded_exercises' => Exercise::query()
+                    ->where('status', 'active')
+                    ->where('source', 'grounded_generator')
+                    ->count(),
             ],
             'sync_connections' => SyncConnection::count(),
             'last_sync' => $lastRun ? [

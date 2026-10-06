@@ -133,10 +133,22 @@
                                     · {{ number_format((float) $mastery->score_percent, 0) }}%
                                 @endif
                             </span>
+                            <span class="{{ $topic->rich_source_chunks_count > 0 ? 'source-ready' : 'unknown' }}">
+                                Fonte · {{ $topic->source_chunks_count }} fragmento(s)
+                                @if($topic->rich_source_chunks_count > 0)
+                                    · {{ $topic->rich_source_chunks_count }} detalhado(s)
+                                @endif
+                            </span>
                         </div>
                         <div class="topic-card-actions">
                             <a href="{{ route('practice.index', ['topic_id' => $topic->id]) }}">Praticar ({{ $topic->exercises_count }})</a>
                             <a href="{{ route('practice.create', ['course_id' => $course->id, 'topic_id' => $topic->id]) }}">Criar exercício</a>
+                            @if($topic->rich_source_chunks_count > 0)
+                                <form method="POST" action="{{ route('practice.generate-topic', $topic) }}">
+                                    @csrf
+                                    <button class="text-link" type="submit">Gerar da fonte</button>
+                                </form>
+                            @endif
                         </div>
                     </article>
                 @empty
@@ -162,12 +174,35 @@
             <div class="practice-course-grid">
                 @forelse($course->exercises as $exercise)
                     <a class="practice-course-card" href="{{ route('practice.show', $exercise) }}">
-                        <span class="activity-type">{{ strtoupper(str_replace('_', ' ', $exercise->type)) }}</span>
+                        <span class="activity-type">{{ strtoupper(str_replace('_', ' ', $exercise->type)) }}@if(($exercise->metadata['source_grounded'] ?? false)) · FONTE @endif</span>
                         <strong>{{ $exercise->title ?: 'Exercício' }}</strong>
                         <p>{{ $exercise->attempts_count }} tentativa(s)</p>
                     </a>
                 @empty
                     <p class="empty">Ainda não existem exercícios para esta UC.</p>
+                @endforelse
+            </div>
+        </section>
+
+        <section class="card wide">
+            <div class="card-head"><h3>Corpus de fontes</h3><span>{{ $course->sourceChunks->count() }} fragmento(s) ativo(s)</span></div>
+            <div class="source-chunk-grid">
+                @forelse($course->sourceChunks as $chunk)
+                    <article class="source-chunk-card {{ $chunk->quality }}">
+                        <div class="source-chunk-head">
+                            <strong>{{ $chunk->sourceLabel() }}</strong>
+                            <span>{{ $chunk->quality === 'content' ? 'Detalhado' : 'Esquema' }}</span>
+                        </div>
+                        <small>{{ $chunk->locator }}</small>
+                        <p>{{ IlluminateSupportStr::limit($chunk->content, 240) }}</p>
+                        <div class="topic-chips">
+                            @foreach($chunk->topics as $linkedTopic)
+                                <span>{{ $linkedTopic->title }}</span>
+                            @endforeach
+                        </div>
+                    </article>
+                @empty
+                    <p class="empty">Ainda não existem fragmentos de conteúdo indexados para esta UC.</p>
                 @endforelse
             </div>
         </section>

@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\Exercise;
 use App\Models\ExerciseAttempt;
+use App\Models\SourceChunk;
 use App\Models\StudySession;
 use App\Models\Topic;
 use App\Services\Practice\ExerciseGrader;
+use App\Services\Practice\GroundedPracticeGenerator;
 use App\Services\Practice\TopicMasteryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +24,7 @@ class PracticeController
     public function index(Request $request): View
     {
         $exerciseQuery = Exercise::query()
-            ->with(['course', 'topics', 'attempts'])
+            ->with(['course', 'topics', 'attempts', 'sourceChunks'])
             ->where('status', 'active');
 
         $studySession = null;
@@ -56,7 +58,15 @@ class PracticeController
 
         $topics = Topic::query()
             ->with(['course', 'mastery'])
-            ->withCount(['exercises', 'studySessions'])
+            ->withCount([
+                'exercises',
+                'studySessions',
+                'sourceChunks as source_chunks_count' => fn ($query) => $query
+                    ->where('source_chunks.status', 'active'),
+                'sourceChunks as rich_source_chunks_count' => fn ($query) => $query
+                    ->where('source_chunks.status', 'active')
+                    ->where('source_chunks.quality', 'content'),
+            ])
             ->where('status', 'active')
             ->orderBy('course_id')
             ->orderBy('position')
@@ -71,6 +81,7 @@ class PracticeController
                 ->limit(8)
                 ->get(),
             'courses' => Course::query()->where('status', 'active')->orderBy('name')->get(),
+            'eligibleSourceChunkCount' => SourceChunk::query()->eligibleForPractice()->count(),
             'selectedCourseId' => $request->integer('course_id') ?: null,
             'selectedTopicId' => $request->integer('topic_id') ?: null,
             'studySession' => $studySession,
@@ -81,7 +92,7 @@ class PracticeController
     {
         return view('practice.form', [
             'exercise' => new Exercise(),
-            'courses' => $this->coursesWithTopics(),
+            'courses' => $this->coursesWithTopicsAndSources(),
             'types' => $this->types(),
             'selectedCourseId' => $request->integer('course_id') ?: null,
             'selectedTopicId' => $request->integer('topic_id') ?: null,
@@ -92,8 +103,9 @@ class PracticeController
     {
         $data = $this->validatedExercise($request);
         $topicIds = $this->validatedTopicIds($data['course_id'], $data['topic_ids'] ?? []);
+        $sourceChunkIds = $this->validatedSourceChunkIds($data['course_id'], $data['source_chunk_ids'] ?? []);
 
-        $exercise = DB::transaction(function () use ($data, $topicIds) {
+        $exercise = DB::transaction(function () use ($data, $topicIds, $sourceChunkIds) {
             $exercise = Exercise::query()->create([
                 'course_id' => $data['course_id'],
                 'source' => 'manual',
@@ -108,11 +120,16 @@ class PracticeController
                 'status' => 'active',
                 'metadata' => [
                     'authorship' => 'manual',
-                    'source_grounded' => false,
+                    'source_grounded' => $sourceChunkIds !== [],
                 ],
             ]);
 
             $exercise->topics()->sync($topicIds);
+            $exercise->sourceChunks()->sync(
+                collect($sourceChunkIds)->mapWithKeys(
+                    fn (int $id) => [$id => ['role' => 'reference']],
+                )->all(),
+            );
 
             return $exercise;
         });
@@ -124,11 +141,11 @@ class PracticeController
     public function edit(Exercise $exercise): View
     {
         $this->ensureManual($exercise);
-        $exercise->load('topics');
+        $exercise->load(['topics', 'sourceChunks']);
 
         return view('practice.form', [
             'exercise' => $exercise,
-            'courses' => $this->coursesWithTopics(),
+            'courses' => $this->coursesWithTopicsAndSources(),
             'types' => $this->types(),
             'selectedCourseId' => $exercise->course_id,
             'selectedTopicId' => null,
@@ -140,10 +157,11 @@ class PracticeController
         $this->ensureManual($exercise);
         $data = $this->validatedExercise($request);
         $topicIds = $this->validatedTopicIds($data['course_id'], $data['topic_ids'] ?? []);
+        $sourceChunkIds = $this->validatedSourceChunkIds($data['course_id'], $data['source_chunk_ids'] ?? []);
 
         $previousTopicIds = $exercise->topics()->pluck('topics.id')->all();
 
-        DB::transaction(function () use ($exercise, $data, $topicIds) {
+        DB::transaction(function () use ($exercise, $data, $topicIds, $sourceChunkIds) {
             $exercise->update([
                 'course_id' => $data['course_id'],
                 'type' => $data['type'],
@@ -153,9 +171,19 @@ class PracticeController
                 'answer_config' => $this->answerConfig($data),
                 'explanation' => $data['explanation'] ?: null,
                 'max_points' => $data['max_points'],
+                'metadata' => [
+                    ...($exercise->metadata ?? []),
+                    'authorship' => 'manual',
+                    'source_grounded' => $sourceChunkIds !== [],
+                ],
             ]);
 
             $exercise->topics()->sync($topicIds);
+            $exercise->sourceChunks()->sync(
+                collect($sourceChunkIds)->mapWithKeys(
+                    fn (int $id) => [$id => ['role' => 'reference']],
+                )->all(),
+            );
         });
 
         $masteryService = app(TopicMasteryService::class);
@@ -170,7 +198,13 @@ class PracticeController
 
     public function show(Request $request, Exercise $exercise): View
     {
-        $exercise->load(['course', 'topics.mastery', 'attempts']);
+        $exercise->load([
+            'course',
+            'topics.mastery',
+            'attempts',
+            'sourceChunks.materialVersion.material',
+            'sourceChunks.lessonSummary',
+        ]);
 
         $studySession = null;
 
@@ -312,6 +346,8 @@ class PracticeController
             'course_id' => ['required', 'integer', Rule::exists('courses', 'id')],
             'topic_ids' => ['required', 'array', 'min:1'],
             'topic_ids.*' => ['integer', Rule::exists('topics', 'id')],
+            'source_chunk_ids' => ['nullable', 'array'],
+            'source_chunk_ids.*' => ['integer', Rule::exists('source_chunks', 'id')],
             'type' => ['required', Rule::in(array_keys($this->types()))],
             'title' => ['nullable', 'string', 'max:255'],
             'prompt' => ['required', 'string', 'max:10000'],
@@ -362,6 +398,29 @@ class PracticeController
         return $topicIds;
     }
 
+    private function validatedSourceChunkIds(int $courseId, array $sourceChunkIds): array
+    {
+        $sourceChunkIds = array_values(array_unique(array_map('intval', $sourceChunkIds)));
+
+        if ($sourceChunkIds === []) {
+            return [];
+        }
+
+        $validCount = SourceChunk::query()
+            ->whereIn('id', $sourceChunkIds)
+            ->where('course_id', $courseId)
+            ->where('status', 'active')
+            ->count();
+
+        if ($validCount !== count($sourceChunkIds)) {
+            throw ValidationException::withMessages([
+                'source_chunk_ids' => 'Todas as fontes escolhidas têm de estar ativas e pertencer à mesma UC.',
+            ]);
+        }
+
+        return $sourceChunkIds;
+    }
+
     private function answerConfig(array $data): array
     {
         $config = [];
@@ -380,11 +439,35 @@ class PracticeController
         return $config;
     }
 
-    private function coursesWithTopics()
+    public function generateForTopic(
+        Topic $topic,
+        GroundedPracticeGenerator $generator,
+    ): RedirectResponse {
+        $result = $generator->generateForTopic($topic);
+
+        if ($result['eligible_source_chunks'] === 0) {
+            return redirect()->route('practice.index', ['topic_id' => $topic->id])
+                ->with('status', 'A fonte confirma o tópico, mas ainda não contém detalhe suficiente para gerar prática fundamentada.');
+        }
+
+        return redirect()->route('practice.index', ['topic_id' => $topic->id])
+            ->with(
+                'status',
+                'Prática fundamentada preparada: '.$result['created'].' novo(s), '.$result['updated'].' atualizado(s).',
+            );
+    }
+
+    private function coursesWithTopicsAndSources()
     {
         return Course::query()
             ->where('status', 'active')
-            ->with(['topics' => fn ($query) => $query->where('status', 'active')->orderBy('position')])
+            ->with([
+                'topics' => fn ($query) => $query->where('status', 'active')->orderBy('position'),
+                'sourceChunks' => fn ($query) => $query
+                    ->where('status', 'active')
+                    ->orderBy('title')
+                    ->orderBy('ordinal'),
+            ])
             ->orderBy('name')
             ->get();
     }

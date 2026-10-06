@@ -27,7 +27,7 @@
     <header class="form-header">
         <p class="eyebrow">Conteúdo académico</p>
         <h1>{{ $material->exists ? 'Editar material' : 'Adicionar material' }}</h1>
-        <p>Associa ligações, documentos de referência ou notas à UC correta. O armazenamento de ficheiros será acrescentado numa fase própria.</p>
+        <p>Associa ligações, documentos de referência ou notas à UC correta. Se adicionares texto do material, o StudyOS cria um corpus com proveniência e só gera prática quando houver conteúdo suficiente.</p>
     </header>
 
     @if($errors->any())
@@ -74,6 +74,12 @@
             <label class="field span-2">
                 <span>Notas <small>opcional</small></span>
                 <textarea name="notes" rows="5" maxlength="4000">{{ old('notes', $material->metadata['notes'] ?? '') }}</textarea>
+            </label>
+
+            <label class="field span-2">
+                <span>Texto / conteúdo extraído <small>opcional · até 200 000 caracteres</small></span>
+                <textarea name="content_text" rows="12" maxlength="200000" placeholder="Texto do material, apontamentos ou conteúdo extraído do documento…">{{ old('content_text', $contentText) }}</textarea>
+                <small class="field-hint">Este texto é versionado. Fragmentos curtos ou meros títulos ficam classificados como esquema e não são usados para gerar exercícios automaticamente.</small>
             </label>
         </div>
 

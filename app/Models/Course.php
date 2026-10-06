@@ -53,4 +53,9 @@ class Course extends Model
     {
         return $this->hasMany(Exercise::class);
     }
+
+    public function sourceChunks(): HasMany
+    {
+        return $this->hasMany(SourceChunk::class);
+    }
 }
