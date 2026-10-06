@@ -23,8 +23,13 @@ class DashboardController
     public function __invoke(): View
     {
         $now = now()->timezone(config('app.timezone', 'Europe/Lisbon'));
-        $dayStart = $now->copy()->startOfDay();
-        $dayEnd = $now->copy()->endOfDay();
+        $dayStart = $now->copy()->startOfDay()->utc();
+        $dayEnd = $now->copy()->endOfDay()->utc();
+        $todayEvents = ClassOccurrence::query()
+            ->with('course')
+            ->whereBetween('starts_at', [$dayStart, $dayEnd])
+            ->orderBy('starts_at')
+            ->get();
 
         return view('dashboard', [
             'courseCount' => Course::query()->where('status', 'active')->count(),
@@ -34,11 +39,11 @@ class DashboardController
                 ->withCount('classOccurrences')
                 ->orderBy('name')
                 ->get(),
-            'todayClasses' => ClassOccurrence::query()
-                ->with('course')
-                ->whereBetween('starts_at', [$dayStart, $dayEnd])
-                ->orderBy('starts_at')
-                ->get(),
+            'todayEvents' => $todayEvents,
+            'todayClasses' => $todayEvents->filter(fn (ClassOccurrence $event) =>
+                $event->eventType() === 'class' && $event->status === 'scheduled'),
+            'todayAssessmentCount' => $todayEvents->filter(fn (ClassOccurrence $event) =>
+                $event->eventType() === 'assessment' && $event->status === 'scheduled')->count(),
             'upcomingAssessments' => Assessment::query()
                 ->with('course')
                 ->whereNotNull('due_at')

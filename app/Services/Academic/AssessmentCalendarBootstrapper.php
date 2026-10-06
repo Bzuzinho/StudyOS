@@ -184,6 +184,7 @@ class AssessmentCalendarBootstrapper
         $day = Carbon::createFromFormat('Y-m-d', $date, $timezone);
 
         $class = ClassOccurrence::query()
+            ->scheduledClasses()
             ->where('course_id', $course->id)
             ->where('source', 'inforestudante_ical')
             ->whereBetween('starts_at', [

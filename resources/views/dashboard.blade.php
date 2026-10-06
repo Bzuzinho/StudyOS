@@ -34,12 +34,13 @@
             <p>{{ $plannedCourseCount }} UCs já registadas para o 2.º semestre. Agenda, avaliações e progresso passam a ficar associados à UC correta.</p>
         </div>
         <div class="metric"><strong>{{ $todayClasses->count() }}</strong><span>aulas hoje</span></div>
+        <div class="metric"><strong>{{ $todayAssessmentCount }}</strong><span>avaliações hoje</span></div>
     </section>
 
     <main class="grid">
         <section class="card">
             <div class="card-head"><h3>Hoje</h3><a href="/calendar">Ver calendário</a></div>
-            @forelse ($todayClasses as $class)
+            @forelse ($todayEvents as $class)
                 <article class="item">
                     <div class="time">{{ $class->localStartsAt()->format('H:i') }}</div>
                     <div>
@@ -48,7 +49,10 @@
                         @else
                             <strong>{{ $class->title }}</strong>
                         @endif
-                        <p>{{ $class->location ?: 'Sala por confirmar' }}</p>
+                        <p>{{ $class->eventTypeLabel() }}@if($class->status === 'cancelled') · Cancelada @endif · {{ $class->location ?: 'Sala por confirmar' }}</p>
+                        @if($class->course && $class->title !== $class->course->name)
+                            <small>{{ $class->title }}</small>
+                        @endif
                     </div>
                 </article>
             @empty

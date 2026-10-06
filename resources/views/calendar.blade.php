@@ -63,17 +63,20 @@
                             $localStart = $event->localStartsAt();
                             $localEnd = $event->localEndsAt();
                             $isManual = $event->source === 'manual';
-                            $isAssessment = $event->source === 'estg_assessment_calendar_2026_27';
+                            $isAssessment = $event->eventType() === 'assessment';
+                            $isOfficialAssessment = $event->source === 'estg_assessment_calendar_2026_27';
                             $isMoodle = $event->source === 'moodle_audit';
                             $isStudyPlan = $event->source === 'study_plan';
+                            $isStudy = $event->eventType() === 'study';
                         @endphp
-                        <div class="calendar-event {{ $event->status === 'cancelled' ? 'cancelled' : '' }} {{ $isManual ? 'manual' : '' }} {{ $isAssessment ? 'assessment-event' : '' }} {{ $isMoodle ? 'moodle-event' : '' }} {{ $isStudyPlan ? 'study-event' : '' }}">
+                        <div class="calendar-event {{ $event->status === 'cancelled' ? 'cancelled' : '' }} {{ $isManual ? 'manual' : '' }} {{ $isAssessment ? 'assessment-event' : '' }} {{ $isMoodle ? 'moodle-event' : '' }} {{ $isStudy ? 'study-event' : '' }}">
                             <div class="event-topline">
                                 <div class="event-time">{{ $localStart->format('H:i') }}@if($localEnd)–{{ $localEnd->format('H:i') }}@endif</div>
                                 @if($isManual)
                                     <a class="event-edit" href="{{ route('calendar-events.edit', $event) }}">Editar</a>
                                 @endif
                             </div>
+                            <small class="event-type">{{ $event->eventTypeLabel() }}@if($event->status === 'cancelled') · Cancelada @endif</small>
                             @if($event->course)
                                 <a href="{{ route('courses.show', $event->course) }}"><strong>{{ $event->course->name }}</strong></a>
                             @else
@@ -87,10 +90,10 @@
                                 <small class="study-label">Estudo planeado · execução não confirmada</small>
                             @elseif($isMoodle)
                                 <small class="moodle-label">Moodle · prazo confirmado</small>
-                            @elseif($isAssessment)
+                            @elseif($isOfficialAssessment)
                                 <small class="assessment-label">Avaliação periódica · calendário oficial</small>
                             @elseif($isManual)
-                                <small class="manual-label">Manual · {{ ucfirst($event->source_payload['event_type'] ?? 'evento') }}</small>
+                                <small class="manual-label">Manual · {{ $event->eventTypeLabel() }}</small>
                             @endif
                         </div>
                     @empty
