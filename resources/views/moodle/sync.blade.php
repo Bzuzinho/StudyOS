@@ -7,7 +7,6 @@
     <title>Sincronizar Moodle · StudyOS</title>
     @include('partials.app-identity')
     <link rel="stylesheet" href="/css/app.css?v=brand-1">
-    <style>#launch[hidden] { display: none; }</style>
 </head>
 <body><main class="shell">
     <a href="{{ route('materials.index', [], false) }}">← Materiais</a>
@@ -19,9 +18,11 @@
         <h2>Primeira ligação neste navegador</h2>
         <p>Usa Chrome ou Edge no computador. Permite que o StudyOS receba o regresso da autenticação quando o navegador perguntar.</p>
         <button class="button" id="register" type="button">Permitir regresso ao StudyOS</button>
-        <button class="button primary" id="sync" type="button" disabled>Autenticar e sincronizar</button>
+        <form id="sync-form" method="POST" action="{{ route('moodle.start', [], false) }}">
+            @csrf
+            <button class="button primary" id="sync" type="submit" disabled>Autenticar e sincronizar</button>
+        </form>
         <p id="message" role="status" aria-live="polite"></p>
-        <a class="button primary" id="launch" hidden>Abrir Moodle e continuar</a>
         <p>Se o navegador do telemóvel não suportar esta ligação, inicia a recolha no computador. Os documentos recolhidos ficam disponíveis no telemóvel.</p>
     </section>
     <section class="material-card">
@@ -34,7 +35,6 @@
 (() => {
     const register = document.getElementById('register');
     const sync = document.getElementById('sync');
-    const launch = document.getElementById('launch');
     let preparing = false;
     const message = document.getElementById('message');
     let running = @json($running);
@@ -53,33 +53,16 @@
             message.textContent = 'O navegador bloqueou o regresso ao StudyOS. Verifica as permissões ou usa Chrome/Edge no computador.';
         }
     });
-    sync.addEventListener('click', async () => {
-        if (preparing || running) return;
+    document.getElementById('sync-form').addEventListener('submit', (event) => {
+        if (!registered || preparing || running) {
+            event.preventDefault();
+            return;
+        }
         preparing = true;
         sync.disabled = true;
-        launch.hidden = true;
-        launch.removeAttribute('href');
-        message.textContent = 'A preparar a ligação…';
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
-        try {
-            const response = await fetch({{ Illuminate\Support\Js::from(route('moodle.start', [], false)) }}, {
-                signal: controller.signal, method: 'POST', headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json'},
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'Não foi possível iniciar a ligação.');
-            const url = new URL(data.url);
-            if (url.protocol !== 'https:') throw new Error('Ligação ao Moodle inválida.');
-            launch.href = url.href;
-            launch.hidden = false;
-            message.textContent = 'Ligação pronta. Clica em «Abrir Moodle e continuar». Se não regressares ao StudyOS, confirma que aceitaste o regresso nas permissões do navegador.';
-        } catch (error) {
-            message.textContent = error.name === 'AbortError' ? 'O servidor demorou demasiado. Volta a tentar preparar a ligação.' : error.message;
-        } finally {
-            clearTimeout(timeout);
-            preparing = false;
-            sync.disabled = !registered || running || preparing;
-        }
+        message.textContent = 'A abrir o Moodle…';
+        // A normal form navigation preserves the browser's navigation flow.
+        // The response redirects directly to Moodle, without an async fetch.
     });
     async function poll() {
         try {
