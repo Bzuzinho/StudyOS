@@ -9,6 +9,8 @@ use App\Services\Academic\MoodleAuditBootstrapper;
 use App\Services\Academic\TopicBootstrapper;
 use App\Services\Calendar\ICalendarSyncService;
 use App\Services\Learning\CorpusBuilder;
+use App\Services\Moodle\MoodleAuthenticatedClient;
+use App\Services\Moodle\MoodleSyncService;
 use App\Services\Practice\GroundedPracticeGenerator;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -80,6 +82,58 @@ Artisan::command('studyos:generate-grounded-practice', function () {
 
     return 0;
 })->purpose('Generate only practice supported by sufficiently rich source chunks');
+
+Artisan::command('studyos:sync-moodle', function () {
+    if (! config('studyos.moodle.enabled', true)) {
+        $this->warn('Moodle synchronization is disabled.');
+
+        return 0;
+    }
+
+    $connection = SyncConnection::query()->firstOrCreate(
+        ['source' => 'moodle_authenticated', 'name' => 'Moodle EAD 2026/27'],
+        [
+            'secret' => null,
+            'config' => [
+                'base_url' => config('studyos.moodle.base_url'),
+                'read_only' => true,
+                'credentials_source' => 'environment',
+            ],
+            'status' => 'pending_credentials',
+            'enabled' => true,
+        ],
+    );
+
+    $client = app(MoodleAuthenticatedClient::class);
+
+    if (! $client->isConfigured()) {
+        $connection->update([
+            'status' => 'pending_credentials',
+            'config' => [
+                ...($connection->config ?? []),
+                'base_url' => config('studyos.moodle.base_url'),
+                'read_only' => true,
+                'credentials_source' => 'environment',
+            ],
+        ]);
+
+        $this->warn('Moodle synchronization is ready but credentials are not configured.');
+
+        return 0;
+    }
+
+    $run = app(MoodleSyncService::class)->sync($connection);
+
+    if (in_array($run->status, ['success', 'success_with_warnings'], true)) {
+        $this->info('Moodle sync '.strtoupper($run->status).': '.json_encode($run->stats, JSON_UNESCAPED_UNICODE));
+
+        return 0;
+    }
+
+    $this->error($run->error ?: 'Moodle synchronization failed.');
+
+    return 1;
+})->purpose('Synchronize Moodle documents through authenticated read-only access');
 
 Artisan::command('studyos:sync-ical {connection?}', function () {
     $connectionId = $this->argument('connection');

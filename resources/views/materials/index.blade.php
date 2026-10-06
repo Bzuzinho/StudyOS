@@ -56,7 +56,9 @@
             <article class="material-card">
                 <div class="material-card-head">
                     <span class="material-type">{{ strtoupper($material->type) }}</span>
-                    <span class="source-pill {{ $material->source === 'manual' ? 'manual' : '' }}">{{ $material->source === 'manual' ? 'Manual' : 'Fonte auditada' }}</span>
+                    <span class="source-pill {{ $material->source === 'manual' ? 'manual' : '' }}">
+                        {{ $material->source === 'manual' ? 'Manual' : ($material->source === 'moodle' ? 'Moodle automático' : 'Fonte auditada') }}
+                    </span>
                 </div>
                 <h2>{{ $material->title }}</h2>
                 <a class="material-course" href="{{ route('courses.show', $material->course) }}">{{ $material->course?->name }}</a>
