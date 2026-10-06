@@ -24,6 +24,10 @@ class SystemStatusController
     public function __invoke(): JsonResponse
     {
         $lastRun = SyncRun::query()->latest('started_at')->first();
+        $moodleConnection = SyncConnection::query()
+            ->where('source', 'moodle_authenticated')
+            ->first();
+        $moodleRun = $moodleConnection?->runs()->latest('started_at')->first();
 
         return response()->json([
             'courses' => [
@@ -68,6 +72,19 @@ class SystemStatusController
             'background_queue' => [
                 'pending_jobs' => DB::table('jobs')->count(),
                 'failed_jobs' => DB::table('failed_jobs')->count(),
+            ],
+            'moodle_sync' => [
+                'configured' => $moodleConnection?->status !== 'pending_credentials',
+                'status' => $moodleConnection?->status ?? 'not_configured',
+                'last_synced_at' => $moodleConnection?->last_synced_at?->toIso8601String(),
+                'last_run' => $moodleRun ? [
+                    'status' => $moodleRun->status,
+                    'started_at' => $moodleRun->started_at?->toIso8601String(),
+                    'finished_at' => $moodleRun->finished_at?->toIso8601String(),
+                    'stats' => $moodleRun->stats,
+                    'error' => $moodleRun->status === 'failed' ? $moodleRun->error : null,
+                ] : null,
+                'materials' => Material::query()->where('source', 'moodle')->count(),
             ],
             'sync_connections' => SyncConnection::count(),
             'last_sync' => $lastRun ? [
