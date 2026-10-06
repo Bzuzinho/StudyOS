@@ -9,6 +9,7 @@ use App\Models\Exercise;
 use App\Models\ExerciseAttempt;
 use App\Models\LessonSummary;
 use App\Models\Material;
+use App\Models\MaterialVersion;
 use App\Models\SourceChunk;
 use App\Models\StudySession;
 use App\Models\SyncRun;
@@ -57,8 +58,10 @@ class DashboardController
                 ->get(),
             'materialCount' => Material::query()->where('status', 'active')->count(),
             'summaryCount' => LessonSummary::query()->count(),
+            'uploadedFileCount' => MaterialVersion::query()->whereNotNull('storage_path')->count(),
+            'extractedFileCount' => MaterialVersion::query()->where('extraction_status', 'extracted')->count(),
             'recentMaterials' => Material::query()
-                ->with('course')
+                ->with(['course', 'versions'])
                 ->where('status', 'active')
                 ->latest('updated_at')
                 ->limit(4)
