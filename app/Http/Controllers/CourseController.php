@@ -10,7 +10,17 @@ class CourseController
     public function index(): View
     {
         $courses = Course::query()
-            ->withCount(['classOccurrences', 'assessments', 'tasks', 'materials', 'lessonSummaries', 'topics', 'studySessions', 'exercises', 'sourceChunks'])
+            ->withCount([
+                'classOccurrences',
+                'assessments',
+                'tasks',
+                'materials',
+                'lessonSummaries',
+                'topics',
+                'studySessions',
+                'exercises',
+                'sourceChunks as source_chunks_count' => fn ($query) => $query->where('status', 'active'),
+            ])
             ->with(['classOccurrences' => fn ($query) => $query
                 ->where('starts_at', '>=', now())
                 ->orderBy('starts_at')
@@ -42,7 +52,8 @@ class CourseController
                 ->withCount([
                     'studySessions',
                     'exercises',
-                    'sourceChunks',
+                    'sourceChunks as source_chunks_count' => fn ($sourceQuery) => $sourceQuery
+                        ->where('source_chunks.status', 'active'),
                     'sourceChunks as rich_source_chunks_count' => fn ($sourceQuery) => $sourceQuery
                         ->where('source_chunks.status', 'active')
                         ->where('source_chunks.quality', 'content'),
@@ -56,7 +67,7 @@ class CourseController
                 ->latest('updated_at'),
             'sourceChunks' => fn ($query) => $query
                 ->where('status', 'active')
-                ->with(['materialVersion.material', 'lessonSummary'])
+                ->with(['materialVersion.material', 'lessonSummary', 'topics'])
                 ->orderBy('title')
                 ->orderBy('ordinal'),
         ]);
