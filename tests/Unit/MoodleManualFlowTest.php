@@ -53,12 +53,24 @@ class MoodleManualFlowTest extends TestCase
     public function test_start_creates_a_session_bound_launch_without_credentials(): void
     {
         $response = $this->postJson('/moodle/start')->assertOk();
+        $response->assertSessionHas('_token', $response->json('csrf_token'));
         parse_str(parse_url($response->json('url'), PHP_URL_QUERY), $parameters);
         $this->assertSame('web+studyos', $parameters['urlscheme']);
         $this->assertSame('moodle_mobile_app', $parameters['service']);
         $this->assertArrayNotHasKey('oauthsso', $parameters);
         $response->assertSessionHas('moodle_sso.passport', $parameters['passport']);
         $this->assertStringNotContainsString('token=', $response->json('url'));
+        Queue::assertNothingPushed();
+    }
+
+    public function test_browser_form_redirects_to_moodle_with_a_session_bound_challenge(): void
+    {
+        $response = $this->post('/moodle/start')->assertStatus(302);
+        $url = $response->headers->get('Location');
+        $this->assertStringStartsWith('https://ead.ulo.pt/2026-27/admin/tool/mobile/launch.php?', $url);
+        parse_str(parse_url($url, PHP_URL_QUERY), $parameters);
+        $response->assertSessionHas('moodle_sso.passport', $parameters['passport']);
+        $this->assertSame('web+studyos', $parameters['urlscheme']);
         Queue::assertNothingPushed();
     }
 

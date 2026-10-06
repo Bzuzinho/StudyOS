@@ -33,11 +33,17 @@ class MoodleSyncController
         $request->session()->regenerate();
         $request->session()->put('moodle_sso', ['passport' => $passport, 'expires' => now()->addMinutes(15)->timestamp]);
 
-        return response()->json(['url' => config('studyos.moodle.base_url').'/admin/tool/mobile/launch.php?'.http_build_query([
+        $url = config('studyos.moodle.base_url').'/admin/tool/mobile/launch.php?'.http_build_query([
             'service' => 'moodle_mobile_app',
             'passport' => $passport,
             'urlscheme' => 'web+studyos',
-        ])])->header('Cache-Control', 'no-store');
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['url' => $url, 'csrf_token' => csrf_token()])->header('Cache-Control', 'no-store');
+        }
+
+        return redirect()->away($url)->header('Cache-Control', 'no-store')->header('Referrer-Policy', 'no-referrer');
     }
 
     public function callback()
