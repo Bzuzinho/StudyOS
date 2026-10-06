@@ -61,6 +61,12 @@ class MoodleManualFlowTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+    public function test_sync_and_callback_pages_render_successfully(): void
+    {
+        $this->get('/moodle/sync')->assertOk()->assertSee('Autenticar e sincronizar');
+        $this->get('/moodle/callback')->assertOk()->assertSee('Ligação ao Moodle');
+    }
+
     public function test_callback_consumes_challenge_and_queues_one_encrypted_job(): void
     {
         $challenge = ['passport' => 'passport', 'expires' => now()->addMinutes(15)->timestamp];

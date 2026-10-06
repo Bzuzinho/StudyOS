@@ -33,7 +33,7 @@
     const register = document.getElementById('register');
     const sync = document.getElementById('sync');
     const message = document.getElementById('message');
-    let running = @json(in_array($run?->status, ['queued', 'running'], true));
+    let running = @json($running);
     let registered = false;
     if (!window.isSecureContext || !navigator.registerProtocolHandler) {
         register.disabled = true;

@@ -15,8 +15,10 @@ class MoodleSyncController
 {
     public function index(Request $request)
     {
+        $run = $this->sessionRun($request);
         return response()->view('moodle.sync', [
-            'run' => $this->sessionRun($request),
+            'run' => $run,
+            'running' => in_array($run?->status, ['queued', 'running'], true),
         ])->header('Cache-Control', 'no-store')->header('Referrer-Policy', 'no-referrer');
     }
 
