@@ -27,7 +27,7 @@
     <header class="form-header">
         <p class="eyebrow">Banco de exercícios</p>
         <h1>{{ $exercise->exists ? 'Editar exercício' : 'Criar exercício' }}</h1>
-        <p>Exercícios manuais ficam identificados como tal. A geração automática a partir de materiais validados será adicionada separadamente.</p>
+        <p>Exercícios manuais ficam identificados como tal. Podes ligá-los aos fragmentos-fonte da UC para preservar proveniência e separar conteúdo suportado de conteúdo livre.</p>
     </header>
 
     @if($errors->any())
@@ -41,6 +41,7 @@
         $config = $exercise->answer_config ?? [];
         $acceptedAnswers = implode("\n", $config['accepted_answers'] ?? []);
         $oldTopics = old('topic_ids', $exercise->exists ? $exercise->topics->pluck('id')->all() : ($selectedTopicId ? [$selectedTopicId] : []));
+        $oldSources = old('source_chunk_ids', $exercise->exists ? $exercise->sourceChunks->pluck('id')->all() : []);
     @endphp
 
     <form class="event-form card" method="POST" action="{{ $exercise->exists ? route('practice.update', $exercise) : route('practice.store') }}">
@@ -72,6 +73,26 @@
                         </div>
                     @endif
                 @endforeach
+            </fieldset>
+
+            <fieldset class="field span-2 topic-selector">
+                <legend>Fontes de referência <small>opcional</small></legend>
+                @foreach($courses as $course)
+                    @if($course->sourceChunks->isNotEmpty())
+                        <div class="source-options" data-course="{{ $course->id }}">
+                            @foreach($course->sourceChunks as $chunk)
+                                <label>
+                                    <input type="checkbox" name="source_chunk_ids[]" value="{{ $chunk->id }}" @checked(in_array($chunk->id, $oldSources))>
+                                    <span>
+                                        <strong>{{ $chunk->title ?: 'Fonte académica' }}</strong>
+                                        <small>{{ $chunk->locator }} · {{ $chunk->quality === 'content' ? 'conteúdo detalhado' : 'esquema / confirmação de tópico' }} · {{ IlluminateSupportStr::limit($chunk->content, 110) }}</small>
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                    @endif
+                @endforeach
+                <p class="field-hint">As fontes são sempre limitadas à UC escolhida. Fragmentos de esquema continuam úteis como proveniência, mas não alimentam geração automática.</p>
             </fieldset>
 
             <label class="field">
@@ -139,11 +160,12 @@
     const course = document.getElementById('practice-course');
     const type = document.getElementById('exercise-type');
     const topicGroups = [...document.querySelectorAll('.topic-options')];
+    const sourceGroups = [...document.querySelectorAll('.source-options')];
     const accepted = document.querySelector('[data-answer-field="accepted"]');
     const tolerance = document.querySelector('[data-answer-field="tolerance"]');
 
     const refreshTopics = () => {
-        topicGroups.forEach(group => {
+        [...topicGroups, ...sourceGroups].forEach(group => {
             const visible = group.dataset.course === course.value;
             group.hidden = !visible;
             if (!visible) {
