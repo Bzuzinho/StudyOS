@@ -104,8 +104,10 @@ class MoodleWebServiceClient
         parse_str((string) ($parts['query'] ?? ''), $query);
         $query['token'] = $token;
 
+        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+
         $url = ($parts['scheme'] ?? 'https').'://'.$parts['host']
-            .($parts['port'] ?? null ? ':'.$parts['port'] : '')
+            .$port
             .($parts['path'] ?? '')
             .'?'.http_build_query($query);
 
