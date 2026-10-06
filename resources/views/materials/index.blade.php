@@ -39,6 +39,8 @@
             @php
                 $notes = $material->metadata['notes'] ?? null;
                 $latestVersion = $material->versions->first();
+                $activeChunks = $latestVersion?->sourceChunks?->where('status', 'active') ?? collect();
+                $richChunks = $activeChunks->where('quality', 'content')->count();
             @endphp
             <article class="material-card">
                 <div class="material-card-head">
@@ -59,6 +61,11 @@
                 <div class="material-meta">
                     @if($latestVersion)
                         <span>Versão: {{ $latestVersion->version_label ?: 'observada' }}</span>
+                    @endif
+                    @if($activeChunks->isNotEmpty())
+                        <span>{{ $activeChunks->count() }} fragmento(s) · {{ $richChunks }} apto(s) para prática</span>
+                    @elseif($latestVersion?->content_text)
+                        <span>Conteúdo por indexar</span>
                     @endif
                     @if($material->url)
                         <a href="{{ $material->url }}" target="_blank" rel="noopener noreferrer">Abrir ↗</a>
