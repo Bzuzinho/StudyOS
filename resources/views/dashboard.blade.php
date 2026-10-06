@@ -23,7 +23,7 @@
     </nav>
 
     <header class="topbar">
-        <div><p class="eyebrow">StudyOS · Alpha 0.10</p><h1>Painel académico</h1></div>
+        <div><p class="eyebrow">StudyOS · Alpha 0.11</p><h1>Painel académico</h1></div>
         <div class="sync {{ $lastSync?->status === 'success' ? 'ok' : '' }}"><span></span>{{ $lastSync ? 'Última sincronização: '.$lastSync->started_at?->copy()->timezone(config('app.timezone'))->format('d/m H:i') : 'Sincronização ainda não configurada' }}</div>
     </header>
 
@@ -106,6 +106,11 @@
                 <div><strong>{{ $gradedAttemptCount }}</strong><span>tentativas corrigidas</span></div>
                 <div><strong>{{ $masteryEvidenceCount }}</strong><span>tópicos com evidência</span></div>
             </div>
+            <div class="corpus-summary">
+                <span>{{ $sourceChunkCount }} fragmento(s) indexado(s)</span>
+                <span>{{ $richSourceChunkCount }} apto(s) para geração</span>
+                <span>{{ $groundedExerciseCount }} exercício(s) gerado(s) da fonte</span>
+            </div>
             @forelse($recentAttempts as $attempt)
                 <article class="item">
                     <div class="date">{{ $attempt->percentage !== null ? number_format((float) $attempt->percentage, 0).'%' : '…' }}</div>
@@ -154,7 +159,7 @@
         </section>
 
         <section class="card wide">
-            <div class="card-head"><h3>Roadmap Alpha</h3><span>0.10</span></div>
+            <div class="card-head"><h3>Roadmap Alpha</h3><span>0.11</span></div>
             <div class="roadmap">
                 <div class="done"><b>01</b><span>Fundação de dados</span></div>
                 <div class="done"><b>02</b><span>iCalendar InforEstudante</span></div>
@@ -165,7 +170,8 @@
                 <div class="done"><b>07</b><span>Fiabilidade da sincronização</span></div>
                 <div class="done"><b>08</b><span>Materiais e contexto de aprendizagem</span></div>
                 <div class="done"><b>09</b><span>Tópicos e planeamento de estudo</span></div>
-                <div class="active"><b>10</b><span>Exercícios, tentativas e domínio</span></div>
+                <div class="done"><b>10</b><span>Exercícios, tentativas e domínio</span></div>
+                <div class="active"><b>11</b><span>Corpus com proveniência e prática fundamentada</span></div>
             </div>
         </section>
     </main>
