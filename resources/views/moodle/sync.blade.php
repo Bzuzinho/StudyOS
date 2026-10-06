@@ -7,6 +7,7 @@
     <title>Sincronizar Moodle · StudyOS</title>
     @include('partials.app-identity')
     <link rel="stylesheet" href="/css/app.css?v=brand-1">
+    <style>#launch[hidden] { display: none; }</style>
 </head>
 <body><main class="shell">
     <a href="{{ route('materials.index', [], false) }}">← Materiais</a>
@@ -20,6 +21,7 @@
         <button class="button" id="register" type="button">Permitir regresso ao StudyOS</button>
         <button class="button primary" id="sync" type="button" disabled>Autenticar e sincronizar</button>
         <p id="message" role="status" aria-live="polite"></p>
+        <a class="button primary" id="launch" hidden>Abrir Moodle e continuar</a>
         <p>Se o navegador do telemóvel não suportar esta ligação, inicia a recolha no computador. Os documentos recolhidos ficam disponíveis no telemóvel.</p>
     </section>
     <section class="material-card">
@@ -32,6 +34,8 @@
 (() => {
     const register = document.getElementById('register');
     const sync = document.getElementById('sync');
+    const launch = document.getElementById('launch');
+    let preparing = false;
     const message = document.getElementById('message');
     let running = @json($running);
     let registered = false;
@@ -50,21 +54,31 @@
         }
     });
     sync.addEventListener('click', async () => {
+        if (preparing || running) return;
+        preparing = true;
         sync.disabled = true;
-        message.textContent = 'A abrir o Moodle…';
+        launch.hidden = true;
+        launch.removeAttribute('href');
+        message.textContent = 'A preparar a ligação…';
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
         try {
             const response = await fetch({{ Illuminate\Support\Js::from(route('moodle.start', [], false)) }}, {
-                method: 'POST', headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json'},
+                signal: controller.signal, method: 'POST', headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json'},
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || 'Não foi possível iniciar a ligação.');
-            // Top-level navigation lets Moodle reuse its existing session and
-            // request institutional authentication only when it is necessary.
-            location.assign(data.url);
+            const url = new URL(data.url);
+            if (url.protocol !== 'https:') throw new Error('Ligação ao Moodle inválida.');
+            launch.href = url.href;
+            launch.hidden = false;
+            message.textContent = 'Ligação pronta. Clica em «Abrir Moodle e continuar». Se não regressares ao StudyOS, confirma que aceitaste o regresso nas permissões do navegador.';
         } catch (error) {
-            message.textContent = error.message;
+            message.textContent = error.name === 'AbortError' ? 'O servidor demorou demasiado. Volta a tentar preparar a ligação.' : error.message;
         } finally {
-            sync.disabled = running;
+            clearTimeout(timeout);
+            preparing = false;
+            sync.disabled = !registered || running || preparing;
         }
     });
     async function poll() {
@@ -73,7 +87,7 @@
             if (!response.ok) throw new Error();
             const data = await response.json();
             running = ['queued', 'running'].includes(data.status);
-            sync.disabled = !registered || running;
+            sync.disabled = !registered || running || preparing;
             const stats = data.stats || {};
             const labels = {idle: 'Ainda não foi iniciada uma recolha nesta sessão.', queued: 'Pedido na fila de recolha.', running: 'A recolher os documentos do Moodle…', failed: 'A recolha falhou. Confirma a conta ULO e volta a autenticar.'};
             document.getElementById('result').textContent = labels[data.status] ||
