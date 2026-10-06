@@ -17,6 +17,8 @@ return [
 
     'moodle' => [
         'base_url' => rtrim(env('MOODLE_BASE_URL', 'https://ead.ulo.pt/2026-27'), '/'),
+        'token' => env('MOODLE_TOKEN'),
+        'private_token' => env('MOODLE_PRIVATE_TOKEN'),
         'username' => env('MOODLE_USERNAME'),
         'password' => env('MOODLE_PASSWORD'),
         'enabled' => filter_var(env('MOODLE_ENABLED', true), FILTER_VALIDATE_BOOL),
