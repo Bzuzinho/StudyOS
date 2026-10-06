@@ -67,8 +67,10 @@
                     <p>{{ $material->metadata['observed_items'] }} ficheiros {{ $material->metadata['observed_format'] ?? '' }} observados.</p>
                 @endif
 
-                @if($latestVersion?->extraction_error)
-                    <p class="extraction-warning">{{ $latestVersion->extraction_error }}</p>
+                @if($latestVersion?->extraction_status === 'empty_or_scanned')
+                    <p class="extraction-warning">Este PDF parece não ter texto pesquisável. O ficheiro foi guardado, mas não entra na geração de exercícios.</p>
+                @elseif($latestVersion?->extraction_status === 'failed')
+                    <p class="extraction-warning">O ficheiro foi guardado, mas a extração automática falhou. O StudyOS não usará conteúdo não extraído como fonte.</p>
                 @endif
 
                 <div class="material-meta">
