@@ -120,6 +120,19 @@ class MoodleFileSynchronizer
                 ->first();
 
             if ($existing) {
+                if ($existing->extraction_status === 'queued') {
+                    $lastDispatch = $existing->metadata['moodle_last_dispatch_at'] ?? null;
+                    $dispatchAgain = ! $lastDispatch
+                        || now()->diffInMinutes(\Illuminate\Support\Carbon::parse($lastDispatch)) >= 10;
+
+                    if ($dispatchAgain) {
+                        $versionMetadata = $existing->metadata ?? [];
+                        $versionMetadata['moodle_last_dispatch_at'] = now()->toIso8601String();
+                        $existing->update(['metadata' => $versionMetadata]);
+                        ExtractMaterialVersion::dispatch($existing->id)->afterCommit();
+                    }
+                }
+
                 return [
                     'status' => 'unchanged',
                     'material_id' => $material->id,
@@ -145,16 +158,21 @@ class MoodleFileSynchronizer
             }
 
             try {
-                Storage::disk($storageDisk)->writeStream(
+                $stored = Storage::disk($storageDisk)->writeStream(
                     $storagePath,
                     $stream,
                     ['visibility' => 'private'],
                 );
+
+                if (! $stored) {
+                    throw new RuntimeException('Could not store the Moodle file in academic cloud storage.');
+                }
             } finally {
                 fclose($stream);
             }
 
-            $version = DB::transaction(function () use (
+            try {
+                $version = DB::transaction(function () use (
                 $material,
                 $storageDisk,
                 $storagePath,
@@ -194,7 +212,15 @@ class MoodleFileSynchronizer
                         'moodle_source_url' => $item['url'],
                     ],
                 ]);
-            });
+                });
+            } catch (\Throwable $exception) {
+                Storage::disk($storageDisk)->delete($storagePath);
+                throw $exception;
+            }
+
+            $versionMetadata = $version->metadata ?? [];
+            $versionMetadata['moodle_last_dispatch_at'] = now()->toIso8601String();
+            $version->update(['metadata' => $versionMetadata]);
 
             ExtractMaterialVersion::dispatch($version->id)->afterCommit();
 
