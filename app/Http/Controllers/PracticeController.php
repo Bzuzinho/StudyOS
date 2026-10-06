@@ -141,6 +141,8 @@ class PracticeController
         $data = $this->validatedExercise($request);
         $topicIds = $this->validatedTopicIds($data['course_id'], $data['topic_ids'] ?? []);
 
+        $previousTopicIds = $exercise->topics()->pluck('topics.id')->all();
+
         DB::transaction(function () use ($exercise, $data, $topicIds) {
             $exercise->update([
                 'course_id' => $data['course_id'],
@@ -155,6 +157,13 @@ class PracticeController
 
             $exercise->topics()->sync($topicIds);
         });
+
+        $masteryService = app(TopicMasteryService::class);
+        $affectedTopicIds = array_values(array_unique([...$previousTopicIds, ...$topicIds]));
+
+        Topic::query()->whereIn('id', $affectedTopicIds)->each(
+            fn (Topic $topic) => $masteryService->recalculate($topic),
+        );
 
         return redirect()->route('practice.show', $exercise)->with('status', 'Exercício atualizado.');
     }
