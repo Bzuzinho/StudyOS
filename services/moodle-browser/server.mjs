@@ -145,7 +145,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 server.requestTimeout = 60000;
-server.listen(Number(process.env.PORT || 3000), '0.0.0.0');
+server.listen(Number(process.env.PORT || 3000), '::');
 async function shutdown() {
   server.close();
   for (const id of sessions.keys()) await destroy(id);
