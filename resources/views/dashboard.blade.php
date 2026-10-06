@@ -23,7 +23,7 @@
     </nav>
 
     <header class="topbar">
-        <div><p class="eyebrow">StudyOS · Alpha 0.14</p><h1>Painel académico</h1></div>
+        <div><p class="eyebrow">StudyOS · Alpha 0.15</p><h1>Painel académico</h1></div>
         <div class="sync {{ $lastSync?->status === 'success' ? 'ok' : '' }}"><span></span>{{ $lastSync ? 'Última sincronização: '.$lastSync->started_at?->copy()->timezone(config('app.timezone'))->format('d/m H:i') : 'Sincronização ainda não configurada' }}</div>
     </header>
 
@@ -169,7 +169,7 @@
         </section>
 
         <section class="card wide">
-            <div class="card-head"><h3>Roadmap Alpha</h3><span>0.14</span></div>
+            <div class="card-head"><h3>Roadmap Alpha</h3><span>0.15</span></div>
             <div class="roadmap">
                 <div class="done"><b>01</b><span>Fundação de dados</span></div>
                 <div class="done"><b>02</b><span>iCalendar InforEstudante</span></div>
@@ -184,7 +184,8 @@
                 <div class="done"><b>11</b><span>Corpus com proveniência e prática fundamentada</span></div>
                 <div class="done"><b>12</b><span>Upload cloud e extração de documentos</span></div>
                 <div class="done"><b>13</b><span>Extração assíncrona e worker cloud</span></div>
-                <div class="active"><b>14</b><span>Sincronização automática do Moodle</span></div>
+                <div class="done"><b>14</b><span>Sincronização automática do Moodle</span></div>
+                <div class="active"><b>15</b><span>Autenticação Moodle via Microsoft/ULO SSO</span></div>
             </div>
         </section>
     </main>
