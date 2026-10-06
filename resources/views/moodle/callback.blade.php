@@ -14,12 +14,12 @@
 </head><body><main class="shell">
     <h1>Ligação ao Moodle</h1>
     <p id="message" role="status">A validar a ligação e a iniciar a recolha…</p>
-    <a class="button" href="{{ route('moodle.sync') }}">Voltar à sincronização</a>
+    <a class="button" href="{{ route('moodle.sync', [], false) }}">Voltar à sincronização</a>
 </main><script>
 (async () => {
     try {
         if (!moodleCallbackFragment) throw new Error('A resposta do Moodle não chegou. Volta a iniciar a ligação.');
-        const response = await fetch(@json(route('moodle.complete')), {
+        const response = await fetch({{ Illuminate\Support\Js::from(route('moodle.complete', [], false)) }}, {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content},
             body: JSON.stringify({payload: decodeURIComponent(moodleCallbackFragment)}),

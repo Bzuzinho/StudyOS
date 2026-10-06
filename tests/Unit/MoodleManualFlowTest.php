@@ -63,8 +63,11 @@ class MoodleManualFlowTest extends TestCase
 
     public function test_sync_and_callback_pages_render_successfully(): void
     {
-        $this->get('/moodle/sync')->assertOk()->assertSee('Autenticar e sincronizar');
-        $this->get('/moodle/callback')->assertOk()->assertSee('Ligação ao Moodle');
+        $sync = $this->get('/moodle/sync')->assertOk()->assertSee('Autenticar e sincronizar');
+        $callback = $this->get('/moodle/callback')->assertOk()->assertSee('Ligação ao Moodle');
+        // JSON may escape slashes; inspect the actual URL after unescaping them.
+        $this->assertStringNotContainsString('http://localhost/moodle/', str_replace('\\/', '/', $sync->getContent()));
+        $this->assertStringNotContainsString('http://localhost/moodle/', str_replace('\\/', '/', $callback->getContent()));
     }
 
     public function test_callback_consumes_challenge_and_queues_one_encrypted_job(): void
@@ -72,7 +75,7 @@ class MoodleManualFlowTest extends TestCase
         $challenge = ['passport' => 'passport', 'expires' => now()->addMinutes(15)->timestamp];
         $uri = 'web+studyos://token='.base64_encode(md5('https://ead.ulo.pt/2026-27passport').':::'.str_repeat('a', 32));
         $this->withSession(['moodle_sso' => $challenge])->postJson('/moodle/complete', ['payload' => $uri])
-            ->assertOk()->assertSessionMissing('moodle_sso')->assertSessionHas('moodle_run_id');
+            ->assertOk()->assertJsonPath('url', '/moodle/sync')->assertSessionMissing('moodle_sso')->assertSessionHas('moodle_run_id');
         Queue::assertPushed(SyncMoodleOnDemand::class, function ($job) {
             return $job instanceof ShouldBeEncrypted && $job->connection === 'moodle' && $job->queue === 'moodle';
         });
