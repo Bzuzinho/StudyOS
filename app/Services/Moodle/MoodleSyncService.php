@@ -73,6 +73,7 @@ class MoodleSyncService
                 );
 
                 $expanded = [];
+                $discoveryComplete = true;
 
                 foreach ($items as $item) {
                     $stats['items_seen']++;
@@ -96,6 +97,7 @@ class MoodleSyncService
                         }
                     } catch (Throwable) {
                         $stats['file_errors']++;
+                        $discoveryComplete = false;
                     }
                 }
 
@@ -123,11 +125,13 @@ class MoodleSyncService
                     }
                 }
 
-                $stats['materials_marked_missing'] += $this->markMissing(
-                    $sourceCourse->course_id,
-                    $sourceCourse->external_id,
-                    $seenExternalIds,
-                );
+                if ($discoveryComplete) {
+                    $stats['materials_marked_missing'] += $this->markMissing(
+                        $sourceCourse->course_id,
+                        $sourceCourse->external_id,
+                        $seenExternalIds,
+                    );
+                }
 
                 $stats['courses_scanned']++;
             }
