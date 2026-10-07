@@ -208,7 +208,7 @@
         </section>
 
         <section class="card wide">
-            <div class="card-head"><h3>Materiais</h3><a href="{{ route('materials.index') }}">{{ $course->materials->count() }} registado(s)</a></div>
+            <div class="card-head"><h3>Materiais</h3><a href="{{ route('materials.index', ['course_id' => $course->id], false) }}">Ver {{ $course->materials->count() }} material(is) desta UC</a></div>
             <div class="course-material-grid">
                 @forelse($course->materials as $material)
                     @php
@@ -217,7 +217,7 @@
                     <article class="course-material">
                         <div class="material-card-head">
                             <span class="material-type">{{ strtoupper($material->type) }}</span>
-                            <span class="source-pill {{ $material->source === 'manual' ? 'manual' : '' }}">{{ $material->source === 'manual' ? 'Manual' : 'Auditado' }}</span>
+                            <span class="source-pill {{ $material->source === 'manual' ? 'manual' : '' }}">{{ $material->source === 'manual' ? 'Manual' : ($material->source === 'moodle' ? 'Moodle' : 'Fonte auditada') }}</span>
                         </div>
                         <strong>{{ $material->title }}</strong>
                         @if($latestVersion)
@@ -239,10 +239,10 @@
                         @endif
                         <div class="material-meta">
                             @if($latestVersion?->storage_path)
-                                <a href="{{ route('materials.download', ['material' => $material, 'version' => $latestVersion]) }}">Descarregar</a>
+                                <a href="{{ route('materials.download', ['material' => $material, 'version' => $latestVersion], false) }}">Descarregar ficheiro</a>
                             @endif
                             @if($material->url)
-                                <a href="{{ $material->url }}" target="_blank" rel="noopener noreferrer">Abrir ↗</a>
+                                <a href="{{ $material->url }}" target="_blank" rel="noopener noreferrer">{{ $material->source === 'moodle' ? 'Ver no Moodle' : 'Abrir origem' }} ↗</a>
                             @endif
                             @if($material->source === 'manual')
                                 <a href="{{ route('materials.edit', $material) }}">Editar</a>

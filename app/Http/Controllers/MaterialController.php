@@ -20,14 +20,35 @@ use Throwable;
 
 class MaterialController
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $filters = $request->validate([
+            'course_id' => ['nullable', 'integer', 'exists:courses,id'],
+            'source' => ['nullable', Rule::in(['moodle', 'manual', 'moodle_audit'])],
+            'q' => ['nullable', 'string', 'max:200'],
+        ]);
+        $search = trim($filters['q'] ?? '');
+
         return view('materials.index', [
             'materials' => Material::query()
-                ->with(['course', 'versions.sourceChunks'])
+                ->with(['course', 'versions' => fn ($query) => $query->withCount([
+                    'sourceChunks as active_chunks_count' => fn ($chunks) => $chunks->where('status', 'active'),
+                    'sourceChunks as rich_chunks_count' => fn ($chunks) => $chunks->where('status', 'active')->where('quality', 'content'),
+                ])])
                 ->where('status', 'active')
+                ->when($filters['course_id'] ?? null, fn ($query, $courseId) => $query->where('course_id', $courseId))
+                ->when($filters['source'] ?? null, fn ($query, $source) => $query->where('source', $source))
+                ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search) {
+                    $query->whereLike('title', '%'.$search.'%')
+                        ->orWhereHas('versions', fn ($versions) => $versions->whereLike('original_filename', '%'.$search.'%'));
+                }))
                 ->orderByDesc('updated_at')
-                ->get(),
+                ->orderByDesc('id')
+                ->paginate(24)
+                ->withPath(route('materials.index', [], false))
+                ->withQueryString(),
+            'courses' => Course::query()->whereHas('materials', fn ($query) => $query->where('status', 'active'))->orderBy('name')->get(),
+            'filters' => $filters,
         ]);
     }
 
