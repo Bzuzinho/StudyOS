@@ -9,6 +9,8 @@ use Illuminate\Support\Carbon;
 
 class CalendarEventClassificationTest extends TestCase
 {
+    private string $originalTimezone;
+
     public function createApplication()
     {
         $app = require dirname(__DIR__, 2).'/bootstrap/app.php';
@@ -19,6 +21,7 @@ class CalendarEventClassificationTest extends TestCase
 
     protected function setUp(): void
     {
+        $this->originalTimezone = date_default_timezone_get();
         parent::setUp();
         config([
             'app.key' => 'base64:'.base64_encode(str_repeat('a', 32)),
@@ -32,6 +35,10 @@ class CalendarEventClassificationTest extends TestCase
                 'foreign_key_constraints' => true,
             ],
         ]);
+        // SQLite stores datetime values without an offset. Interpret those values
+        // in UTC, matching the timestamps returned by production PostgreSQL.
+        // app.timezone stays Europe/Lisbon for the displayed calendar times.
+        date_default_timezone_set('UTC');
         Carbon::setTestNow(Carbon::parse('2026-10-06 09:00', 'Europe/Lisbon'));
         $this->artisan('migrate', ['--force' => true])->assertExitCode(0);
         $this->withoutExceptionHandling();
@@ -40,6 +47,7 @@ class CalendarEventClassificationTest extends TestCase
     protected function tearDown(): void
     {
         Carbon::setTestNow();
+        date_default_timezone_set($this->originalTimezone);
         parent::tearDown();
     }
 
@@ -116,7 +124,8 @@ class CalendarEventClassificationTest extends TestCase
             ->update(['starts_at' => Carbon::parse('2026-10-07 00:30', 'Europe/Lisbon')->utc()]);
 
         $this->get('/')->assertOk()
-            ->assertViewHas('todayClasses', fn ($events) => $events->pluck('id')->all() === [$early->id]);
+            ->assertViewHas('todayClasses', fn ($events) => $events->pluck('id')->all() === [$early->id]
+                && $events->first()->localStartsAt()->format('Y-m-d H:i') === '2026-10-06 00:30');
     }
 
     public function test_an_assessment_without_a_class_of_its_uc_keeps_a_full_amber_card(): void
