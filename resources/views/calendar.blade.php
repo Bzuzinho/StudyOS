@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Calendário · StudyOS</title>
     @include('partials.app-identity')
-    <link rel="stylesheet" href="/css/app.css?v=brand-1">
+    <link rel="stylesheet" href="/css/app.css?v=inline-assessments-1">
 </head>
 <body>
 <div class="shell">
@@ -47,7 +47,7 @@
 
     <section class="calendar-grid {{ $mode }}">
         @foreach ($days as $day)
-            @php $dayEvents = $events->get($day->toDateString(), collect()); @endphp
+            @php $dayRows = $eventRows->get($day->toDateString(), collect()); @endphp
             <article class="calendar-day {{ $day->isToday() ? 'today' : '' }} {{ $mode === 'month' && $day->month !== $anchor->month ? 'muted' : '' }}">
                 <header>
                     <span>{{ $day->translatedFormat('D') }}</span>
@@ -58,8 +58,9 @@
                 </header>
 
                 <div class="calendar-events">
-                    @forelse ($dayEvents as $event)
+                    @forelse ($dayRows as $row)
                         @php
+                            $event = $row['event'];
                             $localStart = $event->localStartsAt();
                             $localEnd = $event->localEndsAt();
                             $isManual = $event->source === 'manual';
@@ -95,6 +96,7 @@
                             @elseif($isManual)
                                 <small class="manual-label">Manual · {{ $event->eventTypeLabel() }}</small>
                             @endif
+                            @include('partials.inline-assessments', ['owner' => $event, 'assessments' => $row['assessments']])
                         </div>
                     @empty
                         @if($mode === 'week')

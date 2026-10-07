@@ -16,10 +16,13 @@ use App\Models\SyncRun;
 use App\Models\Task;
 use App\Models\Topic;
 use App\Models\TopicMastery;
+use App\Services\Calendar\CalendarEventPresenter;
 use Illuminate\View\View;
 
 class DashboardController
 {
+    public function __construct(private readonly CalendarEventPresenter $presenter) {}
+
     public function __invoke(): View
     {
         $now = now()->timezone(config('app.timezone', 'Europe/Lisbon'));
@@ -40,6 +43,7 @@ class DashboardController
                 ->orderBy('name')
                 ->get(),
             'todayEvents' => $todayEvents,
+            'todayRows' => $this->presenter->rows($todayEvents),
             'todayClasses' => $todayEvents->filter(fn (ClassOccurrence $event) =>
                 $event->eventType() === 'class' && $event->status === 'scheduled'),
             'todayAssessmentCount' => $todayEvents->filter(fn (ClassOccurrence $event) =>
