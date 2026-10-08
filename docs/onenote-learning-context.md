@@ -1,5 +1,17 @@
 # OneNote institucional e estado da matéria
 
+## Abordagem adotada (8 de outubro de 2026)
+
+O utilizador optou por acompanhar o progresso diretamente no StudyOS, dado que os
+apontamentos OneNote são manuscritos. A integração OneNote fica adiada.
+
+Cada UC mostra a percentagem de aulas decorridas face às aulas programadas no
+calendário disponível, excluindo avaliações e cancelamentos. A matéria lecionada é
+assinalada numa lista de tópicos, independente do progresso temporal e do domínio
+demonstrado em exercícios. É possível acrescentar tópicos manualmente por UC.
+
+A análise OneNote abaixo fica como referência para uma integração futura.
+
 ## Resultado da análise (7 de outubro de 2026)
 
 O StudyOS importa ficheiros do Moodle para o armazenamento próprio e extrai texto

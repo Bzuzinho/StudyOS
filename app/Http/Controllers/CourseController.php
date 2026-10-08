@@ -11,12 +11,14 @@ class CourseController
     {
         $courses = Course::query()
             ->withCount([
-                'classOccurrences',
+                'classOccurrences as scheduled_classes_count' => fn ($query) => $query->scheduledClasses(),
+                'classOccurrences as elapsed_classes_count' => fn ($query) => $query->elapsedClasses(),
                 'assessments',
                 'tasks',
                 'materials',
                 'lessonSummaries',
-                'topics',
+                'topics' => fn ($query) => $query->where('status', 'active'),
+                'topics as taught_topics_count' => fn ($query) => $query->where('status', 'active')->whereNotNull('taught_at'),
                 'studySessions',
                 'exercises',
                 'sourceChunks as source_chunks_count' => fn ($query) => $query->where('status', 'active'),
@@ -40,6 +42,11 @@ class CourseController
 
     public function show(Course $course): View
     {
+        $course->loadCount([
+            'classOccurrences as scheduled_classes_count' => fn ($query) => $query->scheduledClasses(),
+            'classOccurrences as elapsed_classes_count' => fn ($query) => $query->elapsedClasses(),
+            'sourceChunks as active_source_chunks_count' => fn ($query) => $query->where('status', 'active'),
+        ]);
         $course->load([
             'sourceCourses',
             'classOccurrences' => fn ($query) => $query->scheduledClasses()->orderBy('starts_at'),
@@ -70,7 +77,8 @@ class CourseController
                 ->where('status', 'active')
                 ->with(['materialVersion.material', 'lessonSummary', 'topics'])
                 ->orderBy('title')
-                ->orderBy('ordinal'),
+                ->orderBy('ordinal')
+                ->limit(24),
         ]);
 
         $now = now();

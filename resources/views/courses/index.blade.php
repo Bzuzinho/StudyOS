@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>UCs · StudyOS</title>
     @include('partials.app-identity')
-    <link rel="stylesheet" href="/css/app.css?v=brand-1">
+    <link rel="stylesheet" href="/css/app.css?v=course-progress-1">
 </head>
 <body>
 <div class="shell">
@@ -43,18 +43,18 @@
             <div class="course-grid">
                 @forelse ($coursesBySemester[$semester] ?? collect() as $course)
                     @php $nextClass = $course->classOccurrences->first(); @endphp
-                    <a class="course-card" href="{{ route('courses.show', $course) }}">
+                    <a class="course-card" href="{{ route('courses.show', $course, false) }}">
                         <div class="course-card-head">
                             <span class="course-code">{{ $course->academic_code }}</span>
                             <span class="status-pill {{ $course->status }}">{{ $course->status === 'active' ? 'Ativa' : 'Planeada' }}</span>
                         </div>
                         <h3>{{ $course->name }}</h3>
+                        @include('partials.course-class-progress')
                         <div class="course-meta">
-                            <span>{{ $course->class_occurrences_count }} ocorrências</span>
                             <span>{{ $course->assessments_count }} avaliações</span>
                             <span>{{ $course->tasks_count }} tarefas</span>
                             <span>{{ $course->materials_count }} materiais</span>
-                            <span>{{ $course->topics_count }} tópicos</span>
+                            <span>{{ $course->taught_topics_count }}/{{ $course->topics_count }} tópicos lecionados</span>
                             <span>{{ $course->exercises_count }} exercícios</span>
                             @if($course->source_chunks_count > 0)
                                 <span>{{ $course->source_chunks_count }} fragmento(s) de fonte</span>

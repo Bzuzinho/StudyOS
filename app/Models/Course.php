@@ -9,6 +9,13 @@ class Course extends Model
 {
     protected $guarded = [];
 
+    public function classProgressPercent(): ?float
+    {
+        return $this->scheduled_classes_count > 0
+            ? round(100 * $this->elapsed_classes_count / $this->scheduled_classes_count, 1)
+            : null;
+    }
+
     public function sourceCourses(): HasMany
     {
         return $this->hasMany(SourceCourse::class);

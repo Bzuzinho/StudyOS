@@ -14,7 +14,7 @@ class Topic extends Model
 
     protected function casts(): array
     {
-        return ['metadata' => 'array'];
+        return ['metadata' => 'array', 'taught_at' => 'datetime'];
     }
 
     public function course(): BelongsTo
