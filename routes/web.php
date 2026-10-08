@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\CourseTopicController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ManualCalendarEventController;
 use App\Http\Controllers\MaterialController;
@@ -58,4 +59,10 @@ Route::delete('/calendar/events/{event}', [ManualCalendarEventController::class,
 
 Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
 Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
+Route::get('/courses/{course}/topics/create', [CourseTopicController::class, 'create'])->name('course-topics.create');
+Route::post('/courses/{course}/topics', [CourseTopicController::class, 'store'])->name('course-topics.store');
+Route::patch('/courses/{course}/topics/coverage', [CourseTopicController::class, 'coverage'])->name('course-topics.coverage');
+Route::get('/courses/{course}/topics/{topic}/edit', [CourseTopicController::class, 'edit'])->name('course-topics.edit');
+Route::put('/courses/{course}/topics/{topic}', [CourseTopicController::class, 'update'])->name('course-topics.update');
+Route::delete('/courses/{course}/topics/{topic}', [CourseTopicController::class, 'destroy'])->name('course-topics.destroy');
 Route::get('/api/system/status', SystemStatusController::class)->name('system.status');

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $course->name }} · StudyOS</title>
     @include('partials.app-identity')
-    <link rel="stylesheet" href="/css/app.css?v=brand-1">
+    <link rel="stylesheet" href="/css/app.css?v=course-progress-1">
 </head>
 <body>
 <div class="shell">
@@ -23,6 +23,12 @@
     </nav>
 
     <div class="breadcrumb"><a href="/courses">← UCs</a></div>
+    @if(session('status'))
+        <div class="alert success" role="status">{{ session('status') }}</div>
+    @endif
+    @if($errors->any())
+        <div class="alert error" role="alert"><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+    @endif
 
     <header class="course-hero">
         <div>
@@ -44,6 +50,93 @@
     </header>
 
     <main class="grid">
+        <section class="card wide">
+            <div class="card-head"><h3>Progresso das aulas</h3><a href="/calendar">Calendário</a></div>
+            @include('partials.course-class-progress')
+            <p class="muted-text">Calculado pelas aulas do calendário disponível. Avaliações e aulas canceladas ficam excluídas. Uma aula com hora de fim só conta depois de terminar; sem hora de fim, é usada a hora de início.</p>
+        </section>
+
+        <section class="card wide" id="course-topics">
+            <div class="card-head"><h3>Matéria lecionada e preparação</h3><a class="button" href="{{ route('course-topics.create', $course, false) }}">+ Acrescentar tópico</a></div>
+            <p class="muted-text">{{ $course->topics->whereNotNull('taught_at')->count() }} de {{ $course->topics->count() }} tópicos registados marcados como lecionados. Seleciona a matéria já dada nas aulas e guarda a seleção.</p>
+            @if($course->topics->isNotEmpty())
+                <form id="taught-topics" method="POST" action="{{ route('course-topics.coverage', $course, false) }}">
+                    @csrf
+                    @method('PATCH')
+                </form>
+            @endif
+            <div class="topic-grid">
+                @forelse($course->topics as $topic)
+                    <article class="topic-card">
+                        <span class="topic-position">{{ str_pad((string) $topic->position, 2, '0', STR_PAD_LEFT) }}</span>
+                        <h3>{{ $topic->title }}</h3>
+                        <input type="hidden" form="taught-topics" name="topic_ids[]" value="{{ $topic->id }}">
+                        <label class="taught-topic-option">
+                            <input type="checkbox" form="taught-topics" name="taught_topic_ids[]" value="{{ $topic->id }}" @checked(old('topic_ids') !== null ? in_array($topic->id, (array) old('taught_topic_ids', [])) : $topic->taught_at !== null)>
+                            <span>Lecionado</span>
+                        </label>
+                        @if($topic->description)<p class="muted-text">{{ $topic->description }}</p>@endif
+                        @php
+                            $mastery = $topic->mastery;
+                            $masteryStatus = $mastery?->status ?? 'no_evidence';
+                            $masteryLabels = [
+                                'no_evidence' => 'sem evidência',
+                                'insufficient_evidence' => 'evidência insuficiente',
+                                'fragile' => 'frágil',
+                                'developing' => 'em desenvolvimento',
+                                'competent' => 'competente',
+                                'strong' => 'forte',
+                            ];
+                        @endphp
+                        <div class="topic-states">
+                            <span class="{{ $topic->taught_at ? 'source-ready' : 'unknown' }}">{{ $topic->taught_at ? 'Lecionado · assinalado' : 'Matéria · por assinalar' }}</span>
+                            <span>{{ $topic->study_sessions_count > 0 ? 'Estudo · planeado' : 'Estudo · por planear' }}</span>
+                            <span class="{{ $masteryStatus === 'no_evidence' ? 'unknown' : 'mastery-evidence' }}">
+                                Domínio · {{ $masteryLabels[$masteryStatus] ?? $masteryStatus }}
+                                @if($mastery?->score_percent !== null)
+                                    · {{ number_format((float) $mastery->score_percent, 0) }}%
+                                @endif
+                            </span>
+                            <span class="{{ $topic->rich_source_chunks_count > 0 ? 'source-ready' : 'unknown' }}">
+                                Fonte · {{ $topic->source_chunks_count }} fragmento(s)
+                                @if($topic->rich_source_chunks_count > 0)
+                                    · {{ $topic->rich_source_chunks_count }} detalhado(s)
+                                @endif
+                            </span>
+                        </div>
+                        <div class="topic-card-actions">
+                            <a href="{{ route('practice.index', ['topic_id' => $topic->id]) }}">Praticar ({{ $topic->exercises_count }})</a>
+                            <a href="{{ route('practice.create', ['course_id' => $course->id, 'topic_id' => $topic->id]) }}">Criar exercício</a>
+                            @if($topic->source === 'manual')<a href="{{ route('course-topics.edit', ['course' => $course, 'topic' => $topic], false) }}">Editar tópico</a>@endif
+                            @if($topic->rich_source_chunks_count > 0)
+                                <form method="POST" action="{{ route('practice.generate-topic', $topic) }}">
+                                    @csrf
+                                    <button class="text-link" type="submit">Gerar da fonte</button>
+                                </form>
+                            @endif
+                        </div>
+                    </article>
+                @empty
+                    <p class="empty">Acrescenta os tópicos do programa desta UC para acompanhares a matéria lecionada.</p>
+                @endforelse
+            </div>
+            <div class="topic-coverage-actions">
+                @if($course->topics->isNotEmpty())<button class="button primary" form="taught-topics" type="submit">Guardar matéria lecionada</button>@endif
+                <a href="{{ route('study.create', ['course_id' => $course->id], false) }}">Planear estudo</a>
+            </div>
+
+            @if($course->studySessions->isNotEmpty())
+                <div class="course-study-sessions">
+                    @foreach($course->studySessions as $session)
+                        <article>
+                            <strong>{{ $session->localStartsAt()->format('d/m · H:i') }}</strong>
+                            <span>{{ $session->title ?: ucfirst($session->type) }} · {{ $session->planned_minutes }} min</span>
+                            <small>{{ $session->localEndsAt()->isPast() ? 'Janela decorrida — execução não confirmada' : 'Planeado' }}</small>
+                        </article>
+                    @endforeach
+                </div>
+            @endif
+        </section>
         <section class="card">
             <div class="card-head"><h3>Próximas aulas</h3><a href="/calendar">Calendário</a></div>
             @forelse ($upcomingClasses as $class)
@@ -105,69 +198,7 @@
             @endforelse
         </section>
 
-        <section class="card wide">
-            <div class="card-head"><h3>Tópicos e preparação</h3><a href="{{ route('study.create', ['course_id' => $course->id]) }}">Planear estudo</a></div>
-            <div class="topic-grid">
-                @forelse($course->topics as $topic)
-                    <article class="topic-card">
-                        <span class="topic-position">{{ str_pad((string) $topic->position, 2, '0', STR_PAD_LEFT) }}</span>
-                        <h3>{{ $topic->title }}</h3>
-                        @php
-                            $mastery = $topic->mastery;
-                            $masteryStatus = $mastery?->status ?? 'no_evidence';
-                            $masteryLabels = [
-                                'no_evidence' => 'sem evidência',
-                                'insufficient_evidence' => 'evidência insuficiente',
-                                'fragile' => 'frágil',
-                                'developing' => 'em desenvolvimento',
-                                'competent' => 'competente',
-                                'strong' => 'forte',
-                            ];
-                        @endphp
-                        <div class="topic-states">
-                            <span class="observed">Curricular · observado</span>
-                            <span>{{ $topic->study_sessions_count > 0 ? 'Estudo · planeado' : 'Estudo · por planear' }}</span>
-                            <span class="{{ $masteryStatus === 'no_evidence' ? 'unknown' : 'mastery-evidence' }}">
-                                Domínio · {{ $masteryLabels[$masteryStatus] ?? $masteryStatus }}
-                                @if($mastery?->score_percent !== null)
-                                    · {{ number_format((float) $mastery->score_percent, 0) }}%
-                                @endif
-                            </span>
-                            <span class="{{ $topic->rich_source_chunks_count > 0 ? 'source-ready' : 'unknown' }}">
-                                Fonte · {{ $topic->source_chunks_count }} fragmento(s)
-                                @if($topic->rich_source_chunks_count > 0)
-                                    · {{ $topic->rich_source_chunks_count }} detalhado(s)
-                                @endif
-                            </span>
-                        </div>
-                        <div class="topic-card-actions">
-                            <a href="{{ route('practice.index', ['topic_id' => $topic->id]) }}">Praticar ({{ $topic->exercises_count }})</a>
-                            <a href="{{ route('practice.create', ['course_id' => $course->id, 'topic_id' => $topic->id]) }}">Criar exercício</a>
-                            @if($topic->rich_source_chunks_count > 0)
-                                <form method="POST" action="{{ route('practice.generate-topic', $topic) }}">
-                                    @csrf
-                                    <button class="text-link" type="submit">Gerar da fonte</button>
-                                </form>
-                            @endif
-                        </div>
-                    </article>
-                @empty
-                    <p class="empty">Ainda não foram identificados tópicos suportados pelas fontes desta UC.</p>
-                @endforelse
-            </div>
 
-            @if($course->studySessions->isNotEmpty())
-                <div class="course-study-sessions">
-                    @foreach($course->studySessions as $session)
-                        <article>
-                            <strong>{{ $session->localStartsAt()->format('d/m · H:i') }}</strong>
-                            <span>{{ $session->title ?: ucfirst($session->type) }} · {{ $session->planned_minutes }} min</span>
-                            <small>{{ $session->localEndsAt()->isPast() ? 'Janela decorrida — execução não confirmada' : 'Planeado' }}</small>
-                        </article>
-                    @endforeach
-                </div>
-            @endif
-        </section>
 
         <section class="card wide">
             <div class="card-head"><h3>Exercícios</h3><a href="{{ route('practice.create', ['course_id' => $course->id]) }}">+ Criar exercício</a></div>
@@ -185,7 +216,8 @@
         </section>
 
         <section class="card wide">
-            <div class="card-head"><h3>Corpus de fontes</h3><span>{{ $course->sourceChunks->count() }} fragmento(s) ativo(s)</span></div>
+            <div class="card-head"><h3>Fontes de estudo</h3><span>{{ $course->sourceChunks->count() }} de {{ $course->active_source_chunks_count }} excerto(s)</span></div>
+            @if($course->active_source_chunks_count > $course->sourceChunks->count())<p class="muted-text">Amostra de fontes. Os ficheiros completos estão disponíveis nos materiais desta UC.</p>@endif
             <div class="source-chunk-grid">
                 @forelse($course->sourceChunks as $chunk)
                     <article class="source-chunk-card {{ $chunk->quality }}">

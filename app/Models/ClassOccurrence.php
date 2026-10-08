@@ -67,6 +67,16 @@ class ClassOccurrence extends Model
             });
     }
 
+    public function scopeElapsedClasses(Builder $query): Builder
+    {
+        return $query->scheduledClasses()->where(function (Builder $query) {
+            $query->where('ends_at', '<=', now()->utc())
+                ->orWhere(function (Builder $query) {
+                    $query->whereNull('ends_at')->where('starts_at', '<', now()->utc());
+                });
+        });
+    }
+
     public function localStartsAt(): Carbon
     {
         return $this->starts_at->copy()->timezone(config('app.timezone', 'Europe/Lisbon'));
