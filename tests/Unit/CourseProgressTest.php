@@ -47,6 +47,11 @@ class CourseProgressTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_application_runs_in_testing_environment(): void
+    {
+        $this->assertTrue(app()->environment('testing'));
+    }
+
     public function test_progress_counts_only_classes_and_waits_for_the_end_of_an_ongoing_class(): void
     {
         $course = Course::create(['name' => 'Macroeconomia', 'semester' => 1, 'status' => 'active']);
