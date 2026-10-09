@@ -40,6 +40,7 @@
         <div><strong>{{ $topicCount }}</strong><span>tópicos identificados</span></div>
         <div><strong>{{ $sessions->count() }}</strong><span>sessões planeadas</span></div>
         <div><strong>{{ $plannedMinutes }}</strong><span>minutos planeados</span></div>
+        <div><strong>{{ $completedMinutes }}</strong><span>minutos de estudo confirmados</span></div>
     </section>
 
     <main class="grid">
@@ -66,7 +67,9 @@
                             </div>
                         @endif
                         <small>
-                            @if(($session->metadata['execution_evidence'] ?? false))
+                            @if($session->status === 'completed')
+                                Estudo realizado · {{ $session->metadata['actual_minutes'] ?? $session->planned_minutes }} minutos confirmados.
+                            @elseif(($session->metadata['execution_evidence'] ?? false))
                                 Atividade observada no StudyOS · sessão iniciada, não assumida como concluída.
                             @elseif($elapsed)
                                 Janela de estudo decorrida — execução ainda não confirmada.
@@ -76,6 +79,14 @@
                         </small>
                         <div class="study-session-actions">
                             <a href="{{ route('practice.index', ['study_session_id' => $session->id]) }}">Praticar nesta sessão →</a>
+                            @if($session->status !== 'completed' && $session->source === 'manual')
+                                <form method="POST" action="{{ route('study.complete', $session) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <label>Minutos realizados <input type="number" name="actual_minutes" min="1" max="480" required value="{{ $session->planned_minutes }}"></label>
+                                    <button class="button" type="submit">Confirmar estudo realizado</button>
+                                </form>
+                            @endif
                         </div>
                     </div>
                     <form method="POST" action="{{ route('study.destroy', $session) }}" onsubmit="return confirm('Eliminar esta sessão planeada?')">
@@ -93,7 +104,7 @@
             <div class="card-head"><h3>Estados de progresso</h3><span>Separados por evidência</span></div>
             <div class="progress-explainer">
                 <div><strong>Curricular</strong><p>Indica apenas se o tópico foi observado em fontes académicas.</p></div>
-                <div><strong>Estudo</strong><p>Por agora mostra planeamento. Não assume que uma sessão decorrida foi realizada.</p></div>
+                <div><strong>Estudo</strong><p>O tempo realizado só é contabilizado quando confirmas a sessão e a sua duração efetiva.</p></div>
                 <div><strong>Domínio</strong><p>É calculado apenas com tentativas corrigidas. Menos de 3 exercícios distintos continua a ser evidência insuficiente.</p></div>
             </div>
         </section>
