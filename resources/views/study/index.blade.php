@@ -101,6 +101,13 @@
         <section class="card wide">
             <div class="card-head"><h3>Matéria identificada</h3><span>{{ $topicCount }} tópicos</span></div>
             @foreach($courses as $course)
+                @if($course->topics->isEmpty())
+                    <div class="topic-course-block">
+                        <div class="topic-course-head"><a href="{{ route('courses.show', $course) }}"><strong>{{ $course->name }}</strong></a><span>0 tópicos</span></div>
+                        <p class="muted-text">Programa por estruturar. Sem tópicos não é possível medir a preparação nem recomendar treino baseado na matéria desta UC.</p>
+                        <a href="{{ route('course-topics.create', $course) }}">+ Registar tópicos da UC</a>
+                    </div>
+                @endif
                 @if($course->topics->isNotEmpty())
                     <div class="topic-course-block">
                         <div class="topic-course-head">
