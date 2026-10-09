@@ -116,11 +116,11 @@ class StudyController
                 'source' => 'manual',
                 'external_id' => $externalId,
                 'type' => $data['type'],
-                'title' => $data['title'] ?: null,
+                'title' => ($data['title'] ?? null) ?: null,
                 'starts_at' => $startsAt,
                 'planned_minutes' => $data['planned_minutes'],
                 'status' => 'planned',
-                'notes' => $data['notes'] ?: null,
+                'notes' => ($data['notes'] ?? null) ?: null,
                 'metadata' => [
                     'execution_confirmed' => false,
                     'created_in_studyos' => true,
