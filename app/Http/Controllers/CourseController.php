@@ -21,6 +21,11 @@ class CourseController
                 'topics as taught_topics_count' => fn ($query) => $query->where('status', 'active')->whereNotNull('taught_at'),
                 'studySessions',
                 'exercises',
+                'exercises as graded_exercises_count' => fn ($query) => $query->whereHas('attempts', fn ($attempts) => $attempts->where('grading_status', 'graded')),
+                'materials as downloaded_materials_count' => fn ($query) => $query->whereHas('versions', fn ($versions) => $versions->whereNotNull('storage_path')),
+                'materials as extracted_materials_count' => fn ($query) => $query->whereHas('versions', fn ($versions) => $versions->where('extraction_status', 'extracted')),
+                'materials as failed_materials_count' => fn ($query) => $query->whereHas('versions', fn ($versions) => $versions->where('extraction_status', 'failed')),
+                'topics as practiced_topics_count' => fn ($query) => $query->where('status', 'active')->whereHas('mastery', fn ($mastery) => $mastery->whereNotIn('status', ['no_evidence', 'insufficient_evidence'])),
                 'sourceChunks as source_chunks_count' => fn ($query) => $query->where('status', 'active'),
             ])
             ->with(['classOccurrences' => fn ($query) => $query
@@ -45,6 +50,9 @@ class CourseController
         $course->loadCount([
             'classOccurrences as scheduled_classes_count' => fn ($query) => $query->scheduledClasses(),
             'classOccurrences as elapsed_classes_count' => fn ($query) => $query->elapsedClasses(),
+            'materials as downloaded_materials_count' => fn ($query) => $query->whereHas('versions', fn ($versions) => $versions->whereNotNull('storage_path')),
+            'materials as extracted_materials_count' => fn ($query) => $query->whereHas('versions', fn ($versions) => $versions->where('extraction_status', 'extracted')),
+            'materials as failed_materials_count' => fn ($query) => $query->whereHas('versions', fn ($versions) => $versions->where('extraction_status', 'failed')),
             'sourceChunks as active_source_chunks_count' => fn ($query) => $query->where('status', 'active'),
         ]);
         $course->load([
