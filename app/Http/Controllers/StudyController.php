@@ -48,7 +48,8 @@ class StudyController
             'courses' => $courses,
             'sessions' => $sessions,
             'topicCount' => Topic::query()->where('status', 'active')->count(),
-            'plannedMinutes' => StudySession::query()->sum('planned_minutes'),
+            'plannedMinutes' => StudySession::query()->where('status', '!=', 'completed')->sum('planned_minutes'),
+            'completedMinutes' => StudySession::query()->where('status', 'completed')->get()->sum(fn ($session) => (int) ($session->metadata['actual_minutes'] ?? 0)),
         ]);
     }
 
@@ -148,6 +149,27 @@ class StudyController
         });
 
         return redirect()->route('study.index')->with('status', 'Sessão de estudo planeada.');
+    }
+
+    public function complete(Request $request, StudySession $studySession): RedirectResponse
+    {
+        abort_unless($studySession->source === 'manual', 404);
+
+        $data = $request->validate([
+            'actual_minutes' => ['required', 'integer', 'min:1', 'max:480'],
+        ]);
+
+        $metadata = $studySession->metadata ?? [];
+        $metadata['execution_confirmed'] = true;
+        $metadata['completed_at'] = now()->toIso8601String();
+        $metadata['actual_minutes'] = (int) $data['actual_minutes'];
+
+        $studySession->update([
+            'status' => 'completed',
+            'metadata' => $metadata,
+        ]);
+
+        return redirect()->route('study.index')->with('status', 'Estudo realizado registado com sucesso.');
     }
 
     public function destroy(StudySession $studySession): RedirectResponse
