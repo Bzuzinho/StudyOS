@@ -38,6 +38,7 @@ Route::delete('/materials/{material}', [MaterialController::class, 'destroy'])->
 Route::get('/study', [StudyController::class, 'index'])->name('study.index');
 Route::get('/study/create', [StudyController::class, 'create'])->name('study.create');
 Route::post('/study', [StudyController::class, 'store'])->name('study.store');
+Route::patch('/study/{studySession}/complete', [StudyController::class, 'complete'])->name('study.complete');
 Route::delete('/study/{studySession}', [StudyController::class, 'destroy'])->name('study.destroy');
 
 Route::get('/practice', [PracticeController::class, 'index'])->name('practice.index');

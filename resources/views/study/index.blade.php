@@ -40,6 +40,7 @@
         <div><strong>{{ $topicCount }}</strong><span>tópicos identificados</span></div>
         <div><strong>{{ $sessions->count() }}</strong><span>sessões planeadas</span></div>
         <div><strong>{{ $plannedMinutes }}</strong><span>minutos planeados</span></div>
+        <div><strong>{{ $completedMinutes }}</strong><span>minutos de estudo confirmados</span></div>
     </section>
 
     <main class="grid">
@@ -66,7 +67,9 @@
                             </div>
                         @endif
                         <small>
-                            @if(($session->metadata['execution_evidence'] ?? false))
+                            @if($session->status === 'completed')
+                                Estudo realizado · {{ $session->metadata['actual_minutes'] ?? $session->planned_minutes }} minutos confirmados.
+                            @elseif(($session->metadata['execution_evidence'] ?? false))
                                 Atividade observada no StudyOS · sessão iniciada, não assumida como concluída.
                             @elseif($elapsed)
                                 Janela de estudo decorrida — execução ainda não confirmada.
@@ -76,6 +79,14 @@
                         </small>
                         <div class="study-session-actions">
                             <a href="{{ route('practice.index', ['study_session_id' => $session->id]) }}">Praticar nesta sessão →</a>
+                            @if($session->status !== 'completed' && $session->source === 'manual')
+                                <form method="POST" action="{{ route('study.complete', $session) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <label>Minutos realizados <input type="number" name="actual_minutes" min="1" max="480" required value="{{ $session->planned_minutes }}"></label>
+                                    <button class="button" type="submit">Confirmar estudo realizado</button>
+                                </form>
+                            @endif
                         </div>
                     </div>
                     <form method="POST" action="{{ route('study.destroy', $session) }}" onsubmit="return confirm('Eliminar esta sessão planeada?')">
@@ -93,14 +104,22 @@
             <div class="card-head"><h3>Estados de progresso</h3><span>Separados por evidência</span></div>
             <div class="progress-explainer">
                 <div><strong>Curricular</strong><p>Indica apenas se o tópico foi observado em fontes académicas.</p></div>
-                <div><strong>Estudo</strong><p>Por agora mostra planeamento. Não assume que uma sessão decorrida foi realizada.</p></div>
+                <div><strong>Estudo</strong><p>O tempo realizado só é contabilizado quando confirmas a sessão e a sua duração efetiva.</p></div>
                 <div><strong>Domínio</strong><p>É calculado apenas com tentativas corrigidas. Menos de 3 exercícios distintos continua a ser evidência insuficiente.</p></div>
             </div>
         </section>
 
         <section class="card wide">
+            <p class="muted-text"><strong>Próximo passo sugerido:</strong> começa pelos tópicos já lecionados que ainda não têm domínio demonstrado ou cujo resultado seja frágil. Planeia uma sessão de revisão, responde a exercícios da fonte e confirma a sessão quando a realizares. Tópicos sem fontes ou sem tentativas não são classificados como dominados.</p>
             <div class="card-head"><h3>Matéria identificada</h3><span>{{ $topicCount }} tópicos</span></div>
             @foreach($courses as $course)
+                @if($course->topics->isEmpty())
+                    <div class="topic-course-block">
+                        <div class="topic-course-head"><a href="{{ route('courses.show', $course) }}"><strong>{{ $course->name }}</strong></a><span>0 tópicos</span></div>
+                        <p class="muted-text">Programa por estruturar. Sem tópicos não é possível medir a preparação nem recomendar treino baseado na matéria desta UC.</p>
+                        <a href="{{ route('course-topics.create', $course) }}">+ Registar tópicos da UC</a>
+                    </div>
+                @endif
                 @if($course->topics->isNotEmpty())
                     <div class="topic-course-block">
                         <div class="topic-course-head">
@@ -112,6 +131,9 @@
                                 <article class="topic-card">
                                     <span class="topic-position">{{ str_pad((string) $topic->position, 2, '0', STR_PAD_LEFT) }}</span>
                                     <h3>{{ $topic->title }}</h3>
+                                    @if($topic->taught_at && in_array($topic->mastery?->status ?? 'no_evidence', ['no_evidence', 'insufficient_evidence', 'fragile'], true))
+                                        <p class="muted-text"><strong>Prioridade:</strong> matéria já lecionada, {{ ($topic->mastery?->status ?? 'no_evidence') === 'fragile' ? 'rever os erros e voltar a praticar' : 'precisa de diagnóstico por exercícios' }}.</p>
+                                    @endif
                                     @php
                                         $mastery = $topic->mastery;
                                         $masteryStatus = $mastery?->status ?? 'no_evidence';
@@ -126,7 +148,7 @@
                                     @endphp
                                     <div class="topic-states">
                                         <span class="observed">Curricular · observado</span>
-                                        <span>{{ $topic->study_sessions_count > 0 ? 'Estudo · planeado' : 'Estudo · por planear' }}</span>
+                                        <span>{{ $topic->completed_study_sessions_count > 0 ? 'Estudo · realizado ('.$topic->completed_study_sessions_count.' sessão/ões)' : ($topic->study_sessions_count > 0 ? 'Estudo · planeado' : 'Estudo · por planear') }}</span>
                                         <span class="{{ $masteryStatus === 'no_evidence' ? 'unknown' : 'mastery-evidence' }}">
                                             Domínio · {{ $masteryLabels[$masteryStatus] ?? $masteryStatus }}
                                             @if($mastery?->score_percent !== null)

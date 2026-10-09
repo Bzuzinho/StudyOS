@@ -56,6 +56,25 @@
             <p class="muted-text">Calculado pelas aulas do calendário disponível. Avaliações e aulas canceladas ficam excluídas. Uma aula com hora de fim só conta depois de terminar; sem hora de fim, é usada a hora de início.</p>
         </section>
 
+        <section class="card wide" aria-label="Diagnóstico de conteúdos">
+            <div class="card-head"><h3>Disponibilidade de conteúdos para estudar</h3><a href="{{ route('materials.index', ['course_id' => $course->id], false) }}">Ver materiais desta UC</a></div>
+            <div class="course-meta">
+                <span><strong>{{ $course->materials->count() }}</strong> materiais catalogados</span>
+                <span><strong>{{ $course->downloaded_materials_count }}</strong> com ficheiro</span>
+                <span><strong>{{ $course->extracted_materials_count }}</strong> com texto extraído</span>
+                <span><strong>{{ $course->active_source_chunks_count }}</strong> excertos indexados</span>
+                <span><strong>{{ $course->topics->count() }}</strong> tópicos definidos</span>
+                @if($course->failed_materials_count > 0)<span><strong>{{ $course->failed_materials_count }}</strong> extrações falhadas</span>@endif
+            </div>
+            @if($course->topics->isEmpty())
+                <p class="muted-text"><strong>Programa ainda não estruturado:</strong> esta UC não tem tópicos registados. Os dados sincronizados não foram convertidos automaticamente em matéria curricular. Podes acrescentar tópicos a partir do programa oficial, sem inventar conteúdos.</p>
+                <a class="button primary" href="{{ route('course-topics.create', $course, false) }}">+ Estruturar matéria da UC</a>
+            @elseif($course->active_source_chunks_count === 0)
+                <p class="muted-text">Existem tópicos, mas não há excertos de fonte indexados. O StudyOS não deve gerar perguntas sobre conteúdo que ainda não conseguiu ler. Confirma os ficheiros no separador Materiais.</p>
+            @endif
+            <p class="muted-text">Um material catalogado não é necessariamente um ficheiro descarregado ou um texto utilizável. Estes valores são calculados a partir do estado persistido na aplicação.</p>
+        </section>
+
         <section class="card wide" id="course-topics">
             <div class="card-head"><h3>Matéria lecionada e preparação</h3><a class="button" href="{{ route('course-topics.create', $course, false) }}">+ Acrescentar tópico</a></div>
             <p class="muted-text">{{ $course->topics->whereNotNull('taught_at')->count() }} de {{ $course->topics->count() }} tópicos registados marcados como lecionados. Seleciona a matéria já dada nas aulas e guarda a seleção.</p>
