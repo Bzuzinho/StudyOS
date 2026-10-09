@@ -3,6 +3,7 @@
 namespace App\Services\Moodle;
 
 use App\Models\Material;
+use App\Services\Academic\SourceBackedTopicBuilder;
 use App\Models\SourceCourse;
 use App\Models\SyncConnection;
 use App\Models\SyncRun;
@@ -16,6 +17,7 @@ class MoodleWebServiceSyncService
         private readonly MoodleWebServiceClient $client,
         private readonly MoodleCourseContentParser $parser,
         private readonly MoodleApiFileSynchronizer $files,
+        private readonly SourceBackedTopicBuilder $topics,
     ) {}
 
     public function sync(SyncConnection $connection, ?SyncRun $run = null): SyncRun
@@ -106,6 +108,8 @@ class MoodleWebServiceSyncService
                     $seenExternalIds,
                 );
 
+                // Build provisional topics only from sections and summaries actually observed.
+                $this->topics->build($sourceCourse->course);
                 $stats['courses_scanned']++;
             }
 

@@ -7,6 +7,8 @@ use App\Services\Academic\AssessmentCalendarBootstrapper;
 use App\Services\Academic\LearningContextBootstrapper;
 use App\Services\Academic\MoodleAuditBootstrapper;
 use App\Services\Academic\TopicBootstrapper;
+use App\Services\Academic\SourceBackedTopicBuilder;
+use App\Models\Course;
 use App\Services\Calendar\ICalendarSyncService;
 use App\Services\Learning\CorpusBuilder;
 use App\Services\Moodle\MoodleAuthenticatedClient;
@@ -70,6 +72,19 @@ Artisan::command('studyos:bootstrap-topics', function () {
 
     return 0;
 })->purpose('Bootstrap topics explicitly supported by audited academic sources');
+
+Artisan::command('studyos:build-source-topics', function () {
+    $stats = ['courses' => 0, 'created' => 0, 'skipped' => 0];
+    $builder = app(SourceBackedTopicBuilder::class);
+    Course::query()->where('status', 'active')->each(function (Course $course) use (&$stats, $builder) {
+        $result = $builder->build($course);
+        $stats['courses']++;
+        $stats['created'] += $result['created'];
+        $stats['skipped'] += $result['skipped'];
+    });
+    $this->info('Source-backed provisional topics: '.json_encode($stats, JSON_UNESCAPED_UNICODE));
+    return 0;
+})->purpose('Derive provisional topics only from observed academic materials and summaries');
 
 Artisan::command('studyos:rebuild-corpus', function () {
     $stats = app(CorpusBuilder::class)->rebuildAll();
@@ -266,6 +281,8 @@ Artisan::command('studyos:deploy-prepare {--rebuild-learning : Rebuild all sourc
 
         $topics = app(TopicBootstrapper::class)->run();
         $this->info('Topics ready: '.json_encode($topics, JSON_UNESCAPED_UNICODE));
+
+        $this->call('studyos:build-source-topics');
 
         // Imported documents already rebuild their own corpus in the worker.
         // Reprocessing every document here can exhaust Railway's pre-deploy timeout.
