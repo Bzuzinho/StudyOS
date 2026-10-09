@@ -27,6 +27,7 @@ class StudyController
                     ->with('mastery')
                     ->withCount([
                         'studySessions',
+                        'studySessions as completed_study_sessions_count' => fn ($sessions) => $sessions->where('status', 'completed'),
                         'exercises',
                         'sourceChunks as source_chunks_count' => fn ($sourceQuery) => $sourceQuery
                             ->where('source_chunks.status', 'active'),
