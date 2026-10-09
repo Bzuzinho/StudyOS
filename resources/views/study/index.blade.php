@@ -110,6 +110,7 @@
         </section>
 
         <section class="card wide">
+            <p class="muted-text"><strong>Próximo passo sugerido:</strong> começa pelos tópicos já lecionados que ainda não têm domínio demonstrado ou cujo resultado seja frágil. Planeia uma sessão de revisão, responde a exercícios da fonte e confirma a sessão quando a realizares. Tópicos sem fontes ou sem tentativas não são classificados como dominados.</p>
             <div class="card-head"><h3>Matéria identificada</h3><span>{{ $topicCount }} tópicos</span></div>
             @foreach($courses as $course)
                 @if($course->topics->isEmpty())
@@ -130,6 +131,9 @@
                                 <article class="topic-card">
                                     <span class="topic-position">{{ str_pad((string) $topic->position, 2, '0', STR_PAD_LEFT) }}</span>
                                     <h3>{{ $topic->title }}</h3>
+                                    @if($topic->taught_at && in_array($topic->mastery?->status ?? 'no_evidence', ['no_evidence', 'insufficient_evidence', 'fragile'], true))
+                                        <p class="muted-text"><strong>Prioridade:</strong> matéria já lecionada, {{ ($topic->mastery?->status ?? 'no_evidence') === 'fragile' ? 'rever os erros e voltar a praticar' : 'precisa de diagnóstico por exercícios' }}.</p>
+                                    @endif
                                     @php
                                         $mastery = $topic->mastery;
                                         $masteryStatus = $mastery?->status ?? 'no_evidence';
@@ -144,7 +148,7 @@
                                     @endphp
                                     <div class="topic-states">
                                         <span class="observed">Curricular · observado</span>
-                                        <span>{{ $topic->study_sessions_count > 0 ? 'Estudo · planeado' : 'Estudo · por planear' }}</span>
+                                        <span>{{ $topic->completed_study_sessions_count > 0 ? 'Estudo · realizado ('.$topic->completed_study_sessions_count.' sessão/ões)' : ($topic->study_sessions_count > 0 ? 'Estudo · planeado' : 'Estudo · por planear') }}</span>
                                         <span class="{{ $masteryStatus === 'no_evidence' ? 'unknown' : 'mastery-evidence' }}">
                                             Domínio · {{ $masteryLabels[$masteryStatus] ?? $masteryStatus }}
                                             @if($mastery?->score_percent !== null)
