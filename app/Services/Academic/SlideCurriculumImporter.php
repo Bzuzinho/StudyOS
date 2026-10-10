@@ -32,7 +32,7 @@ class SlideCurriculumImporter
                 continue;
             }
             $number = (int) $m[1];
-            if ($extension === 'pdf' && ! preg_match('/slide|diapositivo/i', ($version->material?->title ?? '').' '.($version->original_filename ?? ''))) {
+            if ($extension === 'pdf' && ! preg_match('/slide|diapositivo/i', ($version->material?->title ?? '').' '.($version->original_filename ?? '').' '.($version->material?->metadata['moodle_section_name'] ?? ''))) {
                 continue;
             }
             $topic = Topic::firstOrNew([
