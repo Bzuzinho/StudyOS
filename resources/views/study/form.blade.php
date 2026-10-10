@@ -37,7 +37,7 @@
         </div>
     @endif
 
-    <form class="event-form card" method="POST" action="{{ route('study.store') }}">
+    <form class="event-form card" method="POST" action="{{ route('study.store', [], false) }}">
         @csrf
 
         <div class="form-grid">
@@ -86,6 +86,10 @@
 
             <fieldset class="field span-2 topic-selector">
                 <legend>Tópicos <small>opcional</small></legend>
+                <div class="topic-selection-actions">
+                    <button type="button" class="button ghost" id="select-all-study-topics">Selecionar tudo</button>
+                    <button type="button" class="button ghost" id="clear-all-study-topics">Desselecionar tudo</button>
+                </div>
                 @foreach($courses as $course)
                     @if($course->topics->isNotEmpty())
                         <div class="topic-options" data-course="{{ $course->id }}">
@@ -99,7 +103,7 @@
                         </div>
                     @endif
                 @endforeach
-                <p class="field-hint">Só são apresentados tópicos já suportados pelas fontes académicas recolhidas.</p>
+                <p class="field-hint">Só são apresentados os tópicos confirmados como lecionados nesta UC. Se não aparecer nenhum, assinala primeiro a matéria na ficha da UC.</p>
             </fieldset>
 
             <label class="field span-2">
@@ -130,6 +134,14 @@
         });
     };
 
+    document.getElementById('select-all-study-topics').addEventListener('click', () => {
+        groups.filter(group => !group.hidden).forEach(group =>
+            group.querySelectorAll('input[type="checkbox"]').forEach(input => input.checked = true));
+    });
+    document.getElementById('clear-all-study-topics').addEventListener('click', () => {
+        groups.filter(group => !group.hidden).forEach(group =>
+            group.querySelectorAll('input[type="checkbox"]').forEach(input => input.checked = false));
+    });
     course.addEventListener('change', refresh);
     refresh();
 })();
