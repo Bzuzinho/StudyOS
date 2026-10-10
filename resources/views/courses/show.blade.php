@@ -37,7 +37,7 @@
                 <span class="status-pill {{ $course->status }}">{{ $course->status === 'active' ? 'Ativa' : 'Planeada' }}</span>
             </div>
             <h1>{{ $course->name }}</h1>
-            <p>{{ $course->semester }}.º semestre@if($course->ects) · {{ $course->ects }} ECTS@endif</p>
+            <p>{{ $course->semester }}.º semestre @if($course->ects) · {{ $course->ects }} ECTS @endif</p>
         </div>
         <div class="course-hero-metrics">
             <div><strong>{{ $course->classOccurrences->count() }}</strong><span>aulas</span></div>
@@ -88,7 +88,12 @@
                 @forelse($course->topics as $topic)
                     <article class="topic-card">
                         <span class="topic-position">{{ str_pad((string) $topic->position, 2, '0', STR_PAD_LEFT) }}</span>
-                        <h3>{{ $topic->title }}</h3>
+                        <h3>@if(($topic->metadata['curricular_number'] ?? null)){{ $topic->metadata['curricular_number'] }} · @endif{{ $topic->title }}</h3>
+                        @if($topic->source === 'official_fuc')
+                            <small>Programa oficial da UC · não implica matéria lecionada</small>
+                        @elseif($topic->source === 'source_backed')
+                            <small>Sumário académico · tópico provisório</small>
+                        @endif
                         <input type="hidden" form="taught-topics" name="topic_ids[]" value="{{ $topic->id }}">
                         <label class="taught-topic-option">
                             <input type="checkbox" form="taught-topics" name="taught_topic_ids[]" value="{{ $topic->id }}" @checked(old('topic_ids') !== null ? in_array($topic->id, (array) old('taught_topic_ids', [])) : $topic->taught_at !== null)>
