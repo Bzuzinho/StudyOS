@@ -59,7 +59,7 @@ class PracticeController
         $topics = Topic::query()
             ->with(['course', 'mastery'])
             ->withCount([
-                'exercises',
+                'exercises' => fn ($query) => $query->where('status', 'active'),
                 'studySessions',
                 'sourceChunks as source_chunks_count' => fn ($query) => $query
                     ->where('source_chunks.status', 'active'),
@@ -72,7 +72,22 @@ class PracticeController
             ->orderBy('position')
             ->get();
 
+        $diagnostics = Course::query()->where('status', 'active')->orderBy('name')->get()
+            ->map(function (Course $course) use ($topics) {
+                $courseTopics = $topics->where('course_id', $course->id);
+                return [
+                    'course' => $course,
+                    'topics' => $courseTopics->count(),
+                    'taught' => $courseTopics->whereNotNull('taught_at')->count(),
+                    'with_exercises' => $courseTopics->filter(fn (Topic $topic) => $topic->exercises_count > 0)->count(),
+                    'source_ready' => $courseTopics->filter(fn (Topic $topic) => $topic->rich_source_chunks_count > 0)->count(),
+                    'assessed' => $courseTopics->filter(fn (Topic $topic) => in_array($topic->mastery?->status, ['fragile', 'developing', 'competent', 'strong'], true))->count(),
+                    'needs_diagnosis' => $courseTopics->filter(fn (Topic $topic) => $topic->taught_at !== null && ! in_array($topic->mastery?->status, ['fragile', 'developing', 'competent', 'strong'], true))->count(),
+                ];
+            });
+
         return view('practice.index', [
+            'diagnostics' => $diagnostics,
             'exercises' => $exerciseQuery->latest('updated_at')->get(),
             'topics' => $topics,
             'recentAttempts' => ExerciseAttempt::query()
