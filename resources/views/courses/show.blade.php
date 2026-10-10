@@ -75,6 +75,26 @@
             <p class="muted-text">Um material catalogado não é necessariamente um ficheiro descarregado ou um texto utilizável. Estes valores são calculados a partir do estado persistido na aplicação.</p>
         </section>
 
+        @if($missingStudySources->isNotEmpty())
+            <section class="card wide" id="missing-study-content">
+                <div class="card-head">
+                    <h3>Precisamos de mais matéria para estudar</h3>
+                    <a href="{{ route('materials.create', ['course_id' => $course->id], false) }}">+ Adicionar apontamentos ou documentos</a>
+                </div>
+                <p class="muted-text">Identifiquei {{ $missingStudySources->count() }} tópico(s) já lecionado(s) sem conteúdo explicativo detalhado associado. Os slides podem resumir os conceitos sem os desenvolver. Tens apontamentos, páginas de um manual, fichas de exercícios ou outros documentos destas matérias? Podes carregar um ficheiro ou colar texto, sem sair da UC.</p>
+                <div class="topic-chips">
+                    @foreach($missingStudySources->take(8) as $missingTopic)
+                        <span>{{ $missingTopic->title }}</span>
+                    @endforeach
+                </div>
+                @if($missingStudySources->count() > 8)
+                    <p class="muted-text">E mais {{ $missingStudySources->count() - 8 }} tópico(s).</p>
+                @endif
+                <p class="muted-text">Este aviso significa que ainda não há texto detalhado ligado aos tópicos, não que os materiais importados estejam necessariamente vazios. Quando adicionares conteúdo, o StudyOS terá de o extrair e associar à matéria correta antes de poder considerá-lo apto para treino.</p>
+                <a class="button primary" href="{{ route('materials.create', ['course_id' => $course->id], false) }}">Adicionar conteúdo desta UC</a>
+            </section>
+        @endif
+
         <section class="card wide" id="course-topics">
             <div class="card-head"><h3>Matéria lecionada e preparação</h3><a class="button" href="{{ route('course-topics.create', $course, false) }}">+ Acrescentar tópico</a></div>
             <p class="muted-text">{{ $course->topics->whereNotNull('taught_at')->count() }} de {{ $course->topics->count() }} tópicos registados marcados como lecionados. Seleciona a matéria já dada nas aulas e guarda a seleção.</p>

@@ -52,7 +52,7 @@ class MaterialController
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         return view('materials.form', [
             'material' => new Material(),
@@ -60,6 +60,7 @@ class MaterialController
             'types' => $this->types(),
             'contentText' => '',
             'latestVersion' => null,
+            'selectedCourseId' => $request->integer('course_id') ?: null,
         ]);
     }
 

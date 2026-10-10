@@ -47,7 +47,7 @@
                 <select name="course_id" required>
                     <option value="">Selecionar UC…</option>
                     @foreach($courses as $course)
-                        <option value="{{ $course->id }}" @selected((string) old('course_id', $material->course_id) === (string) $course->id)>{{ $course->name }}</option>
+                        <option value="{{ $course->id }}" @selected((string) old('course_id', $material->course_id ?: ($selectedCourseId ?? null)) === (string) $course->id)>{{ $course->name }}</option>
                     @endforeach
                 </select>
             </label>
