@@ -9,6 +9,7 @@ use App\Services\Academic\MoodleAuditBootstrapper;
 use App\Services\Academic\TopicBootstrapper;
 use App\Services\Academic\SourceBackedTopicBuilder;
 use App\Services\Academic\FucCurriculumImporter;
+use App\Services\Academic\SlideCurriculumImporter;
 use App\Models\Course;
 use App\Services\Calendar\ICalendarSyncService;
 use App\Services\Learning\CorpusBuilder;
@@ -107,6 +108,22 @@ Artisan::command('studyos:import-fuc', function () {
     $this->info('Official FUC curricula: '.json_encode($stats, JSON_UNESCAPED_UNICODE));
     return 0;
 })->purpose('Import hierarchical UC programme from already extracted official FUC materials');
+
+Artisan::command('studyos:import-slides', function () {
+    $stats = ['scanned' => 0, 'created' => 0, 'updated' => 0];
+    MaterialVersion::query()->whereNotNull('content_text')->whereNotNull('original_filename')
+        ->where('original_filename', 'like', '%.pptx')->with('material')
+        ->chunkById(100, function ($versions) use (&$stats) {
+            foreach ($versions as $version) {
+                $result = app(SlideCurriculumImporter::class)->import($version);
+                $stats['scanned']++;
+                $stats['created'] += $result['created'];
+                $stats['updated'] += $result['updated'];
+            }
+        });
+    $this->info('Slide topics: '.json_encode($stats, JSON_UNESCAPED_UNICODE));
+    return 0;
+})->purpose('Index slides from already-extracted Moodle PowerPoint files');
 
 Artisan::command('studyos:rebuild-corpus', function () {
     $stats = app(CorpusBuilder::class)->rebuildAll();
@@ -306,6 +323,7 @@ Artisan::command('studyos:deploy-prepare {--rebuild-learning : Rebuild all sourc
 
         $this->call('studyos:build-source-topics');
         $this->call('studyos:import-fuc');
+        $this->call('studyos:import-slides');
 
         // Imported documents already rebuild their own corpus in the worker.
         // Reprocessing every document here can exhaust Railway's pre-deploy timeout.
