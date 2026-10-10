@@ -12,13 +12,13 @@ class SlideCurriculumImporter
         $courseId = $version->material?->course_id;
         $sections = $version->metadata['sections'] ?? [];
         $extension = strtolower(pathinfo((string) $version->original_filename, PATHINFO_EXTENSION));
-        if (! $courseId || $extension !== 'pptx' || ! is_array($sections) || ! $version->content_text) {
+        if (! $courseId || ! in_array($extension, ['pptx', 'pdf'], true) || ! is_array($sections) || ! $version->content_text) {
             return ['created' => 0, 'updated' => 0];
         }
 
         $stats = ['created' => 0, 'updated' => 0];
         foreach ($sections as $section) {
-            if (! preg_match('/^Slide ([0-9]+)$/', (string) ($section['locator'] ?? ''), $m)) {
+            if (! preg_match('/^(?:Slide|Página) ([0-9]+)$/u', (string) ($section['locator'] ?? ''), $m)) {
                 continue;
             }
             $start = (int) ($section['start'] ?? -1);
@@ -32,6 +32,9 @@ class SlideCurriculumImporter
                 continue;
             }
             $number = (int) $m[1];
+            if ($extension === 'pdf' && ! preg_match('/slide|diapositivo/i', ($version->material?->title ?? '').' '.($version->original_filename ?? ''))) {
+                continue;
+            }
             $topic = Topic::firstOrNew([
                 'source' => 'moodle_slide',
                 'external_id' => $version->material_id.':slide:'.$number,
