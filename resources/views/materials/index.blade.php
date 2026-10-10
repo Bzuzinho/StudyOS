@@ -80,7 +80,7 @@
                         {{ $material->source === 'manual' ? 'Manual' : ($material->source === 'moodle' ? 'Moodle' : 'Fonte auditada') }}
                     </span>
                 </div>
-                <h2>{{ $material->title }}</h2>
+                <h2><a href="{{ $latestVersion?->storage_path ? route('materials.download', ['material' => $material, 'version' => $latestVersion], false) : ($material->url ?: '#') }}">{{ $material->title }}</a></h2>
                 <a class="material-course" href="{{ route('courses.show', $material->course, false) }}">{{ $material->course?->name }}</a>
 
                 @if($notes)

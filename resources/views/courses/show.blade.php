@@ -275,7 +275,7 @@
                             <span class="material-type">{{ strtoupper($material->type) }}</span>
                             <span class="source-pill {{ $material->source === 'manual' ? 'manual' : '' }}">{{ $material->source === 'manual' ? 'Manual' : ($material->source === 'moodle' ? 'Moodle' : 'Fonte auditada') }}</span>
                         </div>
-                        <strong>{{ $material->title }}</strong>
+                        <strong><a href="{{ $latestVersion?->storage_path ? route('materials.download', ['material' => $material, 'version' => $latestVersion], false) : ($material->url ?: '#') }}">{{ $material->title }}</a></strong>
                         @if($latestVersion)
                             <small>{{ $latestVersion->version_label ?: 'Versão observada' }}</small>
                             @if($latestVersion->storage_path)

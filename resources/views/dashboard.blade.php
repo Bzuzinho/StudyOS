@@ -23,7 +23,7 @@
     </nav>
 
     <header class="topbar">
-        <div><p class="eyebrow">StudyOS · Alpha 0.17</p><h1>Painel académico</h1></div>
+        <div><p class="eyebrow">Painel de estudos</p><h1>Painel académico</h1></div>
         <div class="sync {{ $lastSync?->status === 'success' ? 'ok' : '' }}"><span></span>{{ $lastSync ? 'Última sincronização: '.$lastSync->started_at?->copy()->timezone(config('app.timezone'))->format('d/m H:i') : 'Sincronização ainda não configurada' }}</div>
     </header>
 
@@ -31,7 +31,7 @@
         <div>
             <p class="eyebrow">Semestre atual</p>
             <h2>{{ $courseCount }} UCs ativas</h2>
-            <p>{{ $plannedCourseCount }} UCs já registadas para o 2.º semestre. Agenda, avaliações e progresso passam a ficar associados à UC correta.</p>
+            <p>Consulta aulas, avaliações, tarefas e sessões de estudo.</p>
         </div>
         <div class="metric"><strong>{{ $todayClasses->count() }}</strong><span>aulas hoje</span></div>
         <div class="metric"><strong>{{ $todayAssessmentCount }}</strong><span>avaliações hoje</span></div>
@@ -176,26 +176,6 @@
             </div>
         </section>
 
-        <section class="card wide">
-            <div class="card-head"><h3>Roadmap Alpha</h3><span>0.17</span></div>
-            <div class="roadmap">
-                <div class="done"><b>01</b><span>Fundação de dados</span></div>
-                <div class="done"><b>02</b><span>iCalendar InforEstudante</span></div>
-                <div class="done"><b>03</b><span>Calendário visual</span></div>
-                <div class="done"><b>04</b><span>UCs e associação automática</span></div>
-                <div class="done"><b>05</b><span>Avaliações oficiais</span></div>
-                <div class="done"><b>06</b><span>Moodle e atividades</span></div>
-                <div class="done"><b>07</b><span>Fiabilidade da sincronização</span></div>
-                <div class="done"><b>08</b><span>Materiais e contexto de aprendizagem</span></div>
-                <div class="done"><b>09</b><span>Tópicos e planeamento de estudo</span></div>
-                <div class="done"><b>10</b><span>Exercícios, tentativas e domínio</span></div>
-                <div class="done"><b>11</b><span>Corpus com proveniência e prática fundamentada</span></div>
-                <div class="done"><b>12</b><span>Upload cloud e extração de documentos</span></div>
-                <div class="done"><b>13</b><span>Extração assíncrona e worker cloud</span></div>
-                <div class="active"><b>14</b><span>Recolha Moodle — validação real pendente</span></div>
-                <div class="active"><b>15</b><span>Autenticação ULO em janela gerida e recolha manual</span></div>
-            </div>
-        </section>
     </main>
 </div>
 </body>

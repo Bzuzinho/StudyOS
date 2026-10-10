@@ -85,7 +85,7 @@
                                     <input type="checkbox" name="source_chunk_ids[]" value="{{ $chunk->id }}" @checked(in_array($chunk->id, $oldSources))>
                                     <span>
                                         <strong>{{ $chunk->title ?: 'Fonte académica' }}</strong>
-                                        <small>{{ $chunk->locator }} · {{ $chunk->quality === 'content' ? 'conteúdo detalhado' : 'esquema / confirmação de tópico' }} · {{ IlluminateSupportStr::limit($chunk->content, 110) }}</small>
+                                        <small>{{ $chunk->locator }} · {{ $chunk->quality === 'content' ? 'conteúdo detalhado' : 'esquema / confirmação de tópico' }} · {{ \Illuminate\Support\Str::limit($chunk->content, 110) }}</small>
                                     </span>
                                 </label>
                             @endforeach
