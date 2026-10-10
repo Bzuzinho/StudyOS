@@ -89,6 +89,10 @@ class CourseController
                 ->limit(24),
         ]);
 
+        $missingStudySources = $course->topics
+            ->filter(fn ($topic) => $topic->taught_at !== null && $topic->rich_source_chunks_count === 0)
+            ->values();
+
         $now = now();
         $upcomingClasses = $course->classOccurrences
             ->filter(fn ($event) => $event->starts_at->gte($now))
@@ -102,6 +106,7 @@ class CourseController
             'course' => $course,
             'upcomingClasses' => $upcomingClasses,
             'recentClasses' => $recentClasses,
+            'missingStudySources' => $missingStudySources,
         ]);
     }
 }
