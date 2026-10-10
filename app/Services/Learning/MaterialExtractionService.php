@@ -92,8 +92,8 @@ class MaterialExtractionService
             $version = $version->fresh(['material']);
 
             $this->curriculum->import($version);
-            $this->slides->import($version);
             $this->corpusBuilder->rebuildMaterialVersion($version);
+            $this->slides->import($version);
 
             if ($version->material?->course_id) {
                 $this->generator->generateForCourse($version->material->course_id);
