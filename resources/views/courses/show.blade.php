@@ -75,6 +75,15 @@
             <p class="muted-text">Um material catalogado não é necessariamente um ficheiro descarregado ou um texto utilizável. Estes valores são calculados a partir do estado persistido na aplicação.</p>
         </section>
 
+        <section class="card wide">
+            <div class="card-head"><h3>O meu nível nesta UC</h3><a href="/practice?course_id={{ $course->id }}">Ver prática</a></div>
+            @if($meanMastery === null)
+                <p>Por avaliar — ainda não há exercícios corrigidos suficientes nos tópicos lecionados.</p>
+            @else
+                <strong>{{ number_format($meanMastery, 1, ',', '.') }}%</strong>
+                <p>{{ $assessedTopicsCount }} de {{ $taughtTopicsCount }} tópicos lecionados avaliados. A média inclui apenas tópicos com evidência suficiente.</p>
+            @endif
+        </section>
         <section class="card wide" id="course-topics">
             <div class="card-head"><h3>Matéria lecionada e preparação</h3><a class="button" href="{{ route('course-topics.create', $course, false) }}">+ Acrescentar tópico</a></div>
             <p class="muted-text">{{ $course->topics->whereNotNull('taught_at')->count() }} de {{ $course->topics->count() }} tópicos registados marcados como lecionados. Seleciona a matéria já dada nas aulas e guarda a seleção.</p>
