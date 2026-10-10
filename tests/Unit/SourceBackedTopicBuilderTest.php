@@ -30,7 +30,7 @@ class SourceBackedTopicBuilderTest extends TestCase
         $this->artisan('migrate', ['--force' => true])->assertExitCode(0);
     }
 
-    public function test_observed_sections_produce_idempotent_provisional_topics_without_fabricating_syllabus(): void
+    public function test_moodle_folders_do_not_become_curricular_topics(): void
     {
         $course = Course::create(['name' => 'Macroeconomia', 'status' => 'active']);
         Material::create([
@@ -46,13 +46,8 @@ class SourceBackedTopicBuilderTest extends TestCase
             'metadata' => ['moodle_section_name' => 'Geral'],
         ]);
         $builder = app(SourceBackedTopicBuilder::class);
-        $this->assertSame(1, $builder->build($course)['created']);
         $this->assertSame(0, $builder->build($course)['created']);
-        $topic = $course->topics()->firstOrFail();
-        $this->assertSame('Contas Nacionais e Produto Interno Bruto', $topic->title);
-        $this->assertTrue($topic->metadata['provisional']);
-        $this->assertFalse($topic->metadata['official_syllabus_verified']);
-        $this->assertNull($topic->taught_at);
+        $this->assertSame(0, $course->topics()->count());
     }
 
     public function test_actual_lesson_summary_lines_can_populate_a_uc_without_claiming_taught_progress(): void
