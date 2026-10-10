@@ -4,6 +4,7 @@ namespace Tests\Unit;
 use App\Models\Course;
 use App\Models\Material;
 use App\Models\MaterialVersion;
+use App\Models\SourceChunk;
 use App\Services\Academic\SlideCurriculumImporter;
 use Illuminate\Foundation\Testing\TestCase;
 
@@ -42,10 +43,21 @@ class SlideCurriculumImporterTest extends TestCase
                 ['locator' => 'Slide 2', 'start' => mb_strpos($text, 'Inflação'), 'length' => mb_strlen("Inflação\nÍndice de preços e exemplos")],
             ]],
         ]);
+        SourceChunk::create([
+            'course_id' => $course->id,
+            'material_version_id' => $version->id,
+            'ordinal' => 1,
+            'locator' => 'Slide 1',
+            'content' => 'Produto Interno Bruto',
+            'content_hash' => hash('sha256', 'Produto Interno Bruto'),
+            'quality' => 'content',
+            'status' => 'active',
+        ]);
         $importer = app(SlideCurriculumImporter::class);
         $this->assertSame(2, $importer->import($version)['created']);
         $this->assertSame(0, $importer->import($version)['created']);
         $this->assertSame(2, $course->topics()->where('source', 'moodle_slide')->count());
+        $this->assertSame(1, $course->topics()->where('external_id', $material->id.':slide:1')->firstOrFail()->sourceChunks()->count());
         $this->assertSame(0, $course->topics()->whereNotNull('taught_at')->count());
     }
 }
