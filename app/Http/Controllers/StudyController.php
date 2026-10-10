@@ -60,7 +60,7 @@ class StudyController
     {
         $courses = Course::query()
             ->where('status', 'active')
-            ->with(['topics' => fn ($query) => $query->where('status', 'active')->orderBy('position')])
+            ->with(['topics' => fn ($query) => $query->where('status', 'active')->whereNotNull('taught_at')->orderBy('position')])
             ->orderBy('name')
             ->get();
 
@@ -93,6 +93,7 @@ class StudyController
                 ->whereIn('id', $topicIds)
                 ->where('course_id', $data['course_id'])
                 ->where('status', 'active')
+                ->whereNotNull('taught_at')
                 ->count();
 
             if ($validTopicCount !== count($topicIds)) {
@@ -138,7 +139,7 @@ class StudyController
                     'title' => $session->title ?: 'Estudo · '.$course->name,
                     'location' => null,
                     'starts_at' => $startsAt,
-                    'ends_at' => $startsAt->copy()->addMinutes($session->planned_minutes),
+                    'ends_at' => $startsAt->copy()->addMinutes((int) $session->planned_minutes),
                     'status' => 'scheduled',
                     'last_seen_at' => now(),
                     'source_payload' => [

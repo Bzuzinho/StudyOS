@@ -42,6 +42,6 @@ class StudySession extends Model
 
     public function localEndsAt(): Carbon
     {
-        return $this->localStartsAt()->addMinutes($this->planned_minutes);
+        return $this->localStartsAt()->addMinutes((int) $this->planned_minutes);
     }
 }
