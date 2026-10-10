@@ -4,6 +4,7 @@ namespace App\Services\Learning;
 
 use App\Models\MaterialVersion;
 use App\Services\Academic\FucCurriculumImporter;
+use App\Services\Academic\SlideCurriculumImporter;
 use App\Services\Practice\GroundedPracticeGenerator;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -16,6 +17,7 @@ class MaterialExtractionService
         private readonly CorpusBuilder $corpusBuilder,
         private readonly GroundedPracticeGenerator $generator,
         private readonly FucCurriculumImporter $curriculum,
+        private readonly SlideCurriculumImporter $slides,
     ) {}
 
     public function process(MaterialVersion $version): MaterialVersion
@@ -90,6 +92,7 @@ class MaterialExtractionService
             $version = $version->fresh(['material']);
 
             $this->curriculum->import($version);
+            $this->slides->import($version);
             $this->corpusBuilder->rebuildMaterialVersion($version);
 
             if ($version->material?->course_id) {
