@@ -112,7 +112,7 @@ Artisan::command('studyos:import-fuc', function () {
 Artisan::command('studyos:import-slides', function () {
     $stats = ['scanned' => 0, 'created' => 0, 'updated' => 0];
     MaterialVersion::query()->whereNotNull('content_text')->whereNotNull('original_filename')
-        ->where('original_filename', 'like', '%.pptx')->with('material')
+        ->where(function ($q) { $q->where('original_filename', 'like', '%.pptx')->orWhere('original_filename', 'like', '%.pdf'); })->with('material')
         ->chunkById(100, function ($versions) use (&$stats) {
             foreach ($versions as $version) {
                 $result = app(SlideCurriculumImporter::class)->import($version);
