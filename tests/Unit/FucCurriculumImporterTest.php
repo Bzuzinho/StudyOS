@@ -40,7 +40,7 @@ class FucCurriculumImporterTest extends TestCase
             'title' => 'Ficha da Unidade Curricular (FUC)', 'status' => 'active',
         ]);
         $version = MaterialVersion::create([
-            'material_id' => $material->id, 'source_hash' => 'file-hash-fuc',
+            'material_id' => $material->id, 'source_hash' => 'file-hash-fuc', 'observed_at' => now(),
             'original_filename' => 'Programa_Introducao_Gestao_2026.pdf',
             'content_text' => "1. Identificação da UC\n4. Programa analítico\n1. Fundamentos da gestão das organizações\n1.1. A Gestão e o Gestor\n1.1.1. Conceito de Gestão\n2. Evolução do pensamento em gestão\n2.1. Abordagem Clássica\n5. Metodologias de ensino e aprendizagem\n1. Outras considerações",
         ]);
@@ -64,7 +64,7 @@ class FucCurriculumImporterTest extends TestCase
             'course_id' => $course->id, 'source' => 'moodle', 'external_id' => 'slides', 'title' => 'Slides da aula', 'status' => 'active',
         ]);
         $version = MaterialVersion::create([
-            'material_id' => $material->id, 'source_hash' => 'slides',
+            'material_id' => $material->id, 'source_hash' => 'slides', 'observed_at' => now(),
             'content_text' => "4. Programa analítico\n1. Um título de slides\n1.1. Tópico da aula\n2. Outro título",
         ]);
         $this->assertFalse(app(FucCurriculumImporter::class)->import($version)['recognized']);
