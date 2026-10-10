@@ -62,6 +62,37 @@
     </form>
 
     <main class="grid">
+        <section class="card wide" id="diagnostic">
+            <div class="card-head"><h3>Diagnóstico inicial por UC</h3><span>Preparação baseada em evidência</span></div>
+            <p class="muted-text">Tópicos lecionados, exercícios disponíveis e domínio demonstrado são indicadores diferentes. Sem três exercícios distintos corrigidos, o nível continua por determinar.</p>
+            <div class="topic-grid">
+                @foreach($diagnostics as $diagnostic)
+                    <article class="topic-card">
+                        <h3><a href="{{ route('courses.show', $diagnostic['course']) }}">{{ $diagnostic['course']->name }}</a></h3>
+                        <div class="topic-states">
+                            <span>{{ $diagnostic['taught'] }}/{{ $diagnostic['topics'] }} tópicos lecionados</span>
+                            <span>{{ $diagnostic['with_exercises'] }} com exercícios</span>
+                            <span>{{ $diagnostic['source_ready'] }} com fonte para gerar treino</span>
+                            <span>{{ $diagnostic['assessed'] }} com domínio demonstrado</span>
+                            <span>{{ $diagnostic['needs_diagnosis'] }} lecionados por diagnosticar</span>
+                        </div>
+                        @if($diagnostic['topics'] === 0)
+                            <p class="muted-text">Ainda não há tópicos estruturados. É necessário importar ou registar o programa.</p>
+                            <a href="{{ route('course-topics.create', $diagnostic['course']) }}">Estruturar matéria →</a>
+                        @elseif($diagnostic['taught'] === 0)
+                            <p class="muted-text">Confirma primeiro a matéria já lecionada nesta UC.</p>
+                            <a href="{{ route('courses.show', $diagnostic['course']) }}#course-topics">Assinalar matéria lecionada →</a>
+                        @elseif($diagnostic['source_ready'] === 0 && $diagnostic['with_exercises'] === 0)
+                            <p class="muted-text">Ainda não há material indexado nem exercícios ligados aos tópicos. Não é possível realizar diagnóstico automático fiável.</p>
+                            <a href="{{ route('materials.index', ['course_id' => $diagnostic['course']->id]) }}">Verificar materiais →</a>
+                        @else
+                            <a href="{{ route('practice.index', ['course_id' => $diagnostic['course']->id]) }}">Abrir exercícios desta UC →</a>
+                        @endif
+                    </article>
+                @endforeach
+            </div>
+        </section>
+
         <section class="card wide">
             <div class="card-head"><h3>Domínio por tópico</h3><span>baseado em tentativas corrigidas</span></div>
             <div class="mastery-grid">
