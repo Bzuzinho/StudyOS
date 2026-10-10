@@ -54,6 +54,17 @@ class SlideCurriculumImporter
                     'slide_number' => $number,
                 ],
             ])->save();
+            $locator = $extension === 'pdf' ? 'Página '.$number : 'Slide '.$number;
+            $chunks = $version->sourceChunks()->where('status', 'active')
+                ->where(function ($query) use ($locator) {
+                    $query->where('locator', $locator)
+                        ->orWhere('locator', 'like', $locator.' ·%');
+                })->pluck('id')->all();
+            if ($chunks !== []) {
+                $topic->sourceChunks()->syncWithoutDetaching(
+                    array_fill_keys($chunks, ['match_method' => 'slide_locator', 'confidence' => 1.0])
+                );
+            }
             $stats[$existing ? 'updated' : 'created']++;
         }
         return $stats;
