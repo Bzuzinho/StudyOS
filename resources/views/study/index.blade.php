@@ -44,6 +44,39 @@
     </section>
 
     <main class="grid">
+        <section class="card wide" id="recommendations">
+            <div class="card-head"><h3>Plano de estudo e treino por UC</h3><span>Prioridades com base em evidência</span></div>
+            <p class="muted-text">Recomendações baseadas apenas em tópicos confirmados como lecionados e em resultados corrigidos. A duração é uma sugestão, não uma sessão automaticamente realizada.</p>
+            @foreach($studyRecommendations as $plan)
+                <div class="topic-course-block">
+                    <div class="topic-course-head">
+                        <a href="{{ route('courses.show', $plan['course']) }}"><strong>{{ $plan['course']->name }}</strong></a>
+                        <span>{{ $plan['taught_count'] }}/{{ $plan['topic_count'] }} tópicos lecionados</span>
+                    </div>
+                    @if($plan['assessment'])
+                        <p class="muted-text">Próxima avaliação: {{ $plan['assessment']->title }} · {{ $plan['assessment']->due_at->timezone(config('app.timezone'))->format('d/m/Y') }} ({{ max(0, $plan['days_to_assessment']) }} dias)</p>
+                    @endif
+                    @forelse($plan['recommendations'] as $recommendation)
+                        <article class="study-session">
+                            <div>
+                                <strong>{{ $recommendation['topic']->title }}</strong>
+                                <p>{{ $recommendation['reason'] }}</p>
+                                <small>Sessão sugerida: {{ $recommendation['minutes'] }} minutos</small>
+                                <div class="study-session-actions">
+                                    <a href="{{ route('study.create', ['course_id' => $plan['course']->id]) }}">Planear estudo →</a>
+                                    @if($recommendation['action'] === 'practice')
+                                        <a href="{{ route('practice.index', ['course_id' => $plan['course']->id, 'topic_id' => $recommendation['topic']->id]) }}">Treinar tópico →</a>
+                                    @endif
+                                </div>
+                            </div>
+                        </article>
+                    @empty
+                        <p class="muted-text">{{ $plan['topic_count'] === 0 ? 'Ainda não existem tópicos estruturados para esta UC.' : 'Ainda não há tópicos confirmados como lecionados. Assinala a matéria já dada para obteres recomendações.' }}</p>
+                    @endforelse
+                </div>
+            @endforeach
+        </section>
+
         <section class="card">
             <div class="card-head"><h3>Sessões planeadas</h3><span>{{ $sessions->count() }}</span></div>
             @forelse($sessions as $session)

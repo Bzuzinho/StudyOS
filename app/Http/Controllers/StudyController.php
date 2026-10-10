@@ -6,6 +6,7 @@ use App\Models\ClassOccurrence;
 use App\Models\Course;
 use App\Models\StudySession;
 use App\Models\Topic;
+use App\Services\Learning\StudyRecommendationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -17,7 +18,7 @@ use Illuminate\View\View;
 
 class StudyController
 {
-    public function index(): View
+    public function index(StudyRecommendationService $recommendations): View
     {
         $courses = Course::query()
             ->where('status', 'active')
@@ -47,6 +48,7 @@ class StudyController
 
         return view('study.index', [
             'courses' => $courses,
+            'studyRecommendations' => $courses->map(fn (Course $course) => $recommendations->forCourse($course)),
             'sessions' => $sessions,
             'topicCount' => Topic::query()->where('status', 'active')->count(),
             'plannedMinutes' => StudySession::query()->where('status', '!=', 'completed')->sum('planned_minutes'),
