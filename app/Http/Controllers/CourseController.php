@@ -98,10 +98,22 @@ class CourseController
             ->sortByDesc('starts_at')
             ->take(8);
 
+        $taughtTopics = $course->topics->whereNotNull('taught_at');
+        $assessedTopics = $taughtTopics->filter(fn ($topic) =>
+            in_array($topic->mastery?->status, ['fragile', 'developing', 'competent', 'strong'], true)
+            && $topic->mastery?->score_percent !== null
+        );
+        $meanMastery = $assessedTopics->isEmpty()
+            ? null
+            : round($assessedTopics->avg(fn ($topic) => (float) $topic->mastery->score_percent), 1);
+
         return view('courses.show', [
             'course' => $course,
             'upcomingClasses' => $upcomingClasses,
             'recentClasses' => $recentClasses,
+            'taughtTopicsCount' => $taughtTopics->count(),
+            'assessedTopicsCount' => $assessedTopics->count(),
+            'meanMastery' => $meanMastery,
         ]);
     }
 }
