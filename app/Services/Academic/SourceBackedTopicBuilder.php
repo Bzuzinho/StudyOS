@@ -19,12 +19,8 @@ class SourceBackedTopicBuilder
         $seen = [];
 
         $candidates = [];
-        foreach ($course->materials()->where('status', 'active')->get() as $material) {
-            $section = trim((string) ($material->metadata['moodle_section_name'] ?? ''));
-            if ($section !== '') {
-                $candidates[] = ['title' => $section, 'origin' => 'moodle_section', 'ref' => (string) $material->id];
-            }
-        }
+        // Moodle sections are folders/categories, not curricular topics.
+        // Never promote a folder name such as "FUC" to taught content.
         foreach ($course->lessonSummaries()->get() as $summary) {
             foreach (preg_split('/\R/u', (string) $summary->content) ?: [] as $line) {
                 $title = trim((string) preg_replace('/\s+/u', ' ', $line));
