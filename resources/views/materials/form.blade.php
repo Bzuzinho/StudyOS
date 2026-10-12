@@ -52,6 +52,18 @@
                 </select>
             </label>
 
+            @if(!$material->exists)
+            <label class="field span-2">
+                <span>Matéria a complementar <small>opcional</small></span>
+                <select name="topic_id" id="source-topic">
+                    <option value="">Material geral da UC</option>
+                    @foreach($topics as $topic)
+                        <option data-course="{{ $topic->course_id }}" value="{{ $topic->id }}" @selected((string) old('topic_id', $selectedTopicId ?? '') === (string) $topic->id)>{{ $topic->title }}</option>
+                    @endforeach
+                </select>
+                <small>Selecionar um tópico liga os excertos do documento a essa matéria depois da extração.</small>
+            </label>
+            @endif
             <label class="field">
                 <span>Tipo</span>
                 <select name="type" required>
@@ -121,5 +133,21 @@
         </form>
     @endif
 </div>
+<script>
+(() => {
+  const course = document.querySelector('select[name="course_id"]');
+  const topic = document.getElementById('source-topic');
+  if (!topic) return;
+  const refresh = () => {
+    [...topic.options].forEach(option => {
+      if (!option.value) return;
+      option.hidden = option.dataset.course !== course.value;
+      if (option.hidden && option.selected) topic.value = '';
+    });
+  };
+  course.addEventListener('change', refresh);
+  refresh();
+})();
+</script>
 </body>
 </html>

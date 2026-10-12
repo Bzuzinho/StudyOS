@@ -37,7 +37,7 @@ class StudyMaterialRequestTest extends TestCase
         Topic::create(['course_id' => $course->id, 'source' => 'manual', 'title' => 'Planeamento Estratégico', 'status' => 'active']);
 
         $this->get('/courses/'.$course->id)->assertOk()
-            ->assertSee('Precisamos de mais matéria para estudar')
+            ->assertSee('Matéria que precisa de mais documentação')
             ->assertSee('Abordagem Clássica')
             ->assertViewHas('missingStudySources', fn ($topics) => $topics->count() === 1);
     }

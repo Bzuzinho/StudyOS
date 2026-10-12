@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Services\Learning\TopicCoverageService;
 use Illuminate\View\View;
 
 class CourseController
@@ -45,7 +46,7 @@ class CourseController
         ]);
     }
 
-    public function show(Course $course): View
+    public function show(Course $course, TopicCoverageService $coverage): View
     {
         $course->loadCount([
             'classOccurrences as scheduled_classes_count' => fn ($query) => $query->scheduledClasses(),
@@ -89,8 +90,10 @@ class CourseController
                 ->limit(24),
         ]);
 
+        $topicCoverage = $course->topics->mapWithKeys(fn ($topic) => [$topic->id => $coverage->assess($topic)]);
+
         $missingStudySources = $course->topics
-            ->filter(fn ($topic) => $topic->taught_at !== null && $topic->rich_source_chunks_count === 0)
+            ->filter(fn ($topic) => $topic->taught_at !== null && ($topicCoverage[$topic->id]['status'] ?? '') !== 'suficiente_para_estudar')
             ->values();
 
         $now = now();
@@ -107,6 +110,7 @@ class CourseController
             'upcomingClasses' => $upcomingClasses,
             'recentClasses' => $recentClasses,
             'missingStudySources' => $missingStudySources,
+            'topicCoverage' => $topicCoverage,
         ]);
     }
 }
