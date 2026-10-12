@@ -3,6 +3,8 @@ namespace Tests\Unit;
 
 use App\Models\Course;
 use App\Models\LessonSummary;
+use App\Models\Material;
+use App\Models\MaterialVersion;
 use App\Models\SourceChunk;
 use App\Models\Topic;
 use Illuminate\Foundation\Testing\TestCase;
@@ -39,7 +41,11 @@ class AiCurriculumReviewTest extends TestCase
             'title' => 'Eficiência e eficácia', 'status' => 'active']);
         $summary = LessonSummary::create(['course_id' => $course->id, 'source' => 'manual',
             'title' => 'Aula de gestão', 'content' => 'Estudámos a distinção entre eficiência e eficácia.']);
-        $chunk = SourceChunk::create(['course_id' => $course->id, 'ordinal' => 1,
+        $material = Material::create(['course_id' => $course->id, 'source' => 'manual',
+            'external_id' => 'curriculum-test-material', 'title' => 'Slides', 'status' => 'active']);
+        $version = MaterialVersion::create(['material_id' => $material->id,
+            'source_hash' => 'hash-test-review', 'observed_at' => now()]);
+        $chunk = SourceChunk::create(['course_id' => $course->id, 'material_version_id' => $version->id, 'ordinal' => 1,
             'content' => str_repeat('Eficiência consiste em usar os recursos adequadamente. ', 5),
             'content_hash' => hash('sha256', 'curriculum'),
             'status' => 'active', 'quality' => 'content', 'locator' => 'Slide 3', 'title' => 'Gestão']);
