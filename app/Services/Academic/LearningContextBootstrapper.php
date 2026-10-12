@@ -26,12 +26,13 @@ class LearningContextBootstrapper
                     'type' => 'presentation',
                     'title' => 'Material integrado atualizado',
                     'url' => null,
-                    'status' => 'active',
+                    'status' => 'reference_only',
                     'published_at' => null,
                     'metadata' => [
                         'observed_at' => '2026-10-05T11:01:00+01:00',
                         'change_observed' => 'Alteração assinalada no slide 72',
                         'evidence' => 'audited_authenticated_moodle',
+                        'catalogue_only' => true,
                     ],
                 ],
             );
