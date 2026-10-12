@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $course->name }} · StudyOS</title>
     @include('partials.app-identity')
-    <link rel="stylesheet" href="/css/app.css?v=course-progress-1">
+    <link rel="stylesheet" href="/css/app.css?v=course-ai-review-2">
 </head>
 <body>
 <div class="shell">
@@ -100,8 +100,8 @@
             <p class="muted-text">O estado resulta do volume de texto efetivamente ligado ao tópico. Não comprova que os conceitos estejam todos explicados nem que já os domines. A matéria só entra no plano de estudo depois de assinalada como lecionada.</p>
             @foreach($course->topics->whereNotNull('taught_at') as $coverageTopic)
                 @php $evidence = $topicCoverage[$coverageTopic->id]; @endphp
-                <div class="item">
-                    <div>
+                <div class="topic-coverage-row">
+                    <div class="topic-coverage-text">
                         <strong>{{ $coverageTopic->title }}</strong>
                         <p>@if($evidence['status'] === 'suficiente_para_estudar') Conteúdo disponível para iniciar o estudo
                            @elseif($evidence['status'] === 'precisa_complemento') Precisa de complemento
@@ -160,7 +160,12 @@
         @if(config('studyos_ai.enabled'))
             <section class="card wide" id="ai-curriculum">
                 <div class="card-head"><h3>Análise curricular assistida por IA</h3></div>
-                <p class="muted-text">A IA cruza o programa da UC, os sumários das aulas e os excertos dos materiais, sugerindo tópicos que poderão ter sido lecionados e tópicos que faltam estruturar. Não altera a matéria lecionada sem a tua confirmação. Serão enviados excertos à OpenAI.</p>
+                <p class="muted-text">A IA cruza os tópicos da UC com os sumários das aulas e os materiais. Mostra propostas fundamentadas, sem alterar automaticamente a matéria lecionada. Serão enviados excertos à OpenAI.</p>
+                @if($latestAiCurriculumReview)
+                    <p class="muted-text">Última análise: {{ $latestAiCurriculumReview->created_at->format('d/m/Y H:i') }} · {{ count($latestAiCurriculumReview->output['likely_taught'] ?? []) }} tópicos possivelmente lecionados · {{ count($latestAiCurriculumReview->output['missing_topics'] ?? []) }} tópicos a verificar. O resultado completo permanece disponível abaixo.</p>
+                @else
+                    <p class="muted-text">Ainda não existe uma análise curricular concluída nesta UC.</p>
+                @endif
                 <form method="POST" action="{{ route('ai.courses.review', $course, false) }}" class="event-form">
                     @csrf
                     <label class="field"><span>Código de autorização</span><input type="password" name="access_code" autocomplete="off" required></label>
@@ -168,10 +173,10 @@
                 </form>
             </section>
         @endif
-        @if(session('ai_curriculum_review'))
-            @php $curriculumReview = session('ai_curriculum_review'); @endphp
-            <section class="card wide">
-                <div class="card-head"><h3>Propostas de análise curricular</h3><span>Sujeitas a confirmação</span></div>
+        @if($latestAiCurriculumReview)
+            @php $curriculumReview = $latestAiCurriculumReview->output; @endphp
+            <section class="card wide" id="ai-curriculum-results">
+                <div class="card-head"><h3>Resultado da análise curricular</h3><span>Sujeitas a confirmação</span></div>
                 <h4>Possivelmente lecionados</h4>
                 @forelse($curriculumReview['likely_taught'] as $suggestion)
                     <div class="item"><div>
@@ -179,7 +184,7 @@
                         <p>{{ $suggestion['reason'] }} · Sumários de referência: {{ implode(', ', $suggestion['summary_ids']) }}</p>
                     </div></div>
                 @empty
-                    <p class="muted-text">Não existe evidência suficiente nos sumários para propor alterações à matéria lecionada.</p>
+                    <p class="muted-text">Não foram identificados tópicos com evidência explícita nos sumários analisados. Isto não significa que a matéria não tenha sido lecionada.</p>
                 @endforelse
                 <h4>Tópicos identificados nos materiais para verificar</h4>
                 @forelse($curriculumReview['missing_topics'] as $suggestion)
@@ -188,7 +193,7 @@
                         <p>{{ $suggestion['reason'] }} · Excertos de referência: {{ implode(', ', $suggestion['chunk_ids']) }}</p>
                     </div></div>
                 @empty
-                    <p class="muted-text">Sem novas propostas fundamentadas nos excertos analisados.</p>
+                    <p class="muted-text">Não foram identificados tópicos adicionais com evidência suficiente nos documentos analisados.</p>
                 @endforelse
                 <p class="muted-text">Estas propostas não são consideradas matéria lecionada nem criam tópicos automaticamente. Confirma os sumários com o que foi realmente dado nas aulas e utiliza a seleção de matéria existente abaixo.</p>
             </section>
