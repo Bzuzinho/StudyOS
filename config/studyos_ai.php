@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'enabled' => (bool) env('STUDYOS_AI_ENABLED', false),
+    'enabled' => filter_var(env('STUDYOS_AI_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
     'api_key' => env('OPENAI_API_KEY'),
     'access_code' => env('STUDYOS_AI_ACCESS_CODE'),
     'model' => env('STUDYOS_AI_MODEL', 'gpt-5-mini'),
