@@ -22,7 +22,7 @@ class AiStudyController
         try {
             $result = $service->prepare($topic);
         } catch (RuntimeException $error) {
-            return redirect()->route('courses.show', $topic->course_id, false)
+            return redirect()->to(route('courses.show', $topic->course_id, false))
                 ->withErrors(['ai' => $error->getMessage()]);
         }
 
