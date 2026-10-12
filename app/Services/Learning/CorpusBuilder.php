@@ -78,7 +78,7 @@ class CorpusBuilder
                 ->update(['status' => 'superseded']);
         }
 
-        return $this->rebuildSource(
+        $result = $this->rebuildSource(
             sourceType: 'material_version',
             sourceId: $version->id,
             courseId: $version->material?->course_id,
@@ -96,6 +96,14 @@ class CorpusBuilder
             topics: $version->material?->course?->topics ?? collect(),
             sectionMap: $version->metadata['sections'] ?? null,
         );
+
+        $topicId = (int) ($version->material?->metadata['study_topic_id'] ?? 0);
+        if ($topicId > 0 && Topic::query()->whereKey($topicId)->where('course_id', $version->material?->course_id)->where('status', 'active')->exists()) {
+            SourceChunk::query()->where('material_version_id', $version->id)->where('status', 'active')
+                ->each(fn (SourceChunk $chunk) => $chunk->topics()->syncWithoutDetaching([$topicId => ['match_method' => 'manual_material_assignment', 'confidence' => 1.0]]));
+        }
+
+        return $result;
     }
 
     /**
