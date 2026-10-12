@@ -157,6 +157,43 @@
             </section>
         @endif
 
+        @if(config('studyos_ai.enabled'))
+            <section class="card wide" id="ai-curriculum">
+                <div class="card-head"><h3>Análise curricular assistida por IA</h3></div>
+                <p class="muted-text">A IA cruza o programa da UC, os sumários das aulas e os excertos dos materiais, sugerindo tópicos que poderão ter sido lecionados e tópicos que faltam estruturar. Não altera a matéria lecionada sem a tua confirmação. Serão enviados excertos à OpenAI.</p>
+                <form method="POST" action="{{ route('ai.courses.review', $course, false) }}" class="event-form">
+                    @csrf
+                    <label class="field"><span>Código de autorização</span><input type="password" name="access_code" autocomplete="off" required></label>
+                    <button class="button primary" type="submit">Analisar tópicos e sumários com IA</button>
+                </form>
+            </section>
+        @endif
+        @if(session('ai_curriculum_review'))
+            @php $curriculumReview = session('ai_curriculum_review'); @endphp
+            <section class="card wide">
+                <div class="card-head"><h3>Propostas de análise curricular</h3><span>Sujeitas a confirmação</span></div>
+                <h4>Possivelmente lecionados</h4>
+                @forelse($curriculumReview['likely_taught'] as $suggestion)
+                    <div class="item"><div>
+                        <strong>{{ $course->topics->firstWhere('id', $suggestion['topic_id'])?->title ?? 'Tópico' }}</strong>
+                        <p>{{ $suggestion['reason'] }} · Sumários de referência: {{ implode(', ', $suggestion['summary_ids']) }}</p>
+                    </div></div>
+                @empty
+                    <p class="muted-text">Não existe evidência suficiente nos sumários para propor alterações à matéria lecionada.</p>
+                @endforelse
+                <h4>Tópicos identificados nos materiais para verificar</h4>
+                @forelse($curriculumReview['missing_topics'] as $suggestion)
+                    <div class="item"><div>
+                        <strong>{{ $suggestion['title'] }}</strong>
+                        <p>{{ $suggestion['reason'] }} · Excertos de referência: {{ implode(', ', $suggestion['chunk_ids']) }}</p>
+                    </div></div>
+                @empty
+                    <p class="muted-text">Sem novas propostas fundamentadas nos excertos analisados.</p>
+                @endforelse
+                <p class="muted-text">Estas propostas não são consideradas matéria lecionada nem criam tópicos automaticamente. Confirma os sumários com o que foi realmente dado nas aulas e utiliza a seleção de matéria existente abaixo.</p>
+            </section>
+        @endif
+
         <section class="card wide" id="course-topics">
             <div class="card-head"><h3>Matéria lecionada e preparação</h3><a class="button" href="{{ route('course-topics.create', $course, false) }}">+ Acrescentar tópico</a></div>
             <p class="muted-text">{{ $course->topics->whereNotNull('taught_at')->count() }} de {{ $course->topics->count() }} tópicos registados marcados como lecionados. Seleciona a matéria já dada nas aulas e guarda a seleção.</p>
