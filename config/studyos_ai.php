@@ -3,6 +3,7 @@
 return [
     'enabled' => (bool) env('STUDYOS_AI_ENABLED', false),
     'api_key' => env('OPENAI_API_KEY'),
+    'access_code' => env('STUDYOS_AI_ACCESS_CODE'),
     'model' => env('STUDYOS_AI_MODEL', 'gpt-5-mini'),
     'monthly_budget_usd' => (float) env('STUDYOS_AI_MONTHLY_BUDGET_USD', 10),
     'input_usd_per_million' => (float) env('STUDYOS_AI_INPUT_USD_PER_MILLION', 0.25),
