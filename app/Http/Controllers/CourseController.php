@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Services\Learning\TopicCoverageService;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\DB;
 
 class CourseController
 {
@@ -105,12 +106,19 @@ class CourseController
             ->sortByDesc('starts_at')
             ->take(8);
 
+        $latestReviewRow = DB::table('ai_curriculum_reviews')->where('course_id', $course->id)->orderByDesc('id')->first();
+        $latestAiCurriculumReview = $latestReviewRow ? (object) [
+            'created_at' => \Illuminate\Support\Carbon::parse($latestReviewRow->created_at),
+            'output' => json_decode($latestReviewRow->output, true) ?: [],
+        ] : null;
+
         return view('courses.show', [
             'course' => $course,
             'upcomingClasses' => $upcomingClasses,
             'recentClasses' => $recentClasses,
             'missingStudySources' => $missingStudySources,
             'topicCoverage' => $topicCoverage,
+            'latestAiCurriculumReview' => $latestAiCurriculumReview,
         ]);
     }
 }
