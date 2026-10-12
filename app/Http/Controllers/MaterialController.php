@@ -93,10 +93,10 @@ class MaterialController
                     'external_id' => $externalId,
                     'type' => $data['type'],
                     'title' => $data['title'],
-                    'url' => $data['url'] ?: null,
+                    'url' => ($data['url'] ?? null) ?: null,
                     'status' => 'active',
                     'metadata' => [
-                        'notes' => $data['notes'] ?: null,
+                        'notes' => ($data['notes'] ?? null) ?: null,
                         'manual' => true,
                         'study_topic_id' => $topicId,
                     ],
@@ -181,10 +181,10 @@ class MaterialController
                     'course_id' => $data['course_id'],
                     'type' => $data['type'],
                     'title' => $data['title'],
-                    'url' => $data['url'] ?: null,
+                    'url' => ($data['url'] ?? null) ?: null,
                     'metadata' => [
                         ...($material->metadata ?? []),
-                        'notes' => $data['notes'] ?: null,
+                        'notes' => ($data['notes'] ?? null) ?: null,
                         'manual' => true,
                     ],
                 ]);
