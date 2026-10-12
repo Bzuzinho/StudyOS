@@ -78,13 +78,13 @@
         @if($missingStudySources->isNotEmpty())
             <section class="card wide" id="missing-study-content">
                 <div class="card-head">
-                    <h3>Precisamos de mais matéria para estudar</h3>
+                    <h3>Matéria que precisa de mais documentação</h3>
                     <a href="{{ route('materials.create', ['course_id' => $course->id], false) }}">+ Adicionar apontamentos ou documentos</a>
                 </div>
-                <p class="muted-text">Identifiquei {{ $missingStudySources->count() }} tópico(s) já lecionado(s) sem conteúdo explicativo detalhado associado. Os slides podem resumir os conceitos sem os desenvolver. Tens apontamentos, páginas de um manual, fichas de exercícios ou outros documentos destas matérias? Podes carregar um ficheiro ou colar texto, sem sair da UC.</p>
+                <p class="muted-text">Identifiquei {{ $missingStudySources->count() }} tópico(s) já lecionado(s) com documentação inexistente ou ainda limitada. Os slides podem resumir os conceitos sem os desenvolver. Tens apontamentos, páginas de um manual, fichas de exercícios ou outros documentos destas matérias? Podes carregar um ficheiro ou colar texto, sem sair da UC.</p>
                 <div class="topic-chips">
                     @foreach($missingStudySources->take(8) as $missingTopic)
-                        <span>{{ $missingTopic->title }}</span>
+                        <a href="{{ route('materials.create', ['course_id' => $course->id, 'topic_id' => $missingTopic->id], false) }}">{{ $missingTopic->title }} · Adicionar material</a>
                     @endforeach
                 </div>
                 @if($missingStudySources->count() > 8)
@@ -95,6 +95,26 @@
             </section>
         @endif
 
+        <section class="card wide" id="coverage">
+            <div class="card-head"><h3>Cobertura dos materiais por tópico</h3><a href="{{ route('materials.create', ['course_id' => $course->id], false) }}">+ Adicionar conteúdo</a></div>
+            <p class="muted-text">O estado resulta do volume de texto efetivamente ligado ao tópico. Não comprova que os conceitos estejam todos explicados nem que já os domines. A matéria só entra no plano de estudo depois de assinalada como lecionada.</p>
+            @foreach($course->topics->whereNotNull('taught_at') as $coverageTopic)
+                @php $evidence = $topicCoverage[$coverageTopic->id]; @endphp
+                <div class="item">
+                    <div>
+                        <strong>{{ $coverageTopic->title }}</strong>
+                        <p>@if($evidence['status'] === 'suficiente_para_estudar') Conteúdo disponível para iniciar o estudo
+                           @elseif($evidence['status'] === 'precisa_complemento') Precisa de complemento
+                           @else Sem documentação associada @endif
+                           · {{ $evidence['sources'] }} fonte(s), {{ $evidence['fragments'] }} excerto(s)
+                        </p>
+                    </div>
+                    @if($evidence['status'] !== 'suficiente_para_estudar')
+                        <a href="{{ route('materials.create', ['course_id' => $course->id, 'topic_id' => $coverageTopic->id], false) }}">Adicionar matéria</a>
+                    @endif
+                </div>
+            @endforeach
+        </section>
         <section class="card wide" id="course-topics">
             <div class="card-head"><h3>Matéria lecionada e preparação</h3><a class="button" href="{{ route('course-topics.create', $course, false) }}">+ Acrescentar tópico</a></div>
             <p class="muted-text">{{ $course->topics->whereNotNull('taught_at')->count() }} de {{ $course->topics->count() }} tópicos registados marcados como lecionados. Seleciona a matéria já dada nas aulas e guarda a seleção.</p>
