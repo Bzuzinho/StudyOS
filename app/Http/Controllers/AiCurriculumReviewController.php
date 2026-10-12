@@ -20,11 +20,11 @@ class AiCurriculumReviewController
         try {
             $review = $service->review($course);
         } catch (RuntimeException $exception) {
-            return redirect()->to(route('courses.show', $course, false))
+            return redirect()->to(route('courses.show', $course, false).'#ai-curriculum')
                 ->withErrors(['ai' => $exception->getMessage()]);
         }
 
-        return redirect()->to(route('courses.show', $course, false))
-            ->with('ai_curriculum_review', $review);
+        return redirect()->to(route('courses.show', $course, false).'#ai-curriculum-results')
+            ->with('status', 'Análise curricular concluída. Consulta abaixo as propostas e as fontes antes de alterar matéria lecionada.');
     }
 }
