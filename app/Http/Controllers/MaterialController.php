@@ -6,6 +6,7 @@ use App\Jobs\ExtractMaterialVersion;
 use App\Models\Course;
 use App\Models\Material;
 use App\Models\MaterialVersion;
+use App\Models\Topic;
 use App\Services\Learning\AcademicFileIngestor;
 use App\Services\Learning\CorpusBuilder;
 use App\Services\Practice\GroundedPracticeGenerator;
@@ -61,6 +62,8 @@ class MaterialController
             'contentText' => '',
             'latestVersion' => null,
             'selectedCourseId' => $request->integer('course_id') ?: null,
+            'selectedTopicId' => $request->integer('topic_id') ?: null,
+            'topics' => Topic::query()->where('status', 'active')->orderBy('course_id')->orderBy('position')->get(),
         ]);
     }
 
@@ -71,6 +74,10 @@ class MaterialController
         GroundedPracticeGenerator $generator,
     ): RedirectResponse {
         $data = $this->validated($request);
+        $topicId = $request->integer('topic_id') ?: null;
+        if ($topicId && ! Topic::query()->whereKey($topicId)->where('course_id', $data['course_id'])->where('status', 'active')->exists()) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['topic_id' => 'O tópico não pertence à UC escolhida.']);
+        }
         $externalId = (string) Str::uuid();
         $ingestion = null;
 
@@ -79,7 +86,7 @@ class MaterialController
                 $ingestion = $ingestor->ingest($request->file('file'), (int) $data['course_id']);
             }
 
-            [$material, $version] = DB::transaction(function () use ($data, $externalId, $ingestion) {
+            [$material, $version] = DB::transaction(function () use ($data, $externalId, $ingestion, $topicId) {
                 $material = Material::query()->create([
                     'course_id' => $data['course_id'],
                     'source' => 'manual',
@@ -91,6 +98,7 @@ class MaterialController
                     'metadata' => [
                         'notes' => $data['notes'] ?: null,
                         'manual' => true,
+                        'study_topic_id' => $topicId,
                     ],
                 ]);
 
