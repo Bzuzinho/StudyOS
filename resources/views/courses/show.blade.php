@@ -97,7 +97,15 @@
 
         <section class="card wide" id="coverage">
             <div class="card-head"><h3>Cobertura dos materiais por tópico</h3><a href="{{ route('materials.create', ['course_id' => $course->id], false) }}">+ Adicionar conteúdo</a></div>
-            <p class="muted-text">O estado resulta do volume de texto efetivamente ligado ao tópico. Não comprova que os conceitos estejam todos explicados nem que já os domines. A matéria só entra no plano de estudo depois de assinalada como lecionada.</p>
+            <p class="muted-text">O estado considera apenas texto associado ao tópico. Pode haver matéria no mesmo documento ainda por associar. Não comprova que os conceitos estejam todos explicados nem que já os domines. A matéria só entra no plano de estudo depois de assinalada como lecionada.</p>
+            @if(config('studyos_ai.enabled'))
+                <form method="POST" action="{{ route('ai.courses.match-materials', $course, false) }}">
+                    @csrf
+                    <p class="muted-text">Analisar com IA os materiais existentes e associar os seus excertos aos tópicos. Um ficheiro pode abranger vários temas. Processa 12 excertos de cada vez e podes repetir até terminar. Não altera o estado de lecionado.</p>
+                    <label class="field"><span>Código de autorização</span><input type="password" name="access_code" required autocomplete="off"></label>
+                    <button class="button primary" type="submit">Associar matéria dos ficheiros aos tópicos</button>
+                </form>
+            @endif
             @foreach($course->topics->whereNotNull('taught_at') as $coverageTopic)
                 @php $evidence = $topicCoverage[$coverageTopic->id]; @endphp
                 <div class="topic-coverage-row">
@@ -105,7 +113,7 @@
                         <strong>{{ $coverageTopic->title }}</strong>
                         <p>@if($evidence['status'] === 'suficiente_para_estudar') Conteúdo disponível para iniciar o estudo
                            @elseif($evidence['status'] === 'precisa_complemento') Precisa de complemento
-                           @else Sem documentação associada @endif
+                           @else Sem excertos associados @endif
                            · {{ $evidence['sources'] }} fonte(s), {{ $evidence['fragments'] }} excerto(s)
                         </p>
                     </div>
