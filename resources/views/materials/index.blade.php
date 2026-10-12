@@ -52,7 +52,7 @@
         <button class="button primary" type="submit">Filtrar</button>
         <a class="button" href="{{ route('materials.index', [], false) }}">Limpar</a>
     </form>
-    <p class="muted-text">{{ $materials->total() }} material(is) · Os ficheiros importados podem ser descarregados mesmo quando a extração de texto falha.</p>
+    <p class="muted-text">{{ $materials->total() }} material(is) · Esta lista apresenta materiais reais. Referências observadas em auditorias, sem ficheiro nem texto, não são tratadas como material importado.</p>
 
     <section class="material-grid">
         @forelse($materials as $material)
@@ -71,7 +71,7 @@
                     'manual_text' => 'Texto colado',
                     'not_applicable' => 'Sem extração',
                 ];
-                $extractionLabel = $latestVersion ? ($extractionLabels[$latestVersion->extraction_status] ?? $latestVersion->extraction_status) : null;
+                $extractionLabel = $latestVersion ? ($extractionLabels[$latestVersion->extraction_status] ?? $latestVersion->extraction_status) : 'Ficheiro ainda não recolhido';
             @endphp
             <article class="material-card">
                 <div class="material-card-head">
