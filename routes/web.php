@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\AiStudyController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CourseTopicController;
@@ -58,6 +59,7 @@ Route::get('/calendar/events/{event}/edit', [ManualCalendarEventController::clas
 Route::put('/calendar/events/{event}', [ManualCalendarEventController::class, 'update'])->name('calendar-events.update');
 Route::delete('/calendar/events/{event}', [ManualCalendarEventController::class, 'destroy'])->name('calendar-events.destroy');
 
+Route::post('/ai/topics/{topic}/study', [AiStudyController::class, 'generate'])->middleware('throttle:3,1')->name('ai.topics.study');
 Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
 Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
 Route::get('/courses/{course}/topics/create', [CourseTopicController::class, 'create'])->name('course-topics.create');
