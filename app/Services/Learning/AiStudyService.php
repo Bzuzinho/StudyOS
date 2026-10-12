@@ -44,7 +44,8 @@ class AiStudyService
             ->sum('estimated_usd')
             + (float) DB::table('ai_curriculum_reviews')
                 ->where('created_at', '>=', now()->startOfMonth())
-                ->sum('estimated_usd');
+                ->sum('estimated_usd')
+            + (float) DB::table('ai_topic_match_runs')->where('created_at', '>=', now()->startOfMonth())->sum('estimated_usd');
         $budget = (float) config('studyos_ai.monthly_budget_usd');
         if ($budget <= 0 || $monthCost + 0.10 > $budget) {
             throw new RuntimeException('Orçamento mensal da IA atingido ou insuficiente para uma nova operação.');

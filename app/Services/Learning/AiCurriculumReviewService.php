@@ -36,7 +36,8 @@ class AiCurriculumReviewService
 
         $thisMonth = now()->startOfMonth();
         $spent = (float) DB::table('ai_study_outputs')->where('created_at', '>=', $thisMonth)->sum('estimated_usd')
-            + (float) DB::table('ai_curriculum_reviews')->where('created_at', '>=', $thisMonth)->sum('estimated_usd');
+            + (float) DB::table('ai_curriculum_reviews')->where('created_at', '>=', $thisMonth)->sum('estimated_usd')
+            + (float) DB::table('ai_topic_match_runs')->where('created_at', '>=', $thisMonth)->sum('estimated_usd');
         if ((float) config('studyos_ai.monthly_budget_usd') < $spent + 0.10) {
             throw new RuntimeException('O orçamento mensal da IA não permite uma nova análise.');
         }
