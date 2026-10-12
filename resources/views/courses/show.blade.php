@@ -81,7 +81,7 @@
                     <h3>Matéria que precisa de mais documentação</h3>
                     <a href="{{ route('materials.create', ['course_id' => $course->id], false) }}">+ Adicionar apontamentos ou documentos</a>
                 </div>
-                <p class="muted-text">Identifiquei {{ $missingStudySources->count() }} tópico(s) já lecionado(s) com documentação inexistente ou ainda limitada. Os slides podem resumir os conceitos sem os desenvolver. Tens apontamentos, páginas de um manual, fichas de exercícios ou outros documentos destas matérias? Podes carregar um ficheiro ou colar texto, sem sair da UC.</p>
+                <p class="muted-text">Existem {{ $missingStudySources->count() }} tópico(s) lecionado(s) sem excertos associados suficientes. A matéria pode já existir num ficheiro que abrange vários tópicos. Experimenta primeiro a associação com IA na secção Cobertura dos materiais por tópico. Os slides também podem resumir os conceitos sem os desenvolver. Tens apontamentos, páginas de um manual, fichas de exercícios ou outros documentos destas matérias? Podes carregar um ficheiro ou colar texto, sem sair da UC.</p>
                 <div class="topic-chips">
                     @foreach($missingStudySources->take(8) as $missingTopic)
                         <a href="{{ route('materials.create', ['course_id' => $course->id, 'topic_id' => $missingTopic->id], false) }}">{{ $missingTopic->title }} · Adicionar material</a>
