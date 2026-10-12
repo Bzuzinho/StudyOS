@@ -26,7 +26,7 @@ class AiStudyController
                 ->withErrors(['ai' => $error->getMessage()]);
         }
 
-        return redirect()->route('courses.show', $topic->course_id, false)
+        return redirect()->to(route('courses.show', $topic->course_id, false))
             ->with('ai_study_sheet', ['topic' => $topic->title, 'result' => $result]);
     }
 }
