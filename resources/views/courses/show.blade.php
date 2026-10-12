@@ -115,6 +115,48 @@
                 </div>
             @endforeach
         </section>
+        @if(session('ai_study_sheet'))
+            @php $aiSheet = session('ai_study_sheet'); @endphp
+            <section class="card wide" aria-label="Ficha de estudo apoiada por IA">
+                <div class="card-head"><h3>Ficha de estudo · {{ $aiSheet['topic'] }}</h3><span>Elaborada por IA · confirmar com as fontes</span></div>
+                <p>{{ $aiSheet['result']['summary'] }}</p>
+                <h4>Conceitos-chave</h4>
+                <ul>@foreach($aiSheet['result']['key_points'] as $point)<li>{{ $point }}</li>@endforeach</ul>
+                <h4>Perguntas para revisão</h4>
+                @foreach($aiSheet['result']['questions'] as $question)
+                    <details><summary>{{ $question['question'] }}</summary><p>{{ $question['reference_answer'] }}</p><small>Excertos de referência: {{ implode(', ', $question['source_ids']) }}</small></details>
+                @endforeach
+                @if($aiSheet['result']['missing_information'])
+                    <h4>Informação em falta</h4>
+                    <ul>@foreach($aiSheet['result']['missing_information'] as $missing)<li>{{ $missing }}</li>@endforeach</ul>
+                @endif
+                <p class="muted-text">Estas respostas são apoio ao estudo e não substituem os documentos da UC. Não são usadas para atribuir notas ou marcar tópicos como lecionados.</p>
+            </section>
+        @endif
+        @if(config('studyos_ai.enabled'))
+            <section class="card wide">
+                <div class="card-head"><h3>Preparar estudo com IA</h3></div>
+                <p class="muted-text">Seleciona um tópico já lecionado, com materiais associados. A IA prepara explicações e perguntas baseadas nos excertos, identifica lacunas e reutiliza fichas anteriores sem voltar a cobrar enquanto os documentos não mudarem.</p>
+                <form method="POST" action="#" id="ai-study-form" class="event-form">
+                    @csrf
+                    <label class="field"><span>Tópico</span><select id="ai-study-topic" required>
+                        @foreach($course->topics->whereNotNull('taught_at') as $topic)
+                            <option value="{{ route('ai.topics.study', $topic, false) }}">{{ $topic->title }}</option>
+                        @endforeach
+                    </select></label>
+                    <label class="field"><span>Código de autorização</span><input type="password" name="access_code" required autocomplete="off"></label>
+                    <button class="button primary" type="submit">Gerar ficha fundamentada</button>
+                </form>
+                <script>
+                    (() => {
+                        const form = document.getElementById('ai-study-form');
+                        const topic = document.getElementById('ai-study-topic');
+                        form.addEventListener('submit', () => { form.action = topic.value; });
+                    })();
+                </script>
+            </section>
+        @endif
+
         <section class="card wide" id="course-topics">
             <div class="card-head"><h3>Matéria lecionada e preparação</h3><a class="button" href="{{ route('course-topics.create', $course, false) }}">+ Acrescentar tópico</a></div>
             <p class="muted-text">{{ $course->topics->whereNotNull('taught_at')->count() }} de {{ $course->topics->count() }} tópicos registados marcados como lecionados. Seleciona a matéria já dada nas aulas e guarda a seleção.</p>
