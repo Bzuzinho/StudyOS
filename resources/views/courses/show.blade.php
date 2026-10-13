@@ -38,6 +38,7 @@
             </div>
             <h1>{{ $course->name }}</h1>
             <p>{{ $course->semester }}.º semestre @if($course->ects) · {{ $course->ects }} ECTS @endif</p>
+            <div style="margin-top:16px"><a class="button primary" href="{{ route('courses.import-package', $course, false) }}">Importar / atualizar pacote da UC</a></div>
         </div>
         <div class="course-hero-metrics">
             <div><strong>{{ $course->classOccurrences->count() }}</strong><span>aulas</span></div>
