@@ -61,6 +61,25 @@ class CurriculumPackageImporter
                     $paths[$child['id']] = $name;
                 }
             }
+            $exerciseIds = [];
+            foreach ($exercises['items'] as $item) {
+                $kind = $item['type'] ?? 'open';
+                if (!in_array($kind, ['open','open_text','true_false','single_answer','numeric'], true)
+                    || !is_string($item['id'] ?? null) || mb_strlen($item['id']) > 120
+                    || isset($exerciseIds[$item['id']])) {
+                    throw new RuntimeException('Tipo ou ID de exercício inválido/repetido.');
+                }
+                $exerciseIds[$item['id']] = true;
+                if ($kind === 'true_false' && !in_array(mb_strtolower($item['reference_answer'] ?? ''), ['verdadeiro','falso'], true)) {
+                    throw new RuntimeException('Verdadeiro/falso exige uma solução válida.');
+                }
+                if ($kind === 'single_answer' && (!isset($item['answer_config']['accepted_answers']) || !is_array($item['answer_config']['accepted_answers']))) {
+                    throw new RuntimeException('Resposta curta exige respostas aceites.');
+                }
+                if ($kind === 'numeric' && !is_numeric(str_replace(',', '.', $item['reference_answer'] ?? ''))) {
+                    throw new RuntimeException('Questão numérica exige solução numérica.');
+                }
+            }
             foreach ($exercises['items'] as $item) {
                 if (!is_array($item) || !is_string($item['id'] ?? null)
                     || !is_string($item['topic_id'] ?? null) || !isset($paths[$item['topic_id']])
@@ -102,11 +121,15 @@ class CurriculumPackageImporter
                 foreach ($exercises['items'] as $item) {
                     $exercise = Exercise::updateOrCreate(
                         ['source' => 'chatgpt_package', 'external_id' => $course->academic_code.':'.$item['id']],
-                        ['course_id' => $course->id, 'type' => 'open_text',
+                        ['course_id' => $course->id, 'type' => ($item['type'] ?? 'open') === 'open' ? 'open_text' : $item['type'],
+                            'answer_config' => $item['answer_config'] ?? null,
+                            'max_points' => (float) ($item['max_points'] ?? 1),
                             'title' => 'Exercício · '.$item['id'], 'prompt' => $item['prompt'],
                             'expected_answer' => $item['reference_answer'],
                             'explanation' => $item['reference_answer'], 'status' => 'active',
                             'metadata' => ['rubric' => $item['suggested_rubric'] ?? null,
+                                'difficulty' => $item['difficulty'] ?? 'medio',
+                                'set' => $item['set'] ?? 'geral',
                                 'pedagogical_origin' => 'chatgpt']]
                     );
                     $exercise->topics()->syncWithoutDetaching([$topics[$item['topic_id']]->id]);
