@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $course->name }} · StudyOS</title>
     @include('partials.app-identity')
-    <link rel="stylesheet" href="/css/app.css?v=course-ai-review-2">
+    <link rel="stylesheet" href="/css/app.css?v=course-package-focus-1">
 </head>
 <body>
 <div class="shell">
@@ -44,12 +44,35 @@
             <div><strong>{{ $course->assessments->count() }}</strong><span>avaliações</span></div>
             <div><strong>{{ $course->tasks->count() }}</strong><span>tarefas</span></div>
             <div><strong>{{ $course->materials->count() }}</strong><span>materiais</span></div>
-            <div><strong>{{ $course->topics->count() }}</strong><span>tópicos</span></div>
+            <div><strong>{{ $course->topics->where("source", "chatgpt_package")->isNotEmpty() ? $course->topics->where("source", "chatgpt_package")->count() : $course->topics->count() }}</strong><span>{{ $course->topics->where("source", "chatgpt_package")->isNotEmpty() ? "temas e subtemas" : "tópicos" }}</span></div>
             <div><strong>{{ $course->exercises->count() }}</strong><span>exercícios</span></div>
         </div>
     </header>
 
     <main class="grid">
+        @if($course->topics->where('source', 'chatgpt_package')->isNotEmpty())
+            <section class="card wide" id="package-curriculum">
+                <div class="alert success" role="status">Pacote de estudo importado: {{ $course->topics->where("source", "chatgpt_package")->whereNull("parent_id")->count() }} temas e {{ $course->topics->where("source", "chatgpt_package")->whereNotNull("parent_id")->count() }} subtemas. Os materiais estão nos respetivos subtemas abaixo.</div>
+                <div class="card-head"><h3>Manual completo · organização por temas</h3>
+                    <a href="{{ route('courses.import-package', $course, false) }}">Atualizar pacote</a></div>
+                <p class="muted-text">Abre um dos nove temas para consultar os subtemas, ler os materiais e praticar exercícios. Conteúdos pedagógicos elaborados no ChatGPT, distintos dos documentos oficiais da docente.</p>
+                @foreach($course->topics->where('source', 'chatgpt_package')->whereNull('parent_id') as $packageTheme)
+                    <details style="margin:10px 0;padding:14px;border:1px solid #25424d;border-radius:12px">
+                        <summary style="cursor:pointer;font-weight:700">{{ $packageTheme->title }}</summary>
+                        <div style="display:flex;flex-direction:column;gap:10px;margin-top:15px">
+                            @foreach($course->topics->where('parent_id', $packageTheme->id)->where('source', 'chatgpt_package') as $packageChild)
+                                <div style="display:flex;align-items:center;gap:15px;justify-content:space-between;flex-wrap:wrap">
+                                    <a href="{{ route('courses.package-topic.read', ['course'=>$course, 'topic'=>$packageChild], false) }}">{{ $packageChild->title }}</a>
+                                    <small style="color:#91a6af">{{ $packageChild->taught_at ? 'Lecionado' : 'Ainda não assinalado como lecionado' }}</small>
+                                </div>
+                            @endforeach
+                        </div>
+                    </details>
+                @endforeach
+            </section>
+        @endif
+
+
         <section class="card wide">
             <div class="card-head"><h3>Progresso das aulas</h3><a href="/calendar">Calendário</a></div>
             @include('partials.course-class-progress')
@@ -75,7 +98,7 @@
             <p class="muted-text">Um material catalogado não é necessariamente um ficheiro descarregado ou um texto utilizável. Estes valores são calculados a partir do estado persistido na aplicação.</p>
         </section>
 
-        @if($missingStudySources->isNotEmpty())
+        @if($course->topics->where("source", "chatgpt_package")->isEmpty() && $missingStudySources->isNotEmpty())
             <section class="card wide" id="missing-study-content">
                 <div class="card-head">
                     <h3>Matéria que precisa de mais documentação</h3>
@@ -95,6 +118,7 @@
             </section>
         @endif
 
+        @if($course->topics->where("source", "chatgpt_package")->isEmpty())
         <section class="card wide" id="coverage">
             <div class="card-head"><h3>Cobertura dos materiais por tópico</h3><a href="{{ route('materials.create', ['course_id' => $course->id], false) }}">+ Adicionar conteúdo</a></div>
             <p class="muted-text">O estado considera apenas texto associado ao tópico. Pode haver matéria no mesmo documento ainda por associar. Não comprova que os conceitos estejam todos explicados nem que já os domines. A matéria só entra no plano de estudo depois de assinalada como lecionada.</p>
@@ -123,6 +147,7 @@
                 </div>
             @endforeach
         </section>
+        @endif
         @if(session('ai_study_sheet'))
             @php $aiSheet = session('ai_study_sheet'); @endphp
             <section class="card wide" aria-label="Ficha de estudo apoiada por IA">
@@ -207,27 +232,7 @@
             </section>
         @endif
 
-        @if($course->topics->where('source', 'chatgpt_package')->isNotEmpty())
-            <section class="card wide" id="package-curriculum">
-                <div class="card-head"><h3>Manual completo · organização por temas</h3>
-                    <a href="{{ route('courses.import-package', $course, false) }}">Atualizar pacote</a></div>
-                <p class="muted-text">Abre um dos nove temas para consultar os subtemas, ler os materiais e praticar exercícios. Conteúdos pedagógicos elaborados no ChatGPT, distintos dos documentos oficiais da docente.</p>
-                @foreach($course->topics->where('source', 'chatgpt_package')->whereNull('parent_id') as $packageTheme)
-                    <details style="margin:10px 0;padding:14px;border:1px solid #25424d;border-radius:12px">
-                        <summary style="cursor:pointer;font-weight:700">{{ $packageTheme->title }}</summary>
-                        <div style="display:flex;flex-direction:column;gap:10px;margin-top:15px">
-                            @foreach($course->topics->where('parent_id', $packageTheme->id)->where('source', 'chatgpt_package') as $packageChild)
-                                <div style="display:flex;align-items:center;gap:15px;justify-content:space-between;flex-wrap:wrap">
-                                    <a href="{{ route('courses.package-topic.read', ['course'=>$course, 'topic'=>$packageChild], false) }}">{{ $packageChild->title }}</a>
-                                    <small style="color:#91a6af">{{ $packageChild->taught_at ? 'Lecionado' : 'Ainda não assinalado como lecionado' }}</small>
-                                </div>
-                            @endforeach
-                        </div>
-                    </details>
-                @endforeach
-            </section>
-        @endif
-
+        @if($course->topics->where("source", "chatgpt_package")->isEmpty())
         <section class="card wide" id="course-topics">
             <div class="card-head"><h3>Matéria lecionada e preparação</h3><div class="row-actions"><a class="button primary" href="{{ route('courses.import-package', $course, false) }}">Importar pacote completo</a> <a class="button" href="{{ route('course-topics.create', $course, false) }}">+ Acrescentar tópico</a></div></div>
             <p class="muted-text">{{ $course->topics->whereNotNull('taught_at')->count() }} de {{ $course->topics->count() }} tópicos registados marcados como lecionados. Seleciona a matéria já dada nas aulas e guarda a seleção.</p>
@@ -314,6 +319,7 @@
                 </div>
             @endif
         </section>
+        @endif
         <section class="card">
             <div class="card-head"><h3>Próximas aulas</h3><a href="/calendar">Calendário</a></div>
             @forelse ($upcomingClasses as $class)
