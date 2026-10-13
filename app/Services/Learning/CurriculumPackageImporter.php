@@ -126,7 +126,7 @@ class CurriculumPackageImporter
                             'max_points' => (float) ($item['max_points'] ?? 1),
                             'title' => 'Exercício · '.$item['id'], 'prompt' => $item['prompt'],
                             'expected_answer' => $item['reference_answer'],
-                            'explanation' => $item['reference_answer'], 'status' => 'active',
+                            'explanation' => $item['explanation'] ?? $item['reference_answer'], 'status' => 'active',
                             'metadata' => ['rubric' => $item['suggested_rubric'] ?? null,
                                 'difficulty' => $item['difficulty'] ?? 'medio',
                                 'set' => $item['set'] ?? 'geral',
