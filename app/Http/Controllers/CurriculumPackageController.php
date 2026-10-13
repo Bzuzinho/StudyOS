@@ -38,7 +38,7 @@ class CurriculumPackageController
         } catch (RuntimeException $exception) {
             return back()->withErrors(['package' => $exception->getMessage()]);
         }
-        return redirect()->to(route('courses.show', $course, false).'#course-topics')
+        return redirect()->to(route('courses.show', $course, false).'#package-curriculum')
             ->with('status', 'Pacote importado: '.$result['themes'].' temas, '.
                 $result['subtopics'].' subtemas e '.$result['exercises'].' exercícios.');
     }
