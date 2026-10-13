@@ -30,16 +30,16 @@ class StudyMaterialRequestTest extends TestCase
         $this->artisan('migrate', ['--force' => true])->assertExitCode(0);
     }
 
-    public function test_course_requests_more_content_only_for_taught_topics_with_no_detailed_sources(): void
+    public function test_course_offers_real_material_entrypoints_without_technical_diagnostics(): void
     {
         $course = Course::create(['name' => 'Introdução à Gestão', 'status' => 'active']);
         Topic::create(['course_id' => $course->id, 'source' => 'manual', 'title' => 'Abordagem Clássica', 'status' => 'active', 'taught_at' => now()]);
         Topic::create(['course_id' => $course->id, 'source' => 'manual', 'title' => 'Planeamento Estratégico', 'status' => 'active']);
 
         $this->get('/courses/'.$course->id)->assertOk()
-            ->assertSee('Matéria que precisa de mais documentação')
+            ->assertSee('Abrir biblioteca da UC')
             ->assertSee('Abordagem Clássica')
-            ->assertViewHas('missingStudySources', fn ($topics) => $topics->count() === 1);
+            ->assertDontSee('excertos indexados')->assertDontSee('Fonte auditada');
     }
 
     public function test_more_materials_form_preselects_the_correct_course(): void

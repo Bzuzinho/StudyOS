@@ -90,6 +90,7 @@ class CurriculumPackageImporter
             }
 
             return DB::transaction(function () use ($course, $manifest, $exercises, $zip, $paths) {
+                $this->preserveExistingQuestions($course);
                 $topics = [];
                 $created = 0;
                 foreach ($manifest['themes'] as $position => $theme) {
@@ -140,6 +141,29 @@ class CurriculumPackageImporter
             });
         } finally {
             $zip->close();
+        }
+    }
+
+    /** Freeze old sessions before an imported question changes in place. */
+    private function preserveExistingQuestions(Course $course): void
+    {
+        $questions = $course->exercises()->with('topics')->get()->keyBy('id');
+        $snapshot = fn ($ex) => [
+            'id' => $ex->id, 'title' => $ex->title, 'type' => $ex->type, 'prompt' => $ex->prompt,
+            'expected_answer' => $ex->expected_answer, 'answer_config' => $ex->answer_config,
+            'explanation' => $ex->explanation, 'max_points' => $ex->max_points, 'metadata' => $ex->metadata,
+            'topic_ids' => $ex->topics->pluck('id')->all(), 'topic_titles' => $ex->topics->pluck('title', 'id')->all(),
+        ];
+        foreach (DB::table('practice_runs')->where('course_id', $course->id)->whereNull('question_snapshots')->get() as $run) {
+            $snapshots = collect(json_decode($run->exercise_ids, true) ?: [])->filter(fn ($id) => $questions->has($id))
+                ->mapWithKeys(fn ($id) => [$id => $snapshot($questions[$id])])->all();
+            DB::table('practice_runs')->where('id', $run->id)->update(['question_snapshots' => json_encode($snapshots, JSON_UNESCAPED_UNICODE)]);
+        }
+        foreach (\App\Models\ExerciseAttempt::whereIn('exercise_id', $questions->keys())->get() as $attempt) {
+            $metadata = $attempt->metadata ?? [];
+            if (!isset($metadata['question_snapshot'])) {
+                $attempt->update(['metadata' => [...$metadata, 'question_snapshot' => $snapshot($questions[$attempt->exercise_id])]]);
+            }
         }
     }
 

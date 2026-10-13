@@ -22,7 +22,7 @@ class StudyRecommendationService
                 $query->whereNull('metadata->conditional')->orWhere('metadata->conditional', false);
             })->orderBy('due_at')->first();
 
-        $recommendations = $course->topics->filter(fn (Topic $topic) => $topic->taught_at !== null)
+        $recommendations = Curriculum::leaves($course)->filter(fn (Topic $topic) => $topic->taught_at !== null)
             ->map(function (Topic $topic) {
                 $status = $topic->mastery?->status ?? 'no_evidence';
                 $priority = match ($status) {
@@ -60,8 +60,8 @@ class StudyRecommendationService
             'assessment' => $nextAssessment,
             'days_to_assessment' => $nextAssessment ? (int) now()->startOfDay()->diffInDays($nextAssessment->due_at->copy()->startOfDay(), false) : null,
             'recommendations' => $recommendations,
-            'taught_count' => $course->topics->whereNotNull('taught_at')->count(),
-            'topic_count' => $course->topics->count(),
+            'taught_count' => Curriculum::leaves($course)->whereNotNull('taught_at')->count(),
+            'topic_count' => Curriculum::leaves($course)->count(),
         ];
     }
 }

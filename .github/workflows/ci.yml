@@ -40,3 +40,48 @@ jobs:
         run: php artisan view:cache
       - name: Unit tests
         run: vendor/bin/phpunit tests/Unit
+
+  learning-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, intl, zip
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: mkdir -p bootstrap/cache storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs
+      - run: composer install --no-interaction --prefer-dist
+      - name: Prepare isolated browser database
+        run: |
+          cp .env.example .env
+          touch /tmp/studyos-browser.sqlite
+          php artisan key:generate
+          php artisan migrate --force
+          php tests/Browser/seed.php
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: /tmp/studyos-browser.sqlite
+      - name: Install browser test runtime
+        run: |
+          npm install --prefix /tmp/studyos-browser playwright --no-audit --no-fund
+          /tmp/studyos-browser/node_modules/.bin/playwright install --with-deps chromium msedge
+      - name: Validate desktop, mobile and Microsoft Edge learning flows
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8000 > /tmp/studyos-server.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/practice > /dev/null && break || sleep 1; done
+          node tests/Browser/learning.mjs
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: /tmp/studyos-browser.sqlite
+          STUDYOS_AI_ENABLED: 'false'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: learning-browser-evidence
+          path: |
+            browser-evidence/
+            /tmp/studyos-server.log

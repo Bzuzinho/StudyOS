@@ -33,8 +33,8 @@ class StudyReadinessTest extends TestCase
     public function test_empty_active_courses_are_visible_in_study_and_diagnosis(): void
     {
         $course = Course::create(['name' => 'Macroeconomia', 'status' => 'active', 'semester' => 1]);
-        $this->get('/study')->assertOk()->assertSee('Macroeconomia')->assertSee('Planear sessão');
-        $this->get('/courses/'.$course->id)->assertOk()->assertSee('Programa ainda não estruturado');
+        $this->get('/study')->assertOk()->assertViewHas('courses', fn ($courses) => $courses->contains('id', $course->id))->assertSee('Planear sessão');
+        $this->get('/courses/'.$course->id)->assertOk()->assertSee('Importa um pacote');
         $this->get('/courses')->assertOk()->assertSee('Programa por estruturar');
     }
 
@@ -50,7 +50,7 @@ class StudyReadinessTest extends TestCase
         ])->assertRedirect('/study');
 
         $session = $course->studySessions()->firstOrFail();
-        $this->get('/study')->assertOk()->assertSee('minutos de estudo confirmados')
+        $this->get('/study')->assertOk()->assertSee('minutos realizados')
             ->assertViewHas('completedMinutes', 0);
 
         $this->patch('/study/'.$session->id.'/complete', ['actual_minutes' => 45])->assertRedirect('/study');
@@ -59,18 +59,18 @@ class StudyReadinessTest extends TestCase
         $this->get('/study')->assertOk()->assertViewHas('completedMinutes', 45)
             ->assertViewHas('plannedMinutes', 0);
 
-        $this->withExceptionHandling()->patchJson('/study/'.$session->id.'/complete', ['actual_minutes' => 0])->assertUnprocessable();
+        $this->withExceptionHandling()->patchJson('/study/'.$session->id.'/complete', ['actual_minutes' => 0])->assertStatus(409);
         $this->assertSame(45, $session->fresh()->metadata['actual_minutes']);
     }
-    public function test_only_taught_topics_can_be_selected_when_planning_study(): void
+    public function test_planning_can_include_taught_and_untaught_topics_without_marking_them_taught(): void
     {
         $course = Course::create(['name' => 'Macroeconomia', 'status' => 'active', 'semester' => 1]);
         $taught = Topic::create(['course_id' => $course->id, 'source' => 'manual', 'title' => 'Inflação', 'status' => 'active', 'taught_at' => now()]);
         $untaught = Topic::create(['course_id' => $course->id, 'source' => 'manual', 'title' => 'PIB por lecionar', 'status' => 'active']);
 
         $this->get('/study/create?course_id='.$course->id)->assertOk()
-            ->assertSee('Inflação')->assertDontSee('PIB por lecionar')
-            ->assertSee('Selecionar tudo')->assertSee('Desselecionar tudo')
+            ->assertSee('Inflação')->assertSee('PIB por lecionar')
+            ->assertSee('Selecionar tudo')->assertSee('Limpar seleção')
             ->assertSee('action="/study"', false);
 
         $payload = [
@@ -80,10 +80,11 @@ class StudyReadinessTest extends TestCase
 
         $this->withExceptionHandling()->postJson('/study', [
             ...$payload, 'topic_ids' => [$untaught->id],
-        ])->assertUnprocessable();
+        ])->assertRedirect('/study');
+        $this->assertNull($untaught->fresh()->taught_at);
 
         $this->post('/study', [...$payload, 'topic_ids' => [$taught->id]])->assertRedirect('/study');
-        $session = $course->studySessions()->firstOrFail();
+        $session = $course->studySessions()->latest('id')->firstOrFail();
         $this->assertSame([$taught->id], $session->topics()->pluck('topics.id')->all());
         $this->assertSame(60, (int) $session->planned_minutes);
         $this->get('/study')->assertOk();

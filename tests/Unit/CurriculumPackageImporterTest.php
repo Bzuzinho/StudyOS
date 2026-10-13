@@ -64,7 +64,16 @@ class CurriculumPackageImporterTest extends TestCase
             $this->assertNotNull($topic->parent_id);
             $this->assertNull($topic->taught_at);
             $this->assertGreaterThan(0,$topic->sourceChunks()->count());
+            $exercise = Exercise::where('course_id',$course->id)->firstOrFail();
+            $exercise->update(['prompt'=>'Versão usada no treino antigo']);
+            $runId = \Illuminate\Support\Facades\DB::table('practice_runs')->insertGetId([
+                'course_id'=>$course->id, 'exercise_ids'=>json_encode([$exercise->id]), 'responses'=>json_encode([]),
+                'current_index'=>0, 'status'=>'active', 'created_at'=>now(), 'updated_at'=>now(),
+            ]);
             app(CurriculumPackageImporter::class)->import($course,$path);
+            $snapshots = json_decode(\Illuminate\Support\Facades\DB::table('practice_runs')->find($runId)->question_snapshots,true);
+            $this->assertSame('Versão usada no treino antigo',$snapshots[$exercise->id]['prompt']);
+            $this->assertSame('Uma organização tem objetivos?',$exercise->fresh()->prompt);
             $this->assertSame(2,Topic::where('course_id',$course->id)->count());
             $this->assertSame(1,Exercise::where('course_id',$course->id)->count());
             $this->assertSame(1,Material::where('course_id',$course->id)->count());

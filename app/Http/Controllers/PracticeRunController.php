@@ -21,51 +21,86 @@ class PracticeRunController
 {
     public function create(Request $request): View
     {
-        $courses = Course::query()->where('status', 'active')->with(['topics' => fn($q) => $q
-            ->where('status','active')->orderBy('position')])->orderBy('name')->get();
-        return view('practice.start', ['courses'=>$courses,
-            'selectedCourseId'=>$request->integer('course_id'),
-            'selectedTopicId'=>$request->integer('topic_id'),
-            'studySessionId'=>$request->integer('study_session_id')]);
+        $courses = Course::query()->where('status', 'active')->with(['topics' => fn ($q) => $q
+            ->where('status', 'active')->orderBy('position')])->orderBy('name')->get();
+        $session = $request->integer('study_session_id') ? StudySession::with('topics')->findOrFail($request->integer('study_session_id')) : null;
+        $selected = collect($request->input('topic_ids', array_filter([$request->integer('topic_id')])))->map(fn ($id) => (int) $id);
+        if ($session) $selected = $session->topics->pluck('id');
+        $repeat = $request->integer('repeat_run_id') ? DB::table('practice_runs')->find($request->integer('repeat_run_id')) : null;
+        if ($repeat && $selected->isEmpty()) $selected = collect(data_get(json_decode($repeat->settings ?? 'null', true), 'topic_ids', []));
+        return view('practice.start', [
+            'courses' => $courses, 'selectedCourseId' => $session?->course_id ?: ($repeat?->course_id ?: $request->integer('course_id')),
+            'selectedTopics' => collect(old('topic_ids', $selected->all()))->map(fn ($id) => (int) $id),
+            'studySessionId' => $session?->id, 'repeatRunId' => $repeat?->id,
+        ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    private function filters(Request $request, bool $starting): array
     {
-        $data = $request->validate([
-            'course_id'=>['required','integer',Rule::exists('courses','id')],
-            'topic_ids'=>['required','array','min:1','max:45'],
-            'topic_ids.*'=>['required','integer','distinct'],
-            'count'=>['required','integer','min:1','max:30'],
-            'study_session_id'=>['nullable','integer',Rule::exists('study_sessions','id')],
+        return $request->validate([
+            'course_id' => ['required', 'integer', Rule::exists('courses', 'id')],
+            'topic_ids' => [$starting ? 'required' : 'sometimes', 'array', 'min:1', 'max:500'],
+            'topic_ids.*' => ['required', 'integer', 'distinct'],
+            'count' => [$starting ? 'required' : 'sometimes', 'integer', 'min:1', 'max:30'],
+            'difficulty' => ['nullable', Rule::in(['basic', 'intermediate', 'advanced'])],
+            'types' => ['nullable', 'array'],
+            'types.*' => [Rule::in(['true_false', 'single_answer', 'numeric', 'open_text'])],
+            'mode' => ['nullable', Rule::in(['quick', 'normal', 'assessment'])],
+            'errors_only' => ['nullable', 'boolean'],
+            'repeat_run_id' => ['nullable', 'integer'],
+            'study_session_id' => ['nullable', 'integer', Rule::exists('study_sessions', 'id')],
+            'accept_available' => ['nullable', 'boolean'],
         ]);
-        $course = Course::findOrFail($data['course_id']);
-        $topicIds = array_map('intval',$data['topic_ids']);
-        $topics=Topic::where('course_id',$course->id)->where('status','active')->whereIn('id',$topicIds)->get();
-        if($topics->count() !== count($topicIds)) {
-            throw ValidationException::withMessages(['topic_ids'=>'Há tópicos que não pertencem à UC.']);
+    }
+
+    public function eligible(Request $request, \App\Services\Practice\PracticeQuestionPool $pool): \Illuminate\Http\JsonResponse
+    {
+        $data = $this->filters($request, false);
+        if (empty($data['topic_ids'])) return response()->json(['count' => 0]);
+        $course = Course::with('topics')->findOrFail($data['course_id']);
+        return response()->json(['count' => $pool->query($course, $data['topic_ids'], $data)->count()]);
+    }
+
+    public function store(Request $request, \App\Services\Practice\PracticeQuestionPool $pool): RedirectResponse
+    {
+        $data = $this->filters($request, true);
+        $course = Course::with('topics')->findOrFail($data['course_id']);
+        $topicIds = \App\Services\Learning\Curriculum::expand($course, $data['topic_ids']);
+        $session = !empty($data['study_session_id']) ? StudySession::where('course_id', $course->id)->findOrFail($data['study_session_id']) : null;
+        $query = $pool->query($course, $topicIds, $data);
+        $available = (clone $query)->count();
+        if (!$available) throw ValidationException::withMessages(['topic_ids' => 'Não existem perguntas elegíveis para esta seleção.']);
+        if ($available < $data['count'] && !$request->boolean('accept_available')) {
+            throw ValidationException::withMessages(['count' => "Existem apenas {$available} perguntas elegíveis. Confirma a utilização das disponíveis."]);
         }
-        $expanded=$topics->pluck('id')->all();
-        $parents=$topics->filter(fn($t)=>$t->parent_id===null)->pluck('id')->all();
-        if ($parents !== []) {
-            $expanded=array_unique([...$expanded,...Topic::where('course_id',$course->id)->where('status','active')
-                ->whereIn('parent_id',$parents)->pluck('id')->all()]);
-        }
-        $session=null;
-        if (!empty($data['study_session_id'])) {
-            $session=StudySession::where('course_id',$course->id)->findOrFail($data['study_session_id']);
-        }
-        $ids=Exercise::query()->where('course_id',$course->id)->where('status','active')
-            ->whereHas('topics',fn($q)=>$q->whereIn('topics.id',$expanded))
-            ->inRandomOrder()->limit((int)$data['count'])->pluck('id')->all();
-        if (!$ids) {
-            return back()->withErrors(['topic_ids'=>'Não existem perguntas no banco para estes subtemas.']);
-        }
-        $id=DB::table('practice_runs')->insertGetId([
-            'course_id'=>$course->id,'study_session_id'=>$session?->id,
-            'exercise_ids'=>json_encode($ids),'responses'=>json_encode([]),
-            'current_index'=>0,'status'=>'active','created_at'=>now(),'updated_at'=>now(),
+        // Prefer unused/least recently answered questions, randomizing ties.
+        $exercises = $query->with('topics')->withMax('attempts', 'attempted_at')
+            ->orderByRaw('case when (select max(attempted_at) from exercise_attempts where exercise_attempts.exercise_id = exercises.id) is null then 0 else 1 end')
+            ->orderBy('attempts_max_attempted_at')->inRandomOrder()->limit((int) $data['count'])->get();
+        $snapshots = $exercises->mapWithKeys(fn ($ex) => [$ex->id => [
+            'id' => $ex->id, 'title' => $ex->title, 'prompt' => $ex->prompt, 'type' => $ex->type,
+            'expected_answer' => $ex->expected_answer, 'answer_config' => $ex->answer_config,
+            'explanation' => $ex->explanation, 'max_points' => $ex->max_points, 'metadata' => $ex->metadata,
+            'topic_ids' => $ex->topics->pluck('id')->all(),
+            'topic_titles' => $ex->topics->pluck('title', 'id')->all(),
+        ]])->all();
+        $id = DB::table('practice_runs')->insertGetId([
+            'course_id' => $course->id, 'study_session_id' => $session?->id,
+            'exercise_ids' => json_encode($exercises->pluck('id')->all()), 'responses' => json_encode([]),
+            'settings' => json_encode([...$data, 'topic_ids' => $topicIds]),
+            'question_snapshots' => json_encode($snapshots, JSON_UNESCAPED_UNICODE),
+            'current_index' => 0, 'status' => 'active', 'created_at' => now(), 'updated_at' => now(),
         ]);
-        return redirect()->route('practice.runs.show',$id);
+        return redirect()->route('practice.runs.show', $id);
+    }
+
+    private function questions(object $row): \Illuminate\Support\Collection
+    {
+        $ids = json_decode($row->exercise_ids, true) ?: [];
+        $snapshots = json_decode($row->question_snapshots ?? 'null', true) ?: [];
+        $current = Exercise::with('topics')->whereIn('id', $ids)->get()->keyBy('id');
+        return collect($ids)->mapWithKeys(fn ($id) => [$id => isset($snapshots[$id])
+            ? new Exercise($snapshots[$id]) : $current->get($id)]);
     }
 
     public function show(int $run): View
@@ -74,7 +109,14 @@ class PracticeRunController
         abort_unless($row,404);
         $ids=json_decode($row->exercise_ids,true) ?: [];
         $responses=json_decode($row->responses,true) ?: [];
-        $exercises=Exercise::whereIn('id',$ids)->get()->keyBy('id');
+        $attempts = ExerciseAttempt::where('metadata->practice_run_id', $row->id)->get()->keyBy('exercise_id');
+        foreach ($responses as $exerciseId => &$response) {
+            if ($attempt = $attempts->get($exerciseId)) {
+                $response = [...$response, 'score' => $attempt->score, 'max_points' => $attempt->max_points, 'grading_status' => $attempt->grading_status, 'grading_method' => $attempt->grading_method, 'feedback' => $attempt->feedback, 'attempt_id' => $attempt->id];
+            }
+        }
+        unset($response);
+        $exercises=$this->questions($row);
         if ($row->status==='completed') {
             $questions=collect($ids)->map(fn($id)=>[
                 'exercise'=>$exercises->get($id),
@@ -84,7 +126,23 @@ class PracticeRunController
             $pending=$questions->count()-$graded->count();
             $points=$graded->sum(fn($q)=>(float)($q['response']['score']??0));
             $maximum=$graded->sum(fn($q)=>(float)$q['exercise']->max_points);
-            return view('practice.result',compact('row','questions','graded','pending','points','maximum'));
+            $provisional = $graded->contains(fn ($q) => ($q['response']['grading_method'] ?? '') === 'ai_rubric_provisional');
+            $correct = $graded->filter(fn ($q) => (float) $q['response']['score'] >= (float) $q['exercise']->max_points)->count();
+            $byTopic = [];
+            foreach ($questions as $question) {
+                $ex = $question['exercise'];
+                $titles = $ex->topic_titles ?? $ex->topics->pluck('title', 'id')->all();
+                foreach ($titles as $topicId => $title) {
+                    $byTopic[$topicId] ??= ['title' => $title, 'points' => 0, 'maximum' => 0, 'pending' => 0];
+                    if (($question['response']['grading_status'] ?? '') === 'graded') {
+                        $byTopic[$topicId]['points'] += (float) $question['response']['score'];
+                        $byTopic[$topicId]['maximum'] += (float) $ex->max_points;
+                    } else $byTopic[$topicId]['pending']++;
+                }
+            }
+            $settings = json_decode($row->settings ?? 'null', true) ?: [];
+            $retryTopics = $settings['topic_ids'] ?? collect($questions)->flatMap(fn ($q) => $q['exercise']->topic_ids ?? $q['exercise']->topics->pluck('id')->all())->unique()->values()->all();
+            return view('practice.result', compact('row','questions','graded','pending','points','maximum','provisional','correct','byTopic','settings','retryTopics'));
         }
         $id=$ids[$row->current_index]??null;
         if (!$id) abort(404);
@@ -97,14 +155,16 @@ class PracticeRunController
 
     public function answer(Request $request,int $run,ExerciseGrader $grader,TopicMasteryService $mastery,OpenAnswerAiGrader $aiGrader): RedirectResponse
     {
-        $data=$request->validate(['answer'=>['required','string','max:10000']]);
+        $data=$request->validate(['answer'=>['required','string','max:10000'], 'question_id'=>['nullable','integer']]);
         DB::transaction(function() use($run,$data,$grader,$mastery,$aiGrader) {
             $row=DB::table('practice_runs')->where('id',$run)->lockForUpdate()->first();
             abort_unless($row && $row->status==='active',409);
             $ids=json_decode($row->exercise_ids,true)?:[];
             $id=$ids[$row->current_index]??null;
             abort_unless($id,409);
-            $exercise=Exercise::findOrFail($id);
+            $exercise=$this->questions($row)->get($id);
+            abort_unless($exercise, 404);
+            if (isset($data['question_id'])) abort_unless((int) $data['question_id'] === (int) $id, 409);
             $result=$grader->grade($exercise->type,$exercise->expected_answer,
                 $exercise->answer_config??[],$data['answer'],(float)$exercise->max_points);
             if ($exercise->type==='open_text' && trim((string)$exercise->expected_answer)!=='') {
@@ -118,7 +178,7 @@ class PracticeRunController
                 }
             }
             $responses=json_decode($row->responses,true)?:[];
-            $responses[$id]=['answer'=>$data['answer'],'score'=>$result['score'],
+            $responses[$id]=['answer'=>$data['answer'],'score'=>$result['score'], 'max_points'=>$exercise->max_points, 'grading_method'=>$result['grading_method'],
                 'grading_status'=>$result['grading_status'],'feedback'=>$result['feedback']];
             $attempt=ExerciseAttempt::create([
                 'exercise_id'=>$id,'study_session_id'=>$row->study_session_id,
@@ -126,9 +186,9 @@ class PracticeRunController
                 'max_points'=>$exercise->max_points,'percentage'=>$result['percentage'],
                 'grading_status'=>$result['grading_status'],'grading_method'=>$result['grading_method'],
                 'feedback'=>$result['feedback'],'attempted_at'=>now(),
-                'metadata'=>['practice_run_id'=>$row->id,'provisional_ai'=>($result['grading_method']??'')==='ai_rubric_provisional'],
+                'metadata'=>['question_snapshot'=>$exercise->getAttributes(), 'practice_run_id'=>$row->id,'provisional_ai'=>($result['grading_method']??'')==='ai_rubric_provisional'],
             ]);
-            if ($attempt->grading_status==='graded') $mastery->recalculateForAttempt($attempt);
+            if ($attempt->grading_status==='graded' && $attempt->grading_method !== 'ai_rubric_provisional') $mastery->recalculateForAttempt($attempt);
             if ($row->study_session_id) {
                 $session=StudySession::find($row->study_session_id);
                 if ($session) {

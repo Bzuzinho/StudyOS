@@ -23,83 +23,12 @@ class PracticeController
 {
     public function index(Request $request): View
     {
-        $exerciseQuery = Exercise::query()
-            ->with(['course', 'topics', 'attempts', 'sourceChunks'])
-            ->where('status', 'active');
-
-        $studySession = null;
-
-        if ($request->integer('study_session_id')) {
-            $studySession = StudySession::query()
-                ->with('topics')
-                ->find($request->integer('study_session_id'));
-
-            if ($studySession) {
-                $exerciseQuery->where('course_id', $studySession->course_id);
-
-                $sessionTopicIds = $studySession->topics->pluck('id');
-
-                if ($sessionTopicIds->isNotEmpty()) {
-                    $exerciseQuery->whereHas(
-                        'topics',
-                        fn ($query) => $query->whereIn('topics.id', $sessionTopicIds),
-                    );
-                }
-            }
-        }
-
-        if ($request->integer('course_id')) {
-            $exerciseQuery->where('course_id', $request->integer('course_id'));
-        }
-
-        if ($request->integer('topic_id')) {
-            $exerciseQuery->whereHas('topics', fn ($query) => $query->whereKey($request->integer('topic_id')));
-        }
-
-        $topics = Topic::query()
-            ->with(['course', 'mastery'])
-            ->withCount([
-                'exercises' => fn ($query) => $query->where('status', 'active'),
-                'studySessions',
-                'sourceChunks as source_chunks_count' => fn ($query) => $query
-                    ->where('source_chunks.status', 'active'),
-                'sourceChunks as rich_source_chunks_count' => fn ($query) => $query
-                    ->where('source_chunks.status', 'active')
-                    ->where('source_chunks.quality', 'content'),
-            ])
-            ->where('status', 'active')
-            ->orderBy('course_id')
-            ->orderBy('position')
-            ->get();
-
-        $diagnostics = Course::query()->where('status', 'active')->orderBy('name')->get()
-            ->map(function (Course $course) use ($topics) {
-                $courseTopics = $topics->where('course_id', $course->id);
-                return [
-                    'course' => $course,
-                    'topics' => $courseTopics->count(),
-                    'taught' => $courseTopics->whereNotNull('taught_at')->count(),
-                    'with_exercises' => $courseTopics->filter(fn (Topic $topic) => $topic->exercises_count > 0)->count(),
-                    'source_ready' => $courseTopics->filter(fn (Topic $topic) => $topic->rich_source_chunks_count > 0)->count(),
-                    'assessed' => $courseTopics->filter(fn (Topic $topic) => in_array($topic->mastery?->status, ['fragile', 'developing', 'competent', 'strong'], true))->count(),
-                    'needs_diagnosis' => $courseTopics->filter(fn (Topic $topic) => $topic->taught_at !== null && ! in_array($topic->mastery?->status, ['fragile', 'developing', 'competent', 'strong'], true))->count(),
-                ];
-            });
-
+        $runs = DB::table('practice_runs')->where('status', 'completed')->orderByDesc('id')->limit(20)->get();
         return view('practice.index', [
-            'diagnostics' => $diagnostics,
-            'exercises' => $exerciseQuery->latest('updated_at')->get(),
-            'topics' => $topics,
-            'recentAttempts' => ExerciseAttempt::query()
-                ->with(['exercise.course', 'exercise.topics'])
-                ->latest('attempted_at')
-                ->limit(8)
-                ->get(),
-            'courses' => Course::query()->where('status', 'active')->orderBy('name')->get(),
-            'eligibleSourceChunkCount' => SourceChunk::query()->eligibleForPractice()->count(),
-            'selectedCourseId' => $request->integer('course_id') ?: null,
-            'selectedTopicId' => $request->integer('topic_id') ?: null,
-            'studySession' => $studySession,
+            'courses' => Course::where('status', 'active')->orderBy('name')->get(),
+            'runs' => $runs,
+            'activeRuns' => DB::table('practice_runs')->where('status', 'active')->orderByDesc('id')->get(),
+            'summaries' => app(\App\Services\Practice\PracticeRunSummary::class)->forRuns($runs),
         ]);
     }
 
@@ -315,7 +244,7 @@ class PracticeController
         ExerciseAttempt $attempt,
         TopicMasteryService $masteryService,
     ): RedirectResponse {
-        abort_unless($attempt->grading_status === 'pending_review', 404);
+        abort_unless($attempt->grading_status === 'pending_review' || $attempt->grading_method === 'ai_rubric_provisional', 404);
 
         $data = $request->validate([
             'score' => ['required', 'numeric', 'min:0', 'max:'.$attempt->max_points],
@@ -330,13 +259,12 @@ class PracticeController
             'percentage' => $maxPoints > 0 ? round(($score / $maxPoints) * 100, 2) : 0,
             'grading_status' => 'graded',
             'grading_method' => 'manual_review',
-            'feedback' => $data['feedback'] ?: null,
+            'feedback' => ($data['feedback'] ?? null) ?: null,
         ]);
 
         $masteryService->recalculateForAttempt($attempt->fresh());
 
-        return redirect()->route('practice.show', $attempt->exercise_id)
-            ->with('status', 'Revisão registada e domínio recalculado.');
+        return (($attempt->metadata['practice_run_id'] ?? null) ? redirect()->route('practice.runs.show', $attempt->metadata['practice_run_id']) : redirect()->route('practice.show', $attempt->exercise_id))->with('status', 'Revisão registada e domínio recalculado.');
     }
 
     public function destroy(Exercise $exercise): RedirectResponse

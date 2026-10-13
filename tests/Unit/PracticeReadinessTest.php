@@ -35,11 +35,9 @@ class PracticeReadinessTest extends TestCase
         $course = Course::create(['name' => 'Macroeconomia', 'status' => 'active']);
         Topic::create(['course_id' => $course->id, 'source' => 'manual', 'title' => 'Produto interno bruto', 'status' => 'active', 'taught_at' => now()]);
         Topic::create(['course_id' => $course->id, 'source' => 'manual', 'title' => 'Inflação', 'status' => 'active']);
-        $this->get('/practice')->assertOk()->assertSee('Começar por unidade curricular')
-            ->assertSee('Inglês')->assertSee('Macroeconomia')
-            ->assertViewHas('diagnostics', fn ($items) =>
-                $items->firstWhere('course.id', $course->id)['needs_diagnosis'] === 1
-                && $items->firstWhere('course.id', $empty->id)['topics'] === 0
-            );
+        $this->get('/practice')->assertOk()->assertSee('Iniciar novo treino')->assertSee('Resultados recentes')
+            ->assertDontSee('Produto interno bruto')->assertDontSee('Inflação')
+            ->assertViewHas('courses', fn ($items) => $items->contains('id', $course->id) && $items->contains('id', $empty->id));
+        $this->get('/practice/treinar')->assertOk()->assertSee('Inglês')->assertSee('Macroeconomia');
     }
 }

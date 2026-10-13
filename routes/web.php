@@ -42,12 +42,14 @@ Route::delete('/materials/{material}', [MaterialController::class, 'destroy'])->
 
 Route::get('/study', [StudyController::class, 'index'])->name('study.index');
 Route::get('/study/create', [StudyController::class, 'create'])->name('study.create');
+Route::get('/study/{studySession}', [StudyController::class, 'show'])->name('study.show');
 Route::post('/study', [StudyController::class, 'store'])->name('study.store');
 Route::patch('/study/{studySession}/complete', [StudyController::class, 'complete'])->name('study.complete');
 Route::delete('/study/{studySession}', [StudyController::class, 'destroy'])->name('study.destroy');
 
 Route::get('/practice', [PracticeController::class, 'index'])->name('practice.index');
 Route::get('/practice/treinar', [PracticeRunController::class, 'create'])->name('practice.runs.create');
+Route::get('/practice/treinar/disponiveis', [PracticeRunController::class, 'eligible'])->name('practice.runs.eligible');
 Route::post('/practice/treinar', [PracticeRunController::class, 'store'])->name('practice.runs.store');
 Route::get('/practice/sessao/{run}', [PracticeRunController::class, 'show'])->name('practice.runs.show');
 Route::post('/practice/sessao/{run}/responder', [PracticeRunController::class, 'answer'])->name('practice.runs.answer');

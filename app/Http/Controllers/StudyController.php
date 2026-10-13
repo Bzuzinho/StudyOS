@@ -6,6 +6,7 @@ use App\Models\ClassOccurrence;
 use App\Models\Course;
 use App\Models\StudySession;
 use App\Models\Topic;
+use App\Services\Learning\Curriculum;
 use App\Services\Learning\StudyRecommendationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,7 +51,7 @@ class StudyController
             'courses' => $courses,
             'studyRecommendations' => $courses->map(fn (Course $course) => $recommendations->forCourse($course)),
             'sessions' => $sessions,
-            'topicCount' => Topic::query()->where('status', 'active')->count(),
+            'continuing' => $sessions->where('status', 'started')->sortByDesc('updated_at')->first(),
             'plannedMinutes' => StudySession::query()->where('status', '!=', 'completed')->sum('planned_minutes'),
             'completedMinutes' => StudySession::query()->where('status', 'completed')->get()->sum(fn ($session) => (int) ($session->metadata['actual_minutes'] ?? 0)),
         ]);
@@ -60,7 +61,7 @@ class StudyController
     {
         $courses = Course::query()
             ->where('status', 'active')
-            ->with(['topics' => fn ($query) => $query->where('status', 'active')->whereNotNull('taught_at')->orderBy('position')])
+            ->with(['topics' => fn ($query) => $query->where('status', 'active')->orderBy('position')])
             ->orderBy('name')
             ->get();
 
@@ -69,6 +70,8 @@ class StudyController
             'selectedCourseId' => $request->integer('course_id') ?: null,
             'selectedDate' => $request->string('date')->toString() ?: now()->timezone(config('app.timezone'))->toDateString(),
             'types' => $this->types(),
+            'selectedTopics' => collect(old('topic_ids', array_filter([$request->integer('topic_id')])))->map(fn ($id) => (int) $id),
+            'studyNow' => $request->boolean('now'),
         ]);
     }
 
@@ -80,38 +83,23 @@ class StudyController
             'topic_ids.*' => ['integer', Rule::exists('topics', 'id')],
             'type' => ['required', Rule::in(array_keys($this->types()))],
             'title' => ['nullable', 'string', 'max:255'],
-            'date' => ['required', 'date_format:Y-m-d'],
-            'start_time' => ['required', 'date_format:H:i'],
+            'start_now' => ['sometimes', 'boolean'],
+            'date' => ['required_unless:start_now,1', 'nullable', 'date_format:Y-m-d'],
+            'start_time' => ['required_unless:start_now,1', 'nullable', 'date_format:H:i'],
             'planned_minutes' => ['required', 'integer', 'min:15', 'max:240'],
             'notes' => ['nullable', 'string', 'max:4000'],
         ]);
 
-        $topicIds = array_values(array_unique($data['topic_ids'] ?? []));
-
-        if ($topicIds !== []) {
-            $validTopicCount = Topic::query()
-                ->whereIn('id', $topicIds)
-                ->where('course_id', $data['course_id'])
-                ->where('status', 'active')
-                ->whereNotNull('taught_at')
-                ->count();
-
-            if ($validTopicCount !== count($topicIds)) {
-                throw ValidationException::withMessages([
-                    'topic_ids' => 'Todos os tópicos escolhidos têm de pertencer à UC selecionada.',
-                ]);
-            }
-        }
-
-        $timezone = config('app.timezone', 'Europe/Lisbon');
-        $startsAt = Carbon::createFromFormat(
-            'Y-m-d H:i',
-            $data['date'].' '.$data['start_time'],
-            $timezone,
+        $course = Course::with('topics')->findOrFail($data['course_id']);
+        $topicIds = Curriculum::expand($course, $data['topic_ids'] ?? []);
+        $startNow = $request->boolean('start_now');
+        $startsAt = $startNow ? now()->utc() : Carbon::createFromFormat(
+            'Y-m-d H:i', $data['date'].' '.$data['start_time'], config('app.timezone', 'Europe/Lisbon')
         )->utc();
+        $sessionId = null;
         $externalId = (string) Str::uuid();
 
-        DB::transaction(function () use ($data, $topicIds, $startsAt, $externalId) {
+        DB::transaction(function () use ($data, $topicIds, $startsAt, $externalId, &$sessionId) {
             $course = Course::query()->findOrFail($data['course_id']);
 
             $session = StudySession::query()->create([
@@ -131,6 +119,7 @@ class StudyController
             ]);
 
             $session->topics()->sync($topicIds);
+            $sessionId = $session->id;
 
             ClassOccurrence::query()->updateOrCreate(
                 ['source' => 'study_plan', 'external_uid' => $externalId],
@@ -152,12 +141,27 @@ class StudyController
             );
         });
 
-        return redirect()->route('study.index')->with('status', 'Sessão de estudo planeada.');
+        return $startNow ? redirect()->route('study.show', $sessionId) : redirect()->route('study.index')->with('status', 'Sessão de estudo planeada.');
+    }
+
+    public function show(StudySession $studySession): View
+    {
+        $studySession->load(['course.topics', 'topics']);
+        if ($studySession->status === 'planned') {
+            $meta = $studySession->metadata ?? [];
+            $meta['started_at'] = now()->toIso8601String();
+            $studySession->update(['status' => 'started', 'metadata' => $meta]);
+        }
+        $selected = Curriculum::leaves($studySession->course)->whereIn('id', $studySession->topics->pluck('id'));
+        $materials = $studySession->course->materials()->where('status', 'active')->with('versions')->get()
+            ->filter(fn ($m) => $m->versions->contains(fn ($v) => $v->storage_path || trim((string) $v->content_text) !== ''));
+        $manuals = $materials->where('source', 'chatgpt_package')->whereIn('external_id', $selected->pluck('external_id'));
+        return view('study.session', compact('studySession', 'selected', 'materials', 'manuals'));
     }
 
     public function complete(Request $request, StudySession $studySession): RedirectResponse
     {
-        abort_unless($studySession->source === 'manual', 404);
+        abort_unless($studySession->source === 'manual' && $studySession->status !== 'completed', 409);
 
         $data = $request->validate([
             'actual_minutes' => ['required', 'integer', 'min:1', 'max:480'],
@@ -178,7 +182,7 @@ class StudyController
 
     public function destroy(StudySession $studySession): RedirectResponse
     {
-        abort_unless($studySession->source === 'manual', 404);
+        abort_unless($studySession->source === 'manual' && $studySession->status === 'planned', 409);
 
         DB::transaction(function () use ($studySession) {
             ClassOccurrence::query()
@@ -200,6 +204,7 @@ class StudyController
             'practice' => 'Exercícios / prática',
             'reading' => 'Leitura',
             'assignment' => 'Preparação de trabalho',
+            'assessment' => 'Preparação de avaliação',
         ];
     }
 }

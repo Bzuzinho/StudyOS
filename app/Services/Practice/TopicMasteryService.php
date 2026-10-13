@@ -17,6 +17,7 @@ class TopicMasteryService
             ->join('exercise_topic', 'exercise_topic.exercise_id', '=', 'exercise_attempts.exercise_id')
             ->where('exercise_topic.topic_id', $topic->id)
             ->where('exercise_attempts.grading_status', 'graded')
+            ->where('exercise_attempts.grading_method', '!=', 'ai_rubric_provisional')
             ->orderByDesc('exercise_attempts.attempted_at')
             ->get();
 

@@ -3,9 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
-use App\Services\Learning\TopicCoverageService;
 use Illuminate\View\View;
-use Illuminate\Support\Facades\DB;
 
 class CourseController
 {
@@ -30,7 +28,7 @@ class CourseController
                 'topics as practiced_topics_count' => fn ($query) => $query->where('status', 'active')->whereHas('mastery', fn ($mastery) => $mastery->whereNotIn('status', ['no_evidence', 'insufficient_evidence'])),
                 'sourceChunks as source_chunks_count' => fn ($query) => $query->where('status', 'active'),
             ])
-            ->with(['classOccurrences' => fn ($query) => $query
+            ->with(['topics' => fn ($q) => $q->where('status', 'active')->with('mastery'), 'classOccurrences' => fn ($query) => $query
                 ->scheduledClasses()
                 ->where('starts_at', '>=', now()->utc())
                 ->orderBy('starts_at')
@@ -38,6 +36,12 @@ class CourseController
             ->orderBy('semester')
             ->orderBy('name')
             ->get()
+            ->each(function ($course) {
+                $leaves = \App\Services\Learning\Curriculum::leaves($course);
+                $course->topics_count = $leaves->count();
+                $course->taught_topics_count = $leaves->whereNotNull('taught_at')->count();
+                $course->practiced_topics_count = $leaves->filter(fn ($t) => in_array($t->mastery?->status, ['competent', 'strong']))->count();
+            })
             ->groupBy('semester');
 
         return view('courses.index', [
@@ -47,78 +51,30 @@ class CourseController
         ]);
     }
 
-    public function show(Course $course, TopicCoverageService $coverage): View
+    public function show(Course $course): View
     {
         $course->loadCount([
-            'classOccurrences as scheduled_classes_count' => fn ($query) => $query->scheduledClasses(),
-            'classOccurrences as elapsed_classes_count' => fn ($query) => $query->elapsedClasses(),
-            'materials as downloaded_materials_count' => fn ($query) => $query->whereHas('versions', fn ($versions) => $versions->whereNotNull('storage_path')),
-            'materials as extracted_materials_count' => fn ($query) => $query->whereHas('versions', fn ($versions) => $versions->where('extraction_status', 'extracted')),
-            'materials as failed_materials_count' => fn ($query) => $query->whereHas('versions', fn ($versions) => $versions->where('extraction_status', 'failed')),
-            'sourceChunks as active_source_chunks_count' => fn ($query) => $query->where('status', 'active'),
+            'classOccurrences as scheduled_classes_count' => fn ($q) => $q->scheduledClasses(),
+            'classOccurrences as elapsed_classes_count' => fn ($q) => $q->elapsedClasses(),
         ]);
         $course->load([
-            'sourceCourses',
-            'classOccurrences' => fn ($query) => $query->scheduledClasses()->orderBy('starts_at'),
-            'assessments' => fn ($query) => $query->orderBy('due_at'),
-            'tasks' => fn ($query) => $query->orderByRaw('due_at is null, due_at asc'),
-            'materials' => fn ($query) => $query->with('versions')->where('status', 'active')->orderByDesc('updated_at'),
-            'lessonSummaries' => fn ($query) => $query->orderByDesc('occurred_at'),
-            'topics' => fn ($query) => $query
-                ->where('status', 'active')
-                ->with('mastery')
-                ->withCount([
-                    'studySessions',
-                    'exercises',
-                    'sourceChunks as source_chunks_count' => fn ($sourceQuery) => $sourceQuery
-                        ->where('source_chunks.status', 'active'),
-                    'sourceChunks as rich_source_chunks_count' => fn ($sourceQuery) => $sourceQuery
-                        ->where('source_chunks.status', 'active')
-                        ->where('source_chunks.quality', 'content'),
-                ])
-                ->orderBy('position'),
-            'studySessions' => fn ($query) => $query->with('topics')->orderBy('starts_at'),
-            'exercises' => fn ($query) => $query
-                ->where('status', 'active')
-                ->with(['sourceChunks' => fn ($sourceQuery) => $sourceQuery->where('source_chunks.status', 'active')])
-                ->withCount('attempts')
-                ->latest('updated_at'),
-            'sourceChunks' => fn ($query) => $query
-                ->where('status', 'active')
-                ->with(['materialVersion.material', 'lessonSummary', 'topics'])
-                ->orderBy('title')
-                ->orderBy('ordinal')
-                ->limit(24),
+            'topics' => fn ($q) => $q->where('status', 'active')->with('mastery')
+                ->withCount(['studySessions as completed_study_sessions_count' => fn ($s) => $s->where('status', 'completed')])->orderBy('position'),
+            'materials' => fn ($q) => $q->where('status', 'active')->with('versions'),
         ]);
-
-        $topicCoverage = $course->topics->mapWithKeys(fn ($topic) => [$topic->id => $coverage->assess($topic)]);
-
-        $missingStudySources = $course->topics
-            ->filter(fn ($topic) => $topic->taught_at !== null && ($topicCoverage[$topic->id]['status'] ?? '') !== 'suficiente_para_estudar')
-            ->values();
-
-        $now = now();
-        $upcomingClasses = $course->classOccurrences
-            ->filter(fn ($event) => $event->starts_at->gte($now))
-            ->take(12);
-        $recentClasses = $course->classOccurrences
-            ->filter(fn ($event) => $event->starts_at->lt($now))
-            ->sortByDesc('starts_at')
-            ->take(8);
-
-        $latestReviewRow = DB::table('ai_curriculum_reviews')->where('course_id', $course->id)->orderByDesc('id')->first();
-        $latestAiCurriculumReview = $latestReviewRow ? (object) [
-            'created_at' => \Illuminate\Support\Carbon::parse($latestReviewRow->created_at),
-            'output' => json_decode($latestReviewRow->output, true) ?: [],
-        ] : null;
-
-        return view('courses.show', [
-            'course' => $course,
-            'upcomingClasses' => $upcomingClasses,
-            'recentClasses' => $recentClasses,
-            'missingStudySources' => $missingStudySources,
-            'topicCoverage' => $topicCoverage,
-            'latestAiCurriculumReview' => $latestAiCurriculumReview,
-        ]);
+        $curriculum = \App\Services\Learning\Curriculum::topics($course);
+        $leaves = \App\Services\Learning\Curriculum::leaves($course);
+        $nextClass = $course->classOccurrences()->scheduledClasses()->where('starts_at', '>=', now())->orderBy('starts_at')->first();
+        $nextAssessment = $course->assessments()->where('due_at', '>=', now())
+            ->where(fn ($q) => $q->whereNull('metadata->conditional')->orWhere('metadata->conditional', false))
+            ->orderBy('due_at')->first();
+        $nextSession = $course->studySessions()->whereIn('status', ['planned', 'started'])
+            ->where(fn ($q) => $q->where('status', 'started')->orWhere('starts_at', '>=', now()))
+            ->orderByRaw("case when status = 'started' then 0 else 1 end")->orderBy('starts_at')->first();
+        $priority = $leaves->filter(fn ($t) => $t->taught_at && in_array($t->mastery?->status, ['fragile', 'developing']))
+            ->sortBy(fn ($t) => $t->mastery->score_percent)->first();
+        $availableMaterials = $course->materials->filter(fn ($m) => $m->versions->contains(fn ($v) => $v->storage_path || trim((string) $v->content_text) !== ''));
+        $manualTopicIds = $leaves->filter(fn ($t) => $availableMaterials->contains(fn ($m) => $m->source === 'chatgpt_package' && $m->external_id === $t->external_id))->pluck('id');
+        return view('courses.show', compact('course', 'curriculum', 'leaves', 'nextClass', 'nextAssessment', 'nextSession', 'priority', 'availableMaterials', 'manualTopicIds'));
     }
 }

@@ -1,20 +1,23 @@
-<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Resultados do treino · StudyOS</title>@include('partials.app-identity')<link rel="stylesheet" href="/css/app.css?v=practice-run-1"></head><body><div class="shell narrow-shell">
-<nav class="nav"><a class="brand" href="/"><img src="/brand/studyos-mark.svg" width="36" height="36" alt=""><span>StudyOS</span></a><div class="nav-links"><a href="/">Dashboard</a><a href="/courses">UCs</a><a href="/study">Estudo</a><a href="/practice" class="active">Prática</a></div></nav>
-<header class="form-header"><p class="eyebrow">Sessão concluída</p><h1>Resultados e correção</h1><p>{{ $questions->count() }} perguntas respondidas · {{ $graded->count() }} corrigidas · {{ $pending }} a aguardar revisão.</p></header>
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Resultados do treino · StudyOS</title>@include('partials.app-identity')<link rel="stylesheet" href="/css/app.css?v=learning-20261013"></head><body class="learning-page"><div class="shell narrow-shell">
+@include('partials.learning-nav',['active'=>'/practice'])
+@if(session('status'))<div class="alert success" role="status">{{ session('status') }}</div>@endif
+@if($errors->any())<div class="alert error" role="alert">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
+<header class="form-header"><p class="eyebrow">Sessão concluída</p><h1>Resultados e correção</h1><p>{{ $questions->count() }} perguntas respondidas · {{ $correct }} corretas · {{ $graded->count()-$correct }} incorretas ou parciais · {{ $pending }} pendentes.</p></header>
 <section class="card">
-@if($maximum>0)<h2>{{ number_format(($points/$maximum)*20,1,',','.') }} / 20 <small>nas perguntas já corrigidas</small></h2><p>{{ number_format($points/$maximum*100,1,',','.') }}% de aproveitamento nas perguntas com correção automática.</p>@endif
-@if($pending>0)<p class="extraction-warning"><strong>Classificação global ainda não disponível.</strong> Há {{ $pending }} resposta(s) aberta(s) pendente(s) de correção. Não seriam fiáveis uma nota final ou um nível de domínio baseados nestas respostas sem avaliação.</p>@else<p>Todas as perguntas foram corrigidas. Revê abaixo os erros e as soluções.</p>@endif
+@if($pending>0)<h2>Classificação global ainda não disponível</h2><p class="muted-text">Há {{ $pending }} respostas pendentes. Revê os critérios e regista a correção abaixo.</p>
+@elseif($maximum>0)<h2 class="result-score">{{ number_format($points/$maximum*20,1,',','.') }} / 20</h2><p>{{ $provisional ? 'Classificação provisória — inclui avaliação automática por IA, sujeita a revisão.' : 'Classificação final — todas as respostas corrigidas.' }}</p>@endif
+@if($provisional)<p class="muted-text">As correções de IA são provisórias e não demonstram domínio até serem revistas.</p>@endif
+@if(count($byTopic))<div class="table-scroll"><table><thead><tr><th>Subtema</th><th>Resultado</th><th>Revisão</th></tr></thead><tbody>@foreach($byTopic as $t)<tr><td>{{ $t['title'] }}</td><td>{{ $t['maximum']>0 ? number_format($t['points']/$t['maximum']*100,0).'% nas corrigidas' : 'Sem correção' }}</td><td>{{ $t['pending'] ? $t['pending'].' pendentes' : ($t['maximum']>0 && $t['points']/$t['maximum']<0.7 ? 'Reforçar este subtema' : 'Consultar correção') }}</td></tr>@endforeach</tbody></table></div>@endif
 </section>
 @foreach($questions as $question)
-@php $ex=$question['exercise'];$response=$question['response']??[];$isGraded=($response['grading_status']??'')==='graded';$correct=$isGraded && (float)($response['score']??0)>=(float)$ex->max_points; @endphp
-<section class="card" style="margin-top:14px">
-<h3>{{ $loop->iteration }}. {{ $ex->prompt }}</h3>
-<p><strong>A tua resposta:</strong> {{ $response['answer']??'—' }}</p>
-<p><strong>Estado:</strong> {{ $isGraded ? ($correct?'Correta':'Incorreta') : 'Aguarda revisão' }}</p>
-@if(!$correct)<p><strong>Resposta de referência:</strong> {{ $ex->expected_answer ?: 'Não disponível' }}</p>@endif
-@if($ex->explanation)<p><strong>Explicação:</strong> {{ $ex->explanation }}</p>@endif
-@if(!empty($response['feedback']))<p>{{ $response['feedback'] }}</p>@endif
-</section>
-@endforeach
-<div class="form-actions"><a class="button primary" href="{{ route('practice.runs.create',['course_id'=>$row->course_id]) }}">Novo treino</a><a class="button ghost" href="{{ route('study.index') }}">Estudo</a></div>
+@php $ex=$question['exercise'];$response=$question['response']??[];$isGraded=($response['grading_status']??'')==='graded';$full=$isGraded && (float)($response['score']??0)>=(float)$ex->max_points;$ai=($response['grading_method']??'')==='ai_rubric_provisional'; @endphp
+<section class="card question-correction"><h3>{{ $loop->iteration }}. {{ $ex->prompt }}</h3><p><strong>Estado:</strong> {{ $isGraded ? ($full?'Correta':((float)($response['score']??0)>0?'Parcialmente correta':'Incorreta')) : 'Aguarda revisão' }}{{ $ai ? ' · Avaliação automática provisória por IA' : '' }}</p>
+<p class="answer-text"><strong>A tua resposta:</strong> {{ $response['answer']??'—' }}</p><p class="answer-text"><strong>Resposta de referência:</strong> {{ $ex->expected_answer ?: 'Não disponível' }}</p>
+@if($ex->explanation)<p class="answer-text"><strong>Explicação:</strong> {{ $ex->explanation }}</p>@endif
+<p><strong>Pontuação:</strong> {{ $isGraded ? number_format((float)$response['score'],2,',','.') : 'Pendente' }} / {{ number_format((float)$ex->max_points,2,',','.') }}</p>
+@if(!empty($response['feedback']))<p class="answer-text"><strong>Observações do corretor:</strong> {{ $response['feedback'] }}</p>@endif
+@if(!empty($ex->metadata['rubric']))<div class="muted-text"><strong>Critérios de correção:</strong><ul>@foreach((array)$ex->metadata['rubric'] as $criterion)<li>{{ is_array($criterion) ? implode(' · ',array_map(fn ($v)=>is_scalar($v)?(string)$v:json_encode($v,JSON_UNESCAPED_UNICODE),$criterion)) : $criterion }}</li>@endforeach</ul></div>@endif
+@if((!$isGraded || $ai) && !empty($response['attempt_id']))<details class="review-details"><summary>Rever e registar correção</summary><form class="event-form" method="POST" action="{{ route('practice.review-attempt',$response['attempt_id'],false) }}">@csrf @method('PUT')<label class="field"><span>Pontuação pelos critérios (0 a {{ $ex->max_points }})</span><input type="number" name="score" min="0" max="{{ $ex->max_points }}" step="0.01" required></label><label class="field"><span>Observações da revisão</span><textarea name="feedback" rows="3" maxlength="4000"></textarea></label><button type="submit" class="button">Guardar revisão</button></form></details>@endif
+</section>@endforeach
+<div class="form-actions"><a class="button primary" href="{{ route('practice.runs.create',['course_id'=>$row->course_id,'topic_ids'=>$retryTopics],false) }}">Mesmos subtemas, outras perguntas</a>@if($graded->count()>$correct)<a class="button" href="{{ route('practice.runs.create',['course_id'=>$row->course_id,'topic_ids'=>$retryTopics,'repeat_run_id'=>$row->id],false) }}">Treinar apenas erros</a>@endif<a class="button ghost" href="/study#revision">Rever subtemas</a><a class="button ghost" href="/practice">Histórico</a></div>
 </div></body></html>
