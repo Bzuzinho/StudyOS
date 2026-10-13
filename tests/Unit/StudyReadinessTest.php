@@ -33,7 +33,7 @@ class StudyReadinessTest extends TestCase
     public function test_empty_active_courses_are_visible_in_study_and_diagnosis(): void
     {
         $course = Course::create(['name' => 'Macroeconomia', 'status' => 'active', 'semester' => 1]);
-        $this->get('/study')->assertOk()->assertSee('Macroeconomia')->assertSee('Programa por estruturar');
+        $this->get('/study')->assertOk()->assertSee('Macroeconomia')->assertSee('Planear sessão');
         $this->get('/courses/'.$course->id)->assertOk()->assertSee('Programa ainda não estruturado');
         $this->get('/courses')->assertOk()->assertSee('Programa por estruturar');
     }

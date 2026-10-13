@@ -12,6 +12,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ManualCalendarEventController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\PracticeController;
+use App\Http\Controllers\PracticeRunController;
 use App\Http\Controllers\StudyController;
 use App\Http\Controllers\SystemStatusController;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +47,10 @@ Route::patch('/study/{studySession}/complete', [StudyController::class, 'complet
 Route::delete('/study/{studySession}', [StudyController::class, 'destroy'])->name('study.destroy');
 
 Route::get('/practice', [PracticeController::class, 'index'])->name('practice.index');
+Route::get('/practice/treinar', [PracticeRunController::class, 'create'])->name('practice.runs.create');
+Route::post('/practice/treinar', [PracticeRunController::class, 'store'])->name('practice.runs.store');
+Route::get('/practice/sessao/{run}', [PracticeRunController::class, 'show'])->name('practice.runs.show');
+Route::post('/practice/sessao/{run}/responder', [PracticeRunController::class, 'answer'])->name('practice.runs.answer');
 Route::get('/practice/create', [PracticeController::class, 'create'])->name('practice.create');
 Route::post('/practice', [PracticeController::class, 'store'])->name('practice.store');
 Route::post('/practice/generate/topic/{topic}', [PracticeController::class, 'generateForTopic'])->name('practice.generate-topic');

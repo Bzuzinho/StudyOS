@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Estudo · StudyOS</title>
     @include('partials.app-identity')
-    <link rel="stylesheet" href="/css/app.css?v=brand-1">
+    <link rel="stylesheet" href="/css/app.css?v=practice-run-1">
 </head>
 <body>
 <div class="shell">
@@ -65,7 +65,7 @@
                                 <div class="study-session-actions">
                                     <a href="{{ route('study.create', ['course_id' => $plan['course']->id]) }}">Planear estudo →</a>
                                     @if($recommendation['action'] === 'practice')
-                                        <a href="{{ route('practice.index', ['course_id' => $plan['course']->id, 'topic_id' => $recommendation['topic']->id]) }}">Treinar tópico →</a>
+                                        <a href="{{ route('practice.runs.create', ['course_id' => $plan['course']->id, 'topic_id' => $recommendation['topic']->id]) }}">Treinar tópico →</a>
                                     @endif
                                 </div>
                             </div>
@@ -111,7 +111,7 @@
                             @endif
                         </small>
                         <div class="study-session-actions">
-                            <a href="{{ route('practice.index', ['study_session_id' => $session->id]) }}">Praticar nesta sessão →</a>
+                            <a href="{{ route('practice.runs.create', ['course_id' => $session->course_id, 'study_session_id' => $session->id]) }}">Praticar nesta sessão →</a>
                             @if($session->status !== 'completed' && $session->source === 'manual')
                                 <form method="POST" action="{{ route('study.complete', $session) }}">
                                     @csrf
@@ -144,77 +144,20 @@
 
         <section class="card wide">
             <p class="muted-text"><strong>Próximo passo sugerido:</strong> começa pelos tópicos já lecionados que ainda não têm domínio demonstrado ou cujo resultado seja frágil. Planeia uma sessão de revisão, responde a exercícios da fonte e confirma a sessão quando a realizares. Tópicos sem fontes ou sem tentativas não são classificados como dominados.</p>
-            <div class="card-head"><h3>Matéria identificada</h3><span>{{ $topicCount }} tópicos</span></div>
+            <div class="card-head"><h3>Estudar e praticar por UC</h3></div>
+            <p class="muted-text">Os materiais de estudo ficam organizados na árvore curricular de cada UC. Para praticar, escolhe os temas e inicia uma sequência de perguntas do banco de exercícios.</p>
+            <div class="topic-grid">
             @foreach($courses as $course)
-                @if($course->topics->isEmpty())
-                    <div class="topic-course-block">
-                        <div class="topic-course-head"><a href="{{ route('courses.show', $course) }}"><strong>{{ $course->name }}</strong></a><span>0 tópicos</span></div>
-                        <p class="muted-text">Programa por estruturar. Sem tópicos não é possível medir a preparação nem recomendar treino baseado na matéria desta UC.</p>
-                        <a href="{{ route('course-topics.create', $course) }}">+ Registar tópicos da UC</a>
-                    </div>
-                @endif
-                @if($course->topics->isNotEmpty())
-                    <div class="topic-course-block">
-                        <div class="topic-course-head">
-                            <a href="{{ route('courses.show', $course) }}"><strong>{{ $course->name }}</strong></a>
-                            <span>{{ $course->topics->count() }} tópico(s)</span>
-                        </div>
-                        <div class="topic-grid">
-                            @foreach($course->topics as $topic)
-                                <article class="topic-card">
-                                    <span class="topic-position">{{ str_pad((string) $topic->position, 2, '0', STR_PAD_LEFT) }}</span>
-                                    <h3>{{ $topic->title }}</h3>
-                                    @if($topic->taught_at && in_array($topic->mastery?->status ?? 'no_evidence', ['no_evidence', 'insufficient_evidence', 'fragile'], true))
-                                        <p class="muted-text"><strong>Prioridade:</strong> matéria já lecionada, {{ ($topic->mastery?->status ?? 'no_evidence') === 'fragile' ? 'rever os erros e voltar a praticar' : 'precisa de diagnóstico por exercícios' }}.</p>
-                                    @endif
-                                    @php
-                                        $mastery = $topic->mastery;
-                                        $masteryStatus = $mastery?->status ?? 'no_evidence';
-                                        $masteryLabels = [
-                                            'no_evidence' => 'sem evidência',
-                                            'insufficient_evidence' => 'evidência insuficiente',
-                                            'fragile' => 'frágil',
-                                            'developing' => 'em desenvolvimento',
-                                            'competent' => 'competente',
-                                            'strong' => 'forte',
-                                        ];
-                                    @endphp
-                                    <div class="topic-states">
-                                        <span class="observed">Curricular · observado</span>
-                                        <span>{{ $topic->completed_study_sessions_count > 0 ? 'Estudo · realizado ('.$topic->completed_study_sessions_count.' sessão/ões)' : ($topic->study_sessions_count > 0 ? 'Estudo · planeado' : 'Estudo · por planear') }}</span>
-                                        <span class="{{ $masteryStatus === 'no_evidence' ? 'unknown' : 'mastery-evidence' }}">
-                                            Domínio · {{ $masteryLabels[$masteryStatus] ?? $masteryStatus }}
-                                            @if($mastery?->score_percent !== null)
-                                                · {{ number_format((float) $mastery->score_percent, 0) }}%
-                                            @endif
-                                        </span>
-                                        <span class="{{ $topic->rich_source_chunks_count > 0 ? 'source-ready' : 'unknown' }}">
-                                            Fonte · {{ $topic->source_chunks_count }} fragmento(s)
-                                            @if($topic->rich_source_chunks_count > 0)
-                                                · {{ $topic->rich_source_chunks_count }} detalhado(s)
-                                            @endif
-                                        </span>
-                                    </div>
-                                    <div class="topic-card-actions">
-                                        <a href="{{ route('practice.index', ['topic_id' => $topic->id]) }}">Praticar ({{ $topic->exercises_count }})</a>
-                                        <a href="{{ route('study.create', ['course_id' => $course->id]) }}">Planear estudo</a>
-                                        @if($topic->rich_source_chunks_count > 0)
-                                            <form method="POST" action="{{ route('practice.generate-topic', $topic) }}">
-                                                @csrf
-                                                <button class="text-link" type="submit">Gerar da fonte</button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                </article>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
+              <article class="topic-card">
+                <h3>{{ $course->name }}</h3>
+                <div class="topic-card-actions">
+                  <a href="{{ route('courses.show',$course) }}">Ler os materiais</a>
+                  <a href="{{ route('practice.runs.create',['course_id'=>$course->id]) }}">Iniciar treino</a>
+                  <a href="{{ route('study.create',['course_id'=>$course->id]) }}">Planear sessão</a>
+                </div>
+              </article>
             @endforeach
-
-            @if($topicCount === 0)
-                <p class="empty">Ainda não existem tópicos suportados pelas fontes recolhidas.</p>
-            @endif
+            </div>
         </section>
     </main>
 </div>
