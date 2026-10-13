@@ -321,17 +321,11 @@
 
 
         <section class="card wide">
-            <div class="card-head"><h3>Exercícios</h3><a href="{{ route('practice.create', ['course_id' => $course->id]) }}">+ Criar exercício</a></div>
-            <div class="practice-course-grid">
-                @forelse($course->exercises as $exercise)
-                    <a class="practice-course-card" href="{{ route('practice.show', $exercise) }}">
-                        <span class="activity-type">{{ strtoupper(str_replace('_', ' ', $exercise->type)) }}@if(($exercise->metadata['source_grounded'] ?? false)) · FONTE @endif</span>
-                        <strong>{{ $exercise->title ?: 'Exercício' }}</strong>
-                        <p>{{ $exercise->attempts_count }} tentativa(s)</p>
-                    </a>
-                @empty
-                    <p class="empty">Ainda não existem exercícios para esta UC.</p>
-                @endforelse
+            <div class="card-head"><h3>Treino e prática</h3></div>
+            <p class="muted-text">O banco de perguntas desta UC é utilizado em sessões de treino. Escolhe os temas e subtemas que pretendes praticar e responde a uma sequência de questões. Os resultados e respetivas correções são apresentados no final.</p>
+            <div class="topic-coverage-actions">
+                <a class="button primary" href="{{ route('practice.runs.create', ['course_id' => $course->id], false) }}">Iniciar treino nesta UC</a>
+                <span class="muted-text">{{ $course->exercises->count() }} perguntas disponíveis no banco</span>
             </div>
         </section>
 
