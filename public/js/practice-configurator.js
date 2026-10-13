@@ -37,6 +37,9 @@
     form.querySelector('[name="mode"]').addEventListener('change', event => {
         if (event.target.value === 'quick') form.querySelector('[name="count"]').value = '5';
     });
-    form.addEventListener('change', update);
+    form.addEventListener('curriculum-change', update);
+    form.addEventListener('change', event => {
+        if (!event.target.closest('[data-curriculum-picker]')) update();
+    });
     update();
 })();

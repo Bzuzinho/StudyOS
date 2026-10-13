@@ -17,4 +17,4 @@
 <label class="curriculum-check" id="accept-available" hidden><input type="checkbox" name="accept_available" value="1" @checked(old('accept_available'))><span>Utilizar todas as perguntas disponíveis, mesmo que sejam menos do que o pedido.</span></label>
 <p class="muted-text">Em todos os modos, as soluções ficam ocultas até ao fim. O treino rápido propõe 5 perguntas; a simulação mantém a correção para o relatório final. Respostas abertas podem ficar pendentes ou receber uma avaliação automática provisória por IA.</p>
 <div class="form-actions"><a class="button ghost" href="/practice">Cancelar</a><button class="button primary" type="submit" id="training-submit">Iniciar treino</button></div>
-</form></div><script src="/js/curriculum-picker.js?v=1"></script><script src="/js/practice-configurator.js?v=1"></script></body></html>
+</form></div><script src="/js/curriculum-picker.js?v=1"></script><script src="/js/practice-configurator.js?v=2"></script></body></html>

@@ -33,6 +33,16 @@ for (const variant of [
     await page.locator('.curriculum-theme summary').first().click();
     await page.locator('.curriculum-row').first().getByRole('link',{name:'Treinar',exact:true}).click();
     await page.getByText(/8 perguntas elegíveis/).waitFor();
+    await page.getByRole('button',{name:'Selecionar tudo',exact:true}).click();
+    await page.getByText('264 perguntas elegíveis.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Limpar seleção',exact:true}).click();
+    await page.getByText('Seleciona a UC e pelo menos um subtema.',{exact:true}).waitFor();
+    assert(!(await page.getByRole('button',{name:'Iniciar treino',exact:true}).isEnabled()));
+    await page.getByRole('button',{name:'Toda a matéria lecionada',exact:true}).click();
+    await page.getByText('24 perguntas elegíveis.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Limpar seleção',exact:true}).click();
+    await page.locator('[data-topic-course="1"] [data-leaf]').first().check();
+    await page.getByText(/8 perguntas elegíveis/).waitFor();
     await page.getByLabel('Número de perguntas').selectOption('5');
     await page.getByLabel('Dificuldade').selectOption('advanced');
     await page.getByText('0 perguntas elegíveis.',{exact:true}).waitFor();
