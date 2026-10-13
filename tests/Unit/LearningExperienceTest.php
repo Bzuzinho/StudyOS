@@ -31,7 +31,7 @@ class LearningExperienceTest extends TestCase
         return [$course,$parent,$child,$historical];
     }
     private function question(Course $course, Topic $topic, string $type='true_false'): Exercise {
-        $ex=$course->exercises()->create(['source'=>'manual','type'=>$type,'prompt'=>'Enunciado original','expected_answer'=>'verdadeiro','max_points'=>1,'status'=>'active','metadata'=>['difficulty'=>'medio']]);
+        $ex=$course->exercises()->create(['source'=>'manual','external_id'=>(string) \Illuminate\Support\Str::uuid(),'type'=>$type,'prompt'=>'Enunciado original','expected_answer'=>'verdadeiro','max_points'=>1,'status'=>'active','metadata'=>['difficulty'=>'medio']]);
         $ex->topics()->attach($topic);
         return $ex;
     }
