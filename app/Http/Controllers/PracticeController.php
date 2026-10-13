@@ -23,9 +23,12 @@ class PracticeController
 {
     public function index(Request $request): View
     {
+        $runs = DB::table('practice_runs')->where('status', 'completed')->orderByDesc('id')->limit(20)->get();
         return view('practice.index', [
             'courses' => Course::where('status', 'active')->orderBy('name')->get(),
-            'runs' => DB::table('practice_runs')->orderByDesc('id')->limit(20)->get(),
+            'runs' => $runs,
+            'activeRuns' => DB::table('practice_runs')->where('status', 'active')->orderByDesc('id')->get(),
+            'summaries' => app(\App\Services\Practice\PracticeRunSummary::class)->forRuns($runs),
         ]);
     }
 

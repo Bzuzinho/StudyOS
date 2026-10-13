@@ -27,7 +27,7 @@ class PracticeRunController
         $selected = collect($request->input('topic_ids', array_filter([$request->integer('topic_id')])))->map(fn ($id) => (int) $id);
         if ($session) $selected = $session->topics->pluck('id');
         $repeat = $request->integer('repeat_run_id') ? DB::table('practice_runs')->find($request->integer('repeat_run_id')) : null;
-        if ($repeat && $selected->isEmpty()) $selected = collect(data_get(json_decode($repeat->settings, true), 'topic_ids', []));
+        if ($repeat && $selected->isEmpty()) $selected = collect(data_get(json_decode($repeat->settings ?? 'null', true), 'topic_ids', []));
         return view('practice.start', [
             'courses' => $courses, 'selectedCourseId' => $session?->course_id ?: ($repeat?->course_id ?: $request->integer('course_id')),
             'selectedTopics' => collect(old('topic_ids', $selected->all()))->map(fn ($id) => (int) $id),
