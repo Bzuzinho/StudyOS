@@ -207,6 +207,27 @@
             </section>
         @endif
 
+        @if($course->topics->where('source', 'chatgpt_package')->isNotEmpty())
+            <section class="card wide" id="package-curriculum">
+                <div class="card-head"><h3>Manual completo · organização por temas</h3>
+                    <a href="{{ route('courses.import-package', $course, false) }}">Atualizar pacote</a></div>
+                <p class="muted-text">Abre um dos nove temas para consultar os subtemas, ler os materiais e praticar exercícios. Conteúdos pedagógicos elaborados no ChatGPT, distintos dos documentos oficiais da docente.</p>
+                @foreach($course->topics->where('source', 'chatgpt_package')->whereNull('parent_id') as $packageTheme)
+                    <details style="margin:10px 0;padding:14px;border:1px solid #25424d;border-radius:12px">
+                        <summary style="cursor:pointer;font-weight:700">{{ $packageTheme->title }}</summary>
+                        <div style="display:flex;flex-direction:column;gap:10px;margin-top:15px">
+                            @foreach($course->topics->where('parent_id', $packageTheme->id)->where('source', 'chatgpt_package') as $packageChild)
+                                <div style="display:flex;align-items:center;gap:15px;justify-content:space-between;flex-wrap:wrap">
+                                    <a href="{{ route('courses.package-topic.read', ['course'=>$course, 'topic'=>$packageChild], false) }}">{{ $packageChild->title }}</a>
+                                    <small style="color:#91a6af">{{ $packageChild->taught_at ? 'Lecionado' : 'Ainda não assinalado como lecionado' }}</small>
+                                </div>
+                            @endforeach
+                        </div>
+                    </details>
+                @endforeach
+            </section>
+        @endif
+
         <section class="card wide" id="course-topics">
             <div class="card-head"><h3>Matéria lecionada e preparação</h3><div class="row-actions"><a class="button primary" href="{{ route('courses.import-package', $course, false) }}">Importar pacote completo</a> <a class="button" href="{{ route('course-topics.create', $course, false) }}">+ Acrescentar tópico</a></div></div>
             <p class="muted-text">{{ $course->topics->whereNotNull('taught_at')->count() }} de {{ $course->topics->count() }} tópicos registados marcados como lecionados. Seleciona a matéria já dada nas aulas e guarda a seleção.</p>
