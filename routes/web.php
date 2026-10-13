@@ -69,6 +69,7 @@ Route::get('/courses', [CourseController::class, 'index'])->name('courses.index'
 Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
 Route::get('/courses/{course}/import-package', [CurriculumPackageController::class, 'create'])->name('courses.import-package');
 Route::post('/courses/{course}/import-package', [CurriculumPackageController::class, 'store'])->middleware('throttle:3,1')->name('courses.import-package.store');
+Route::get('/courses/{course}/package-topics/{topic}', [CurriculumPackageController::class, 'read'])->name('courses.package-topic.read');
 Route::get('/courses/{course}/topics/create', [CourseTopicController::class, 'create'])->name('course-topics.create');
 Route::post('/courses/{course}/topics', [CourseTopicController::class, 'store'])->name('course-topics.store');
 Route::patch('/courses/{course}/topics/coverage', [CourseTopicController::class, 'coverage'])->name('course-topics.coverage');
