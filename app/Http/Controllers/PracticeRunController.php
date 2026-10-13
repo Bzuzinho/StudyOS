@@ -25,7 +25,7 @@ class PracticeRunController
             ->where('status', 'active')->orderBy('position')])->orderBy('name')->get();
         $session = $request->integer('study_session_id') ? StudySession::with('topics')->findOrFail($request->integer('study_session_id')) : null;
         $selected = collect($request->input('topic_ids', array_filter([$request->integer('topic_id')])))->map(fn ($id) => (int) $id);
-        if ($session) $selected = $session->topics->pluck('id');
+        if ($session) $selected = $session->topics->pluck('id')->intersect(\App\Services\Learning\Curriculum::topics($session->course)->pluck('id'))->values();
         $repeat = $request->integer('repeat_run_id') ? DB::table('practice_runs')->find($request->integer('repeat_run_id')) : null;
         if ($repeat && $selected->isEmpty()) $selected = collect(data_get(json_decode($repeat->settings ?? 'null', true), 'topic_ids', []));
         return view('practice.start', [

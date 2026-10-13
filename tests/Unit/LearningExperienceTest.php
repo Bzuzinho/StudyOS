@@ -153,4 +153,15 @@ class LearningExperienceTest extends TestCase
         $this->get('/courses/'.$course->id.'/package-topics/'.$child->id)->assertOk()->assertSee('<h1>Conteúdo para estudar</h1>',false);
     }
 
+    public function test_old_session_keeps_its_topics_but_training_uses_the_current_curriculum(): void {
+        [$course,$parent,$child,$old]=$this->curriculum();
+        $session=$course->studySessions()->create(['source'=>'manual','external_id'=>'old-session','type'=>'reading',
+            'starts_at'=>now(),'planned_minutes'=>60,'status'=>'planned']);
+        $session->topics()->attach($old);
+        $this->get('/study')->assertOk()->assertSee('1 tópicos associados')->assertDontSee('Histórico antigo');
+        $this->get('/study/'.$session->id)->assertOk()->assertSee('Consultar matéria original da sessão')->assertSee('Histórico antigo');
+        $this->get('/practice/treinar?study_session_id='.$session->id)->assertOk()->assertViewHas('selectedTopics',fn($ids)=>$ids->isEmpty());
+        $this->assertSame([$old->id],$session->topics()->pluck('topics.id')->all());
+    }
+
 }
