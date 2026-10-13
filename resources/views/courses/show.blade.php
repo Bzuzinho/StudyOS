@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $course->name }} · StudyOS</title>
     @include('partials.app-identity')
-    <link rel="stylesheet" href="/css/app.css?v=course-package-focus-1">
+    <link rel="stylesheet" href="/css/app.css?v=course-package-taught-2">
 </head>
 <body>
 <div class="shell">
@@ -55,20 +55,41 @@
                 <div class="alert success" role="status">Pacote de estudo importado: {{ $course->topics->where("source", "chatgpt_package")->whereNull("parent_id")->count() }} temas e {{ $course->topics->where("source", "chatgpt_package")->whereNotNull("parent_id")->count() }} subtemas. Os materiais estão nos respetivos subtemas abaixo.</div>
                 <div class="card-head"><h3>Manual completo · organização por temas</h3>
                     <a href="{{ route('courses.import-package', $course, false) }}">Atualizar pacote</a></div>
-                <p class="muted-text">Abre um dos nove temas para consultar os subtemas, ler os materiais e praticar exercícios. Conteúdos pedagógicos elaborados no ChatGPT, distintos dos documentos oficiais da docente.</p>
+                <p class="muted-text">Consulta os manuais e indica o que já foi lecionado. Podes assinalar um tema inteiro ou apenas os subtemas abordados nas aulas. Guardar não altera a tua avaliação ou domínio.</p>
+                <form id="package-taught-form" method="POST" action="{{ route('course-topics.coverage', $course, false) }}">@csrf @method('PATCH')</form>
+                <div class="topic-coverage-actions"><button class="button primary" type="submit" form="package-taught-form">Guardar matéria lecionada</button>
+                    <span class="muted-text">{{ $course->topics->where('source','chatgpt_package')->whereNotNull('parent_id')->whereNotNull('taught_at')->count() }} de {{ $course->topics->where('source','chatgpt_package')->whereNotNull('parent_id')->count() }} subtemas lecionados</span></div>
                 @foreach($course->topics->where('source', 'chatgpt_package')->whereNull('parent_id') as $packageTheme)
                     <details style="margin:10px 0;padding:14px;border:1px solid #25424d;border-radius:12px">
                         <summary style="cursor:pointer;font-weight:700">{{ $packageTheme->title }}</summary>
+                        <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="hidden" form="package-taught-form" name="topic_ids[]" value="{{ $packageTheme->id }}"><input form="package-taught-form" class="package-theme-check" type="checkbox" name="taught_topic_ids[]" value="{{ $packageTheme->id }}" data-theme="{{ $packageTheme->id }}" @checked($packageTheme->taught_at !== null)><span>Marcar tema completo como lecionado</span></label>
                         <div style="display:flex;flex-direction:column;gap:10px;margin-top:15px">
                             @foreach($course->topics->where('parent_id', $packageTheme->id)->where('source', 'chatgpt_package') as $packageChild)
                                 <div style="display:flex;align-items:center;gap:15px;justify-content:space-between;flex-wrap:wrap">
                                     <a href="{{ route('courses.package-topic.read', ['course'=>$course, 'topic'=>$packageChild], false) }}">{{ $packageChild->title }}</a>
-                                    <small style="color:#91a6af">{{ $packageChild->taught_at ? 'Lecionado' : 'Ainda não assinalado como lecionado' }}</small>
+                                    <label style="display:flex;align-items:center;gap:8px"><input type="hidden" form="package-taught-form" name="topic_ids[]" value="{{ $packageChild->id }}"><input form="package-taught-form" class="package-child-check" data-parent="{{ $packageTheme->id }}" name="taught_topic_ids[]" type="checkbox" value="{{ $packageChild->id }}" @checked($packageChild->taught_at !== null)><span>Lecionado</span></label>
                                 </div>
                             @endforeach
                         </div>
                     </details>
                 @endforeach
+                <script>
+                (() => {
+                    document.querySelectorAll('.package-theme-check').forEach(parent => {
+                        const children = [...document.querySelectorAll('.package-child-check')].filter(child => child.dataset.parent === parent.dataset.theme);
+                        parent.indeterminate = children.some(x => x.checked) && !children.every(x => x.checked);
+                        parent.addEventListener('change', () => {
+                            children.forEach(child => { child.checked = parent.checked; });
+                            parent.indeterminate = false;
+                        });
+                        children.forEach(child => child.addEventListener('change', () => {
+                            parent.checked = children.every(x => x.checked);
+                            parent.indeterminate = children.some(x => x.checked) && !parent.checked;
+                        }));
+                    });
+                })();
+                </script>
+                <div class="topic-coverage-actions"><button class="button primary" type="submit" form="package-taught-form">Guardar matéria lecionada</button></div>
             </section>
         @endif
 
@@ -148,90 +169,6 @@
             @endforeach
         </section>
         @endif
-        @if(session('ai_study_sheet'))
-            @php $aiSheet = session('ai_study_sheet'); @endphp
-            <section class="card wide" aria-label="Ficha de estudo apoiada por IA">
-                <div class="card-head"><h3>Ficha de estudo · {{ $aiSheet['topic'] }}</h3><span>Elaborada por IA · confirmar com as fontes</span></div>
-                <p>{{ $aiSheet['result']['summary'] }}</p>
-                <h4>Conceitos-chave</h4>
-                <ul>@foreach($aiSheet['result']['key_points'] as $point)<li>{{ $point }}</li>@endforeach</ul>
-                <h4>Perguntas para revisão</h4>
-                @foreach($aiSheet['result']['questions'] as $question)
-                    <details><summary>{{ $question['question'] }}</summary><p>{{ $question['reference_answer'] }}</p><small>Excertos de referência: {{ implode(', ', $question['source_ids']) }}</small></details>
-                @endforeach
-                @if($aiSheet['result']['missing_information'])
-                    <h4>Informação em falta</h4>
-                    <ul>@foreach($aiSheet['result']['missing_information'] as $missing)<li>{{ $missing }}</li>@endforeach</ul>
-                @endif
-                <p class="muted-text">Estas respostas são apoio ao estudo e não substituem os documentos da UC. Não são usadas para atribuir notas ou marcar tópicos como lecionados.</p>
-            </section>
-        @endif
-        @if(config('studyos_ai.enabled'))
-            <section class="card wide">
-                <div class="card-head"><h3>Preparar estudo com IA</h3></div>
-                <p class="muted-text">Seleciona um tópico já lecionado, com materiais associados. A IA prepara explicações e perguntas baseadas nos excertos, identifica lacunas e reutiliza fichas anteriores sem voltar a cobrar enquanto os documentos não mudarem.</p>
-                <form method="POST" action="#" id="ai-study-form" class="event-form">
-                    @csrf
-                    <label class="field"><span>Tópico</span><select id="ai-study-topic" required>
-                        @foreach($course->topics->whereNotNull('taught_at') as $topic)
-                            <option value="{{ route('ai.topics.study', $topic, false) }}">{{ $topic->title }}</option>
-                        @endforeach
-                    </select></label>
-                    <label class="field"><span>Código de autorização</span><input type="password" name="access_code" required autocomplete="off"></label>
-                    <button class="button primary" type="submit">Gerar ficha fundamentada</button>
-                </form>
-                <script>
-                    (() => {
-                        const form = document.getElementById('ai-study-form');
-                        const topic = document.getElementById('ai-study-topic');
-                        form.addEventListener('submit', () => { form.action = topic.value; });
-                    })();
-                </script>
-            </section>
-        @endif
-
-        @if(config('studyos_ai.enabled'))
-            <section class="card wide" id="ai-curriculum">
-                <div class="card-head"><h3>Análise curricular assistida por IA</h3></div>
-                <p class="muted-text">A IA cruza os tópicos da UC com os sumários das aulas e os materiais. Mostra propostas fundamentadas, sem alterar automaticamente a matéria lecionada. Serão enviados excertos à OpenAI.</p>
-                @if($latestAiCurriculumReview)
-                    <p class="muted-text">Última análise: {{ $latestAiCurriculumReview->created_at->format('d/m/Y H:i') }} · {{ count($latestAiCurriculumReview->output['likely_taught'] ?? []) }} tópicos possivelmente lecionados · {{ count($latestAiCurriculumReview->output['missing_topics'] ?? []) }} tópicos a verificar. O resultado completo permanece disponível abaixo.</p>
-                @else
-                    <p class="muted-text">Ainda não existe uma análise curricular concluída nesta UC.</p>
-                @endif
-                <form method="POST" action="{{ route('ai.courses.review', $course, false) }}" class="event-form">
-                    @csrf
-                    <label class="field"><span>Código de autorização</span><input type="password" name="access_code" autocomplete="off" required></label>
-                    <button class="button primary" type="submit">Analisar tópicos e sumários com IA</button>
-                </form>
-            </section>
-        @endif
-        @if($latestAiCurriculumReview)
-            @php $curriculumReview = $latestAiCurriculumReview->output; @endphp
-            <section class="card wide" id="ai-curriculum-results">
-                <div class="card-head"><h3>Resultado da análise curricular</h3><span>Sujeitas a confirmação</span></div>
-                <h4>Possivelmente lecionados</h4>
-                @forelse($curriculumReview['likely_taught'] as $suggestion)
-                    <div class="item"><div>
-                        <strong>{{ $course->topics->firstWhere('id', $suggestion['topic_id'])?->title ?? 'Tópico' }}</strong>
-                        <p>{{ $suggestion['reason'] }} · Sumários de referência: {{ implode(', ', $suggestion['summary_ids']) }}</p>
-                    </div></div>
-                @empty
-                    <p class="muted-text">Não foram identificados tópicos com evidência explícita nos sumários analisados. Isto não significa que a matéria não tenha sido lecionada.</p>
-                @endforelse
-                <h4>Tópicos identificados nos materiais para verificar</h4>
-                @forelse($curriculumReview['missing_topics'] as $suggestion)
-                    <div class="item"><div>
-                        <strong>{{ $suggestion['title'] }}</strong>
-                        <p>{{ $suggestion['reason'] }} · Excertos de referência: {{ implode(', ', $suggestion['chunk_ids']) }}</p>
-                    </div></div>
-                @empty
-                    <p class="muted-text">Não foram identificados tópicos adicionais com evidência suficiente nos documentos analisados.</p>
-                @endforelse
-                <p class="muted-text">Estas propostas não são consideradas matéria lecionada nem criam tópicos automaticamente. Confirma os sumários com o que foi realmente dado nas aulas e utiliza a seleção de matéria existente abaixo.</p>
-            </section>
-        @endif
-
         @if($course->topics->where("source", "chatgpt_package")->isEmpty())
         <section class="card wide" id="course-topics">
             <div class="card-head"><h3>Matéria lecionada e preparação</h3><div class="row-actions"><a class="button primary" href="{{ route('courses.import-package', $course, false) }}">Importar pacote completo</a> <a class="button" href="{{ route('course-topics.create', $course, false) }}">+ Acrescentar tópico</a></div></div>
