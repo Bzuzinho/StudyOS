@@ -15,7 +15,7 @@ for (const variant of [
     const errors=[];
     page.on('pageerror',e=>errors.push(String(e)));
     page.on('response',r=>{if(r.status()>=500)errors.push(`${r.status()} ${r.url()}`);});
-    process.on('unhandledRejection', async error => { console.error('PAGE STATE:',await page.locator('body').innerText()); await page.screenshot({path:`browser-evidence/${variant.name}-failure.png`,fullPage:true}); throw error; });
+    try {
     const checkWidth = async () => assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'horizontal page overflow');
     await page.goto('http://127.0.0.1:8000/courses/1');
     await page.getByRole('heading',{name:'Programa curricular'}).waitFor();
@@ -71,6 +71,11 @@ for (const variant of [
     await checkWidth();
     await page.screenshot({path:`browser-evidence/${variant.name}-study.png`,fullPage:true});
     assert.deepEqual(errors,[],'page errors or HTTP 500s');
+    } catch (error) {
+        console.error('PAGE STATE:',await page.locator('body').innerText());
+        await page.screenshot({path:`browser-evidence/${variant.name}-failure.png`,fullPage:true});
+        throw error;
+    }
     await browser.close();
     console.log(`${variant.name}: curriculum, partial marks, filters, sequential training, resume, result, study/manual and responsive layout passed`);
 }

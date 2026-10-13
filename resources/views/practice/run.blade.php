@@ -5,7 +5,7 @@
 @if($errors->any())<div class="alert error" role="alert">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
 <section class="card"><p class="question-prompt">{{ $exercise->prompt }}</p>
 <form method="POST" action="{{ route('practice.runs.answer',$run->id,false) }}" class="event-form">@csrf<input type="hidden" name="question_id" value="{{ $exercise->id }}">
-@if($exercise->type==='true_false')<label class="field"><span>Resposta</span><select name="answer" required><option value="">Selecionar…</option><option value="verdadeiro" @selected(old('answer')==='verdadeiro')>Verdadeiro</option><option value="falso" @selected(old('answer')==='falso')>Falso</option></select></label>
+@if($exercise->type==='true_false')<label class="field"><span>Resposta</span><select name="answer" aria-label="Resposta" required><option value="">Selecionar…</option><option value="verdadeiro" @selected(old('answer')==='verdadeiro')>Verdadeiro</option><option value="falso" @selected(old('answer')==='falso')>Falso</option></select></label>
 @elseif($exercise->type==='open_text')<label class="field"><span>A tua resposta</span><textarea name="answer" rows="6" maxlength="10000" required>{{ old('answer') }}</textarea></label>
 @else<label class="field"><span>A tua resposta</span><input name="answer" type="text" @if($exercise->type==='numeric') inputmode="decimal" @endif maxlength="10000" required autocomplete="off" value="{{ old('answer') }}"></label>@endif
 <div class="form-actions"><a class="button ghost" href="/practice">Sair e retomar depois</a><button class="button primary" type="submit">{{ $position===$total ? 'Terminar e ver resultados' : 'Responder e avançar' }}</button></div></form></section></div>
