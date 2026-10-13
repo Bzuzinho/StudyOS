@@ -46,8 +46,8 @@ class CurriculumPackageImporterTest extends TestCase
                     'file'=>'temas/tema-01/subtema-01-01.md']]]],
         ]));
         $zip->addFromString('exercicios.json', json_encode(['items'=>[
-            ['id'=>'IG-01.01-Q01','topic_id'=>'IG-01.01','prompt'=>'O que é gerir?',
-                'reference_answer'=>'Gerir é coordenar recursos para atingir objetivos.'],
+            ['id'=>'IG-01.01-Q01','topic_id'=>'IG-01.01','type'=>'true_false','prompt'=>'Uma organização tem objetivos?',
+                'reference_answer'=>'verdadeiro'],
         ]]));
         $zip->addFromString('temas/tema-01/subtema-01-01.md',
             str_repeat('A gestão coordena recursos humanos e materiais para alcançar objetivos. ', 12));
@@ -58,6 +58,7 @@ class CurriculumPackageImporterTest extends TestCase
             $this->assertSame(['themes'=>1,'subtopics'=>1,'exercises'=>1],$result);
             $this->assertSame(2,Topic::where('course_id',$course->id)->count());
             $this->assertSame(1,Exercise::where('course_id',$course->id)->count());
+            $this->assertSame('true_false',Exercise::where('course_id',$course->id)->first()->type);
             $this->assertSame(1,Material::where('course_id',$course->id)->count());
             $topic=Topic::where('external_id','14020:IG-01.01')->firstOrFail();
             $this->assertNotNull($topic->parent_id);
