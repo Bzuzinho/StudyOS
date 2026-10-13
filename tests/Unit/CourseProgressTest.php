@@ -68,7 +68,7 @@ class CourseProgressTest extends TestCase
 
         $this->get('/courses')->assertOk()->assertSee('66,7%')->assertSee('4 de 6 aulas programadas')
             ->assertViewHas('coursesBySemester', fn ($groups) => $groups[1]->first()->scheduled_classes_count === 6);
-        $this->get('/courses/'.$course->id)->assertOk()->assertSee('66,7%')
+        $this->get('/courses/'.$course->id)->assertOk()->assertSee('4 / 6')
             ->assertViewHas('course', fn ($course) => $course->elapsed_classes_count === 4 && $course->classProgressPercent() === 66.7);
     }
 
@@ -78,7 +78,7 @@ class CourseProgressTest extends TestCase
         $this->get('/courses/'.$course->id)->assertOk()
             ->assertViewHas('course', fn ($course) => $course->classProgressPercent() === null);
         $this->event($course, '2026-10-07 10:00', '2026-10-07 11:00');
-        $this->get('/courses/'.$course->id)->assertOk()->assertSee('100,0%');
+        $this->get('/courses/'.$course->id)->assertOk()->assertSee('1 / 1');
     }
 
     public function test_topics_can_be_selected_cleared_and_resaved_without_changing_the_original_confirmation(): void
@@ -92,8 +92,8 @@ class CourseProgressTest extends TestCase
             ->assertRedirect('/courses/'.$course->id.'#course-topics');
         $confirmedAt = $first->fresh()->taught_at->toIso8601String();
         $this->assertDatabaseCount('topic_masteries', 0);
-        $this->get('/courses/'.$course->id)->assertOk()->assertSee('1 de 7 tópicos registados')
-            ->assertSee('form="taught-topics"', false)->assertSee('name="taught_topic_ids[]"', false);
+        $this->get('/courses/'.$course->id)->assertOk()->assertSee('1 / 7')
+            ->assertSee('form="package-taught-form"', false)->assertSee('name="taught_topic_ids[]"', false);
         $this->get('/courses')->assertOk()->assertSee('1/7 tópicos lecionados');
 
         Carbon::setTestNow(now()->addHour());
@@ -153,14 +153,14 @@ class CourseProgressTest extends TestCase
         $this->postJson('/courses/'.$course->id.'/topics', ['title' => ['Invalid']])->assertUnprocessable();
     }
 
-    public function test_course_page_keeps_the_full_source_count_but_only_loads_a_small_preview(): void
+    public function test_course_hides_source_chunks_without_deleting_them(): void
     {
         $course = Course::create(['name' => 'Macroeconomia']);
         for ($ordinal = 1; $ordinal <= 25; $ordinal++) {
             SourceChunk::create(['course_id' => $course->id, 'ordinal' => $ordinal, 'title' => 'Fonte', 'content' => 'Texto '.$ordinal, 'content_hash' => hash('sha256', (string) $ordinal)]);
         }
-        $this->get('/courses/'.$course->id)->assertOk()->assertSee('24 de 25 excerto(s)')
-            ->assertViewHas('course', fn ($course) => $course->active_source_chunks_count === 25 && $course->sourceChunks->count() === 24);
+        $this->get('/courses/'.$course->id)->assertOk()->assertDontSee('excertos')->assertSee('Programa curricular');
+        $this->assertSame(25, $course->sourceChunks()->count());
     }
 
     private function event(Course $course, string $start, ?string $end, string $source = 'inforestudante_ical', ?string $type = null, string $status = 'scheduled'): void

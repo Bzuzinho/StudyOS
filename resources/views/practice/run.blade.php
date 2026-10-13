@@ -1,16 +1,12 @@
-<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Treino em curso · StudyOS</title>@include('partials.app-identity')<link rel="stylesheet" href="/css/app.css?v=practice-run-1"></head><body><div class="shell narrow-shell">
-<nav class="nav"><a class="brand" href="/"><img src="/brand/studyos-mark.svg" width="36" height="36" alt=""><span>StudyOS</span></a><div class="nav-links"><a href="/">Dashboard</a><a href="/courses">UCs</a><a href="/study">Estudo</a><a href="/practice" class="active">Prática</a></div></nav>
-<header class="form-header"><p class="eyebrow">Treino em curso · {{ $position }} de {{ $total }}</p><h1>{{ $exercise->title ?: 'Pergunta '.$position }}</h1><p>Responde antes de continuar. A correção e a resposta de referência serão reveladas apenas no final.</p></header>
-<div style="height:8px;border-radius:12px;background:#23404b;margin:18px 0"><div style="height:100%;width:{{ round(($position-1)/$total*100) }}%;border-radius:12px;background:#b8a7ff"></div></div>
-@if($errors->any())<div class="alert error">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
-<section class="card"><p style="font-size:1.1rem;line-height:1.7">{{ $exercise->prompt }}</p>
-<form method="POST" action="{{ route('practice.runs.answer',$run->id) }}" class="event-form">@csrf
-@if($exercise->type==='true_false')
-<label class="field"><span>Resposta</span><select name="answer" required><option value="">Selecionar...</option><option value="verdadeiro">Verdadeiro</option><option value="falso">Falso</option></select></label>
-@elseif($exercise->type==='open_text')
-<label class="field"><span>A tua resposta</span><textarea name="answer" rows="6" maxlength="10000" required></textarea></label>
-@else
-<label class="field"><span>A tua resposta</span><input name="answer" type="text" maxlength="10000" required autocomplete="off"></label>
-@endif
-<div class="form-actions"><button class="button primary" type="submit">{{ $position===$total ? 'Terminar e ver resultados' : 'Guardar e avançar' }}</button></div>
-</form></section></div></body></html>
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Treino em curso · StudyOS</title>@include('partials.app-identity')<link rel="stylesheet" href="/css/app.css?v=learning-20261013"></head><body class="learning-page"><div class="shell narrow-shell">
+@include('partials.learning-nav',['active'=>'/practice'])
+<header class="form-header"><p class="eyebrow">Treino em curso · Pergunta {{ $position }} de {{ $total }}</p><h1>Uma pergunta de cada vez</h1><p>As respostas submetidas ficam guardadas. Podes sair e retomar este treino na área Prática.</p></header>
+<div class="progress-track" role="progressbar" aria-label="Perguntas respondidas" aria-valuenow="{{ $position-1 }}" aria-valuemin="0" aria-valuemax="{{ $total }}"><div class="progress-fill" style="width:{{ round(($position-1)/$total*100) }}%"></div></div>
+@if($errors->any())<div class="alert error" role="alert">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
+<section class="card"><p class="question-prompt">{{ $exercise->prompt }}</p>
+<form method="POST" action="{{ route('practice.runs.answer',$run->id,false) }}" class="event-form">@csrf<input type="hidden" name="question_id" value="{{ $exercise->id }}">
+@if($exercise->type==='true_false')<label class="field"><span>Resposta</span><select name="answer" required><option value="">Selecionar…</option><option value="verdadeiro" @selected(old('answer')==='verdadeiro')>Verdadeiro</option><option value="falso" @selected(old('answer')==='falso')>Falso</option></select></label>
+@elseif($exercise->type==='open_text')<label class="field"><span>A tua resposta</span><textarea name="answer" rows="6" maxlength="10000" required>{{ old('answer') }}</textarea></label>
+@else<label class="field"><span>A tua resposta</span><input name="answer" type="text" @if($exercise->type==='numeric') inputmode="decimal" @endif maxlength="10000" required autocomplete="off" value="{{ old('answer') }}"></label>@endif
+<div class="form-actions"><a class="button ghost" href="/practice">Sair e retomar depois</a><button class="button primary" type="submit">{{ $position===$total ? 'Terminar e ver resultados' : 'Responder e avançar' }}</button></div></form></section></div>
+<script>(()=>{const form=document.querySelector('form');const input=form.querySelector('[name="answer"]');const key='studyos-draft-{{ $run->id }}-{{ $exercise->id }}';try{if(!input.value)input.value=sessionStorage.getItem(key)||'';input.addEventListener('input',()=>sessionStorage.setItem(key,input.value));form.addEventListener('submit',()=>{form.querySelector('button[type="submit"]').disabled=true;});}catch(e){}})();</script></body></html>

@@ -51,36 +51,9 @@
                         <h3>{{ $course->name }}</h3>
                         @include('partials.course-class-progress')
                         @if($course->status === 'active')
-                            <div class="course-meta" aria-label="Diagnóstico de preparação">
-                                <span><strong>Conteúdo:</strong> {{ $course->topics_count }} tópico(s)</span>
-                                <span>{{ $course->downloaded_materials_count }}/{{ $course->materials_count }} materiais com ficheiro</span>
-                                <span>{{ $course->extracted_materials_count }} com texto extraído</span>
-                                <span>{{ $course->practiced_topics_count }} tópico(s) com domínio avaliado</span>
-                                @if($course->failed_materials_count > 0)<span>⚠ {{ $course->failed_materials_count }} extração(ões) falhada(s)</span>@endif
-                            </div>
-                            @if($course->topics_count === 0)
-                                <p class="muted-text"><strong>Programa por estruturar.</strong> A sincronização não criou tópicos nesta UC; acrescenta tópicos ou associa materiais para iniciar o acompanhamento.</p>
-                            @elseif($course->extracted_materials_count === 0)
-                                <p class="muted-text">Não existem materiais com texto extraído nesta UC. O treino automático baseado em fontes pode estar indisponível.</p>
-                            @endif
+                            <div class="course-meta"><span>{{ $course->taught_topics_count }}/{{ $course->topics_count }} tópicos lecionados</span><span>{{ $course->practiced_topics_count }} com domínio demonstrado</span></div>
+                            @if($course->topics_count === 0)<p class="muted-text">Programa por estruturar.</p>@endif
                         @endif
-                        <div class="course-meta">
-                            <span>{{ $course->assessments_count }} avaliações</span>
-                            <span>{{ $course->tasks_count }} tarefas</span>
-                            <span>{{ $course->materials_count }} materiais</span>
-                            <span>{{ $course->taught_topics_count }}/{{ $course->topics_count }} tópicos lecionados</span>
-                            <span>{{ $course->exercises_count }} exercícios</span>
-                            @if($course->source_chunks_count > 0)
-                                <span>{{ $course->source_chunks_count }} fragmento(s) de fonte</span>
-                            @endif
-                            @if($course->study_sessions_count > 0)
-                                <span>{{ $course->study_sessions_count }} sessão(ões) de estudo</span>
-                            @endif
-                            @if($course->lesson_summaries_count > 0)
-                                <span>{{ $course->lesson_summaries_count }} sumário(s)</span>
-                            @endif
-                            @if($course->ects)<span>{{ $course->ects }} ECTS</span>@endif
-                        </div>
                         @if($nextClass)
                             <div class="next-class">
                                 <small>Próxima aula</small>

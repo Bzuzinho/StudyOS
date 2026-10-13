@@ -48,7 +48,7 @@ class StudyRecommendationTest extends TestCase
         $this->assertCount(1, $plan['recommendations']);
         $this->assertSame($taught->id, $plan['recommendations'][0]['topic']->id);
         $this->assertSame('study', $plan['recommendations'][0]['action']);
-        $this->get('/study')->assertOk()->assertSee('Plano de estudo e treino por UC')->assertSee('Inflação');
+        $this->get('/study')->assertOk()->assertSee('Prioridades de revisão')->assertSee('Inflação');
     }
 
     public function test_upcoming_nonconditional_assessment_is_selected(): void

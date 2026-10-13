@@ -76,6 +76,10 @@ class CourseTopicController
             'taught_topic_ids' => ['sometimes', 'array'],
             'taught_topic_ids.*' => ['required', 'integer', 'distinct', $topicRule()],
         ]);
+        $canonicalIds = \App\Services\Learning\Curriculum::topics($course)->pluck('id')->all();
+        if (array_diff($data['topic_ids'], $canonicalIds)) {
+            throw ValidationException::withMessages(['topic_ids' => 'Atualiza apenas a matéria do programa atual.']);
+        }
         $selected = $data['taught_topic_ids'] ?? [];
         if (array_diff($selected, $data['topic_ids'])) {
             throw ValidationException::withMessages(['taught_topic_ids' => 'Seleciona apenas tópicos apresentados nesta UC.']);
@@ -86,6 +90,14 @@ class CourseTopicController
             $topics = $course->topics()->where('status', 'active')->whereIn('id', $data['topic_ids']);
             (clone $topics)->whereIn('id', $selected)->whereNull('taught_at')->update(['taught_at' => now()]);
             (clone $topics)->whereNotIn('id', $selected)->whereNotNull('taught_at')->update(['taught_at' => null]);
+            $current = \App\Services\Learning\Curriculum::topics($course->fresh('topics'));
+            foreach ($current->whereNull('parent_id') as $theme) {
+                $children = $current->where('parent_id', $theme->id);
+                if ($children->isNotEmpty()) {
+                    $theme->update(['taught_at' => $children->every(fn ($child) => $child->taught_at !== null) ? ($theme->taught_at ?? now()) : null]);
+                }
+            }
+
         });
 
         return redirect(route('courses.show', $course, false).($course->topics()->where('source', 'chatgpt_package')->exists() ? '#package-curriculum' : '#course-topics'))->with('status', 'Matéria lecionada atualizada.');

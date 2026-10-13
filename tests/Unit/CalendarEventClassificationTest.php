@@ -97,7 +97,7 @@ class CalendarEventClassificationTest extends TestCase
             ->assertViewHas('coursesBySemester', fn ($semesters) =>
                 $semesters->get(1)->first()->classOccurrences->first()->id === $class->id);
         $this->get('/courses/'.$course->id)->assertOk()
-            ->assertViewHas('upcomingClasses', fn ($events) => $events->pluck('id')->all() === [$class->id]);
+            ->assertViewHas('nextClass', fn ($event) => $event->id === $class->id);
         $this->get('/calendar?date=2026-10-06')->assertOk()
             ->assertSee('Editar avaliação Teste manual')->assertSee('Estudo')->assertSee('Cancelada');
     }
