@@ -208,7 +208,7 @@
         @endif
 
         <section class="card wide" id="course-topics">
-            <div class="card-head"><h3>Matéria lecionada e preparação</h3><a class="button" href="{{ route('course-topics.create', $course, false) }}">+ Acrescentar tópico</a></div>
+            <div class="card-head"><h3>Matéria lecionada e preparação</h3><div class="row-actions"><a class="button primary" href="{{ route('courses.import-package', $course, false) }}">Importar pacote completo</a> <a class="button" href="{{ route('course-topics.create', $course, false) }}">+ Acrescentar tópico</a></div></div>
             <p class="muted-text">{{ $course->topics->whereNotNull('taught_at')->count() }} de {{ $course->topics->count() }} tópicos registados marcados como lecionados. Seleciona a matéria já dada nas aulas e guarda a seleção.</p>
             @if($course->topics->isNotEmpty())
                 <form id="taught-topics" method="POST" action="{{ route('course-topics.coverage', $course, false) }}">
