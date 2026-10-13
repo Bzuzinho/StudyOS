@@ -8,6 +8,7 @@ use App\Models\ExerciseAttempt;
 use App\Models\StudySession;
 use App\Models\Topic;
 use App\Services\Practice\ExerciseGrader;
+use App\Services\Practice\OpenAnswerAiGrader;
 use App\Services\Practice\TopicMasteryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -94,10 +95,10 @@ class PracticeRunController
         ]);
     }
 
-    public function answer(Request $request,int $run,ExerciseGrader $grader,TopicMasteryService $mastery): RedirectResponse
+    public function answer(Request $request,int $run,ExerciseGrader $grader,TopicMasteryService $mastery,OpenAnswerAiGrader $aiGrader): RedirectResponse
     {
         $data=$request->validate(['answer'=>['required','string','max:10000']]);
-        DB::transaction(function() use($run,$data,$grader,$mastery) {
+        DB::transaction(function() use($run,$data,$grader,$mastery,$aiGrader) {
             $row=DB::table('practice_runs')->where('id',$run)->lockForUpdate()->first();
             abort_unless($row && $row->status==='active',409);
             $ids=json_decode($row->exercise_ids,true)?:[];
@@ -106,6 +107,16 @@ class PracticeRunController
             $exercise=Exercise::findOrFail($id);
             $result=$grader->grade($exercise->type,$exercise->expected_answer,
                 $exercise->answer_config??[],$data['answer'],(float)$exercise->max_points);
+            if ($exercise->type==='open_text' && trim((string)$exercise->expected_answer)!=='') {
+                try {
+                    $result=$aiGrader->grade($exercise->prompt,(string)$exercise->expected_answer,
+                        $data['answer'],(array)($exercise->metadata['rubric']??[]),
+                        (float)$exercise->max_points);
+                } catch (\Throwable $exception) {
+                    report($exception);
+                    // Remains pending; a failed API request must not fabricate a grade.
+                }
+            }
             $responses=json_decode($row->responses,true)?:[];
             $responses[$id]=['answer'=>$data['answer'],'score'=>$result['score'],
                 'grading_status'=>$result['grading_status'],'feedback'=>$result['feedback']];
@@ -115,7 +126,7 @@ class PracticeRunController
                 'max_points'=>$exercise->max_points,'percentage'=>$result['percentage'],
                 'grading_status'=>$result['grading_status'],'grading_method'=>$result['grading_method'],
                 'feedback'=>$result['feedback'],'attempted_at'=>now(),
-                'metadata'=>['practice_run_id'=>$row->id],
+                'metadata'=>['practice_run_id'=>$row->id,'provisional_ai'=>($result['grading_method']??'')==='ai_rubric_provisional'],
             ]);
             if ($attempt->grading_status==='graded') $mastery->recalculateForAttempt($attempt);
             if ($row->study_session_id) {
