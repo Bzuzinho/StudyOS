@@ -88,7 +88,7 @@ class CourseTopicController
             (clone $topics)->whereNotIn('id', $selected)->whereNotNull('taught_at')->update(['taught_at' => null]);
         });
 
-        return $this->backToCourse($course, 'Matéria lecionada atualizada.');
+        return redirect(route('courses.show', $course, false).($course->topics()->where('source', 'chatgpt_package')->exists() ? '#package-curriculum' : '#course-topics'))->with('status', 'Matéria lecionada atualizada.');
     }
 
     private function validated(Request $request): array
