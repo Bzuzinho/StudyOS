@@ -144,4 +144,13 @@ class LearningExperienceTest extends TestCase
         $this->assertDatabaseCount('topic_masteries',1);
     }
 
+    public function test_manual_link_uses_the_same_stable_topic_identifier_as_the_tree(): void {
+        [$course,$parent,$child]=$this->curriculum();
+        $material=$course->materials()->create(['source'=>'chatgpt_package','external_id'=>$child->external_id,
+            'title'=>'Manual','type'=>'document','status'=>'active']);
+        $material->versions()->create(['source_hash'=>hash('sha256','manual'),'content_text'=>"# Conteúdo para estudar\n\nConceitos fundamentais.",
+            'extraction_status'=>'manual_text','observed_at'=>now()]);
+        $this->get('/courses/'.$course->id.'/package-topics/'.$child->id)->assertOk()->assertSee('<h1>Conteúdo para estudar</h1>',false);
+    }
+
 }

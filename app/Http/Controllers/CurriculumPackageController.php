@@ -22,7 +22,7 @@ class CurriculumPackageController
         abort_unless($topic->course_id === $course->id && $topic->source === 'chatgpt_package', 404);
         $material = Material::query()->where('course_id', $course->id)
             ->where('source', 'chatgpt_package')
-            ->where('external_id', $course->academic_code.':'.str_replace($course->academic_code.':', '', $topic->external_id))
+            ->where('external_id', $topic->external_id)
             ->firstOrFail();
         $version = $material->versions()->firstOrFail();
         return view('courses.read-package-topic', [
