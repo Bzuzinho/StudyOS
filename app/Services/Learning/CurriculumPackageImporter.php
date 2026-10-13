@@ -102,7 +102,7 @@ class CurriculumPackageImporter
                 foreach ($exercises['items'] as $item) {
                     $exercise = Exercise::updateOrCreate(
                         ['source' => 'chatgpt_package', 'external_id' => $course->academic_code.':'.$item['id']],
-                        ['course_id' => $course->id, 'type' => 'open_answer',
+                        ['course_id' => $course->id, 'type' => 'open_text',
                             'title' => 'Exercício · '.$item['id'], 'prompt' => $item['prompt'],
                             'expected_answer' => $item['reference_answer'],
                             'explanation' => $item['reference_answer'], 'status' => 'active',
