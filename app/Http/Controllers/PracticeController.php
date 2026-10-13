@@ -259,7 +259,7 @@ class PracticeController
             'percentage' => $maxPoints > 0 ? round(($score / $maxPoints) * 100, 2) : 0,
             'grading_status' => 'graded',
             'grading_method' => 'manual_review',
-            'feedback' => $data['feedback'] ?: null,
+            'feedback' => ($data['feedback'] ?? null) ?: null,
         ]);
 
         $masteryService->recalculateForAttempt($attempt->fresh());

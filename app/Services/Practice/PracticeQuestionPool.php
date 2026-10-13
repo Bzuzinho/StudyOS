@@ -26,7 +26,11 @@ class PracticeQuestionPool
         if (!empty($filters['repeat_run_id'])) {
             $run = \Illuminate\Support\Facades\DB::table('practice_runs')->where('course_id', $course->id)->find($filters['repeat_run_id']);
             abort_unless($run, 404);
-            $wrong = collect(json_decode($run->responses, true) ?: [])->filter(fn ($r) => ($r['grading_status'] ?? '') === 'graded' && ($r['score'] ?? 0) < ($r['max_points'] ?? 1))->keys()->all();
+            $responses = collect(json_decode($run->responses, true) ?: []);
+            foreach (\App\Models\ExerciseAttempt::where('metadata->practice_run_id', $run->id)->get() as $attempt) {
+                $responses->put($attempt->exercise_id, ['score' => $attempt->score, 'max_points' => $attempt->max_points, 'grading_status' => $attempt->grading_status]);
+            }
+            $wrong = $responses->filter(fn ($r) => ($r['grading_status'] ?? '') === 'graded' && ($r['score'] ?? 0) < ($r['max_points'] ?? 1))->keys()->all();
             $query->whereIn('id', $wrong);
         }
         return $query;

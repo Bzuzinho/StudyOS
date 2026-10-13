@@ -111,4 +111,37 @@ class LearningExperienceTest extends TestCase
         $this->post($url,['question_id'=>$first,'answer'=>'verdadeiro'])->assertStatus(409);
         $this->assertDatabaseCount('exercise_attempts',1);
     }
+    public function test_unused_questions_are_preferred_and_revised_errors_are_not_repeated(): void {
+        [$course,$parent,$child]=$this->curriculum();
+        $used=$this->question($course,$child);$unused=$this->question($course,$child);
+        $runId=DB::table('practice_runs')->insertGetId(['course_id'=>$course->id,
+            'exercise_ids'=>json_encode([$used->id]), 'responses'=>json_encode([$used->id=>['score'=>0,'max_points'=>1,'grading_status'=>'graded']]),
+            'current_index'=>1,'status'=>'completed','created_at'=>now(),'updated_at'=>now()]);
+        ExerciseAttempt::create(['exercise_id'=>$used->id,'submitted_answer'=>'verdadeiro','score'=>1,'max_points'=>1,
+            'percentage'=>100,'grading_status'=>'graded','grading_method'=>'manual_review','attempted_at'=>now(),
+            'metadata'=>['practice_run_id'=>$runId]]);
+        $params=['course_id'=>$course->id,'topic_ids'=>[$child->id],'count'=>1];
+        $this->getJson('/practice/treinar/disponiveis?'.http_build_query([...$params,'repeat_run_id'=>$runId]))->assertJson(['count'=>0]);
+        $this->post('/practice/treinar',$params)->assertRedirect();
+        $run=DB::table('practice_runs')->latest('id')->first();
+        $this->assertSame([$unused->id],json_decode($run->exercise_ids,true));
+    }
+
+    public function test_ai_grade_stays_provisional_until_review_and_does_not_create_mastery(): void {
+        [$course,$parent,$child]=$this->curriculum();$ex=$this->question($course,$child,'open_text');
+        $this->mock(\App\Services\Practice\OpenAnswerAiGrader::class, function($mock) {
+            $mock->shouldReceive('grade')->once()->andReturn(['score'=>1,'percentage'=>100,'grading_status'=>'graded',
+                'grading_method'=>'ai_rubric_provisional','feedback'=>'Avaliação provisória']);
+        });
+        $this->post('/practice/treinar',['course_id'=>$course->id,'topic_ids'=>[$child->id],'count'=>1]);
+        $run=DB::table('practice_runs')->first();
+        $this->post('/practice/sessao/'.$run->id.'/responder',['answer'=>'Resposta aberta']);
+        $this->get('/practice/sessao/'.$run->id)->assertOk()->assertSee('Classificação provisória')->assertDontSee('Classificação final');
+        $this->assertDatabaseCount('topic_masteries',0);
+        $attempt=ExerciseAttempt::first();
+        $this->put('/practice/attempts/'.$attempt->id.'/review',['score'=>1])->assertRedirect();
+        $this->get('/practice/sessao/'.$run->id)->assertOk()->assertSee('Classificação final');
+        $this->assertDatabaseCount('topic_masteries',1);
+    }
+
 }

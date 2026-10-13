@@ -69,6 +69,7 @@ class CourseController
             ->where(fn ($q) => $q->whereNull('metadata->conditional')->orWhere('metadata->conditional', false))
             ->orderBy('due_at')->first();
         $nextSession = $course->studySessions()->whereIn('status', ['planned', 'started'])
+            ->where(fn ($q) => $q->where('status', 'started')->orWhere('starts_at', '>=', now()))
             ->orderByRaw("case when status = 'started' then 0 else 1 end")->orderBy('starts_at')->first();
         $priority = $leaves->filter(fn ($t) => $t->taught_at && in_array($t->mastery?->status, ['fragile', 'developing']))
             ->sortBy(fn ($t) => $t->mastery->score_percent)->first();

@@ -15,6 +15,7 @@ for (const variant of [
     const errors=[];
     page.on('pageerror',e=>errors.push(String(e)));
     page.on('response',r=>{if(r.status()>=500)errors.push(`${r.status()} ${r.url()}`);});
+    process.on('unhandledRejection', async error => { console.error('PAGE STATE:',await page.locator('body').innerText()); await page.screenshot({path:`browser-evidence/${variant.name}-failure.png`,fullPage:true}); throw error; });
     const checkWidth = async () => assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'horizontal page overflow');
     await page.goto('http://127.0.0.1:8000/courses/1');
     await page.getByRole('heading',{name:'Programa curricular'}).waitFor();
@@ -31,7 +32,7 @@ for (const variant of [
     await page.getByRole('status').getByText('Matéria lecionada atualizada.').waitFor();
     await page.locator('.curriculum-theme summary').first().click();
     await page.locator('.curriculum-row').first().getByRole('link',{name:'Treinar',exact:true}).click();
-    await page.getByText('8 perguntas elegíveis.',{exact:true}).waitFor();
+    await page.getByText(/8 perguntas elegíveis/).waitFor();
     await page.getByLabel('Número de perguntas').selectOption('5');
     await page.getByLabel('Dificuldade').selectOption('advanced');
     await page.getByText('0 perguntas elegíveis.',{exact:true}).waitFor();

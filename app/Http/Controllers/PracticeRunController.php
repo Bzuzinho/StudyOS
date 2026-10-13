@@ -162,7 +162,7 @@ class PracticeRunController
             $ids=json_decode($row->exercise_ids,true)?:[];
             $id=$ids[$row->current_index]??null;
             abort_unless($id,409);
-$exercise=$this->questions($row)->get($id);
+            $exercise=$this->questions($row)->get($id);
             abort_unless($exercise, 404);
             if (isset($data['question_id'])) abort_unless((int) $data['question_id'] === (int) $id, 409);
             $result=$grader->grade($exercise->type,$exercise->expected_answer,
