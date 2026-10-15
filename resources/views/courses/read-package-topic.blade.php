@@ -22,9 +22,11 @@
     @if(count($reviewSections))
     <div class="reader-stack">
     @foreach($reviewSections as $section)
-    <section class="reader-section type-summary">
+    <section class="reader-section type-{{ $section['kind'] }}">
     <div class="reader-section-heading"><span class="reader-kicker">Revisão rápida</span><h2>{{ $section['title'] ?: 'Conceitos essenciais' }}</h2></div>
     <div class="reader-prose">{!! \Illuminate\Support\Str::markdown($section['body'],['html_input'=>'strip','allow_unsafe_links'=>false]) !!}</div>
+@if(!empty($section['rows']))<div class="reader-table-wrap"><table><tbody>@foreach($section['rows'] as $row)<tr>@foreach($row as $cell)<td>{{ $cell }}</td>@endforeach</tr>@endforeach</tbody></table></div>@endif
+@if(!empty($section['steps']))<ol class="reader-flow">@foreach($section['steps'] as $step)<li>{{ $step }}</li>@endforeach</ol>@endif
     </section>
     @endforeach
     </div>
@@ -37,11 +39,13 @@
     <section class="reader-section type-{{ $section['kind'] }}">
     @if($section['title'] !== '')
     <div class="reader-section-heading">
-    <span class="reader-kicker">{{ ['objectives'=>'O que vais aprender','example'=>'Na prática','summary'=>'Em poucas palavras','warning'=>'Atenção','comparison'=>'Relacionar conceitos','theory'=>'Compreender'][$section['kind']] }}</span>
+    <span class="reader-kicker">{{ ['objectives'=>'O que vais aprender','example'=>'Na prática','summary'=>'Em poucas palavras','warning'=>'Atenção','comparison'=>'Relacionar conceitos','concept'=>'Conceito','definition'=>'Definição','key_idea'=>'Ideia fundamental','explanation'=>'Compreender','table'=>'Quadro','diagram'=>'Diagrama','process'=>'Processo','case_study'=>'Caso aplicado','common_mistake'=>'Não confundir','formula'=>'Fórmula','timeline'=>'Cronologia','relationship'=>'Relações','memory_tip'=>'Memorizar','theory'=>'Compreender'][$section['kind']] }}</span>
     <h2>{{ $section['title'] }}</h2>
     </div>
     @endif
     <div class="reader-prose">{!! \Illuminate\Support\Str::markdown($section['body'],['html_input'=>'strip','allow_unsafe_links'=>false]) !!}</div>
+@if(!empty($section['rows']))<div class="reader-table-wrap"><table><tbody>@foreach($section['rows'] as $row)<tr>@foreach($row as $cell)<td>{{ $cell }}</td>@endforeach</tr>@endforeach</tbody></table></div>@endif
+@if(!empty($section['steps']))<ol class="reader-flow">@foreach($section['steps'] as $step)<li>{{ $step }}</li>@endforeach</ol>@endif
     </section>
     @endforeach
     </div>
