@@ -25,13 +25,12 @@ class MaterialController
     {
         $filters = $request->validate([
             'course_id' => ['nullable', 'integer', 'exists:courses,id'],
-            'source' => ['nullable', Rule::in(['moodle', 'manual', 'moodle_audit'])],
+            'source' => ['nullable', Rule::in(['moodle', 'manual', 'moodle_audit', 'chatgpt_package'])],
             'q' => ['nullable', 'string', 'max:200'],
         ]);
         $search = trim($filters['q'] ?? '');
 
-        return view('materials.index', [
-            'materials' => Material::query()
+        $materials = Material::query()
                 ->with(['course', 'versions' => fn ($query) => $query->withCount([
                     'sourceChunks as active_chunks_count' => fn ($chunks) => $chunks->where('status', 'active'),
                     'sourceChunks as rich_chunks_count' => fn ($chunks) => $chunks->where('status', 'active')->where('quality', 'content'),
@@ -47,7 +46,16 @@ class MaterialController
                 ->orderByDesc('id')
                 ->paginate(24)
                 ->withPath(route('materials.index', [], false))
-                ->withQueryString(),
+                ->withQueryString();
+        $packageTopics = Topic::query()->where('source', 'chatgpt_package')
+            ->where('status', 'active')
+            ->whereIn('external_id', $materials->getCollection()
+                ->where('source', 'chatgpt_package')->pluck('external_id')->all())
+            ->get()->keyBy('external_id');
+
+        return view('materials.index', [
+            'materials' => $materials,
+            'packageTopics' => $packageTopics,
             'courses' => Course::query()->whereHas('materials', fn ($query) => $query->where('status', 'active'))->orderBy('name')->get(),
             'filters' => $filters,
         ]);

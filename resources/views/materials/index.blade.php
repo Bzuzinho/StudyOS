@@ -45,6 +45,7 @@
         <label class="field"><span>Origem</span><select name="source">
             <option value="">Todas as origens</option>
             <option value="moodle" @selected(($filters['source'] ?? '') === 'moodle')>Moodle</option>
+            <option value="chatgpt_package" @selected(($filters['source'] ?? '') === 'chatgpt_package')>Manuais de estudo</option>
             <option value="manual" @selected(($filters['source'] ?? '') === 'manual')>Manual</option>
             <option value="moodle_audit" @selected(($filters['source'] ?? '') === 'moodle_audit')>Fonte auditada</option>
         </select></label>
@@ -58,7 +59,11 @@
         @forelse($materials as $material)
             @php
                 $notes = $material->metadata['notes'] ?? null;
+                $packageTopic = $material->source === 'chatgpt_package' ? $packageTopics->get($material->external_id) : null;
                 $latestVersion = $material->versions->first();
+                $materialLink = $packageTopic && $packageTopic->course_id === $material->course_id
+                    ? route('courses.package-topic.read', ['course' => $material->course_id, 'topic' => $packageTopic->id], false)
+                    : ($latestVersion?->storage_path ? route('materials.download', ['material' => $material, 'version' => $latestVersion], false) : $material->url);
                 $activeChunks = $latestVersion?->active_chunks_count ?? 0;
                 $richChunks = $latestVersion?->rich_chunks_count ?? 0;
                 $extractionLabels = [
@@ -77,10 +82,10 @@
                 <div class="material-card-head">
                     <span class="material-type">{{ strtoupper($material->type) }}</span>
                     <span class="source-pill {{ $material->source === 'manual' ? 'manual' : '' }}">
-                        {{ $material->source === 'manual' ? 'Manual' : ($material->source === 'moodle' ? 'Moodle' : 'Fonte auditada') }}
+                        {{ $material->source === 'chatgpt_package' ? 'Manual de estudo' : ($material->source === 'manual' ? 'Manual' : ($material->source === 'moodle' ? 'Moodle' : 'Fonte auditada')) }}
                     </span>
                 </div>
-                <h2><a href="{{ $latestVersion?->storage_path ? route('materials.download', ['material' => $material, 'version' => $latestVersion], false) : ($material->url ?: '#') }}">{{ $material->title }}</a></h2>
+                <h2>@if($materialLink)<a href="{{ $materialLink }}">{{ $material->title }}</a>@else{{ $material->title }}@endif</h2>
                 <a class="material-course" href="{{ route('courses.show', $material->course, false) }}">{{ $material->course?->name }}</a>
 
                 @if($notes)
