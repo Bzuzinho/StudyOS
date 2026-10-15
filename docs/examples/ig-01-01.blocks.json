@@ -1,0 +1,72 @@
+{
+  "schema": "studyos.pedagogical-blocks.v1",
+  "blocks": [
+    {
+      "type": "key_idea",
+      "mode": "both",
+      "title": "Ideia central",
+      "body": "Uma **organização** coordena pessoas e recursos para atingir finalidades. **Gestão** é o processo de decidir e coordenar a utilização desses recursos."
+    },
+    {
+      "type": "definition",
+      "mode": "study",
+      "title": "O que é uma organização?",
+      "body": "Uma organização é um sistema social estruturado, orientado para objetivos, que coordena pessoas, atividades, informação e recursos. Pode ter fins lucrativos, sociais, culturais ou públicos."
+    },
+    {
+      "type": "comparison",
+      "mode": "both",
+      "title": "Organização e gestão não são sinónimos",
+      "body": "Distingue a entidade da atividade.",
+      "rows": [
+        [
+          "Organização",
+          "Gestão"
+        ],
+        [
+          "Estrutura e pessoas",
+          "Decisões e coordenação"
+        ],
+        [
+          "Dispõe de recursos",
+          "Afeta recursos a objetivos"
+        ],
+        [
+          "Tem finalidades",
+          "Transforma opções em ações"
+        ]
+      ]
+    },
+    {
+      "type": "process",
+      "mode": "study",
+      "title": "Da missão aos resultados",
+      "body": "A relação entre os elementos não é automática: exige escolhas e acompanhamento.",
+      "steps": [
+        "Missão",
+        "Objetivos",
+        "Recursos",
+        "Decisões de gestão",
+        "Resultados e controlo"
+      ]
+    },
+    {
+      "type": "example",
+      "mode": "study",
+      "title": "Exemplo: associação desportiva",
+      "body": "Uma associação quer ampliar a formação de atletas. Deve articular treinadores, pistas, horários, equipamentos e orçamento. A **gestão** permite priorizar recursos, conciliar interesses e acompanhar resultados."
+    },
+    {
+      "type": "common_mistake",
+      "mode": "both",
+      "title": "Não confundir organização com empresa",
+      "body": "Toda a empresa é uma organização, mas nem todas as organizações são empresas com fins lucrativos."
+    },
+    {
+      "type": "summary",
+      "mode": "review",
+      "title": "Revisão em 2 minutos",
+      "body": "**Organização:** pessoas + recursos + coordenação + finalidade. **Gestão:** planear, organizar, dirigir e controlar os recursos. **Stakeholders:** indivíduos e grupos que podem afetar ou ser afetados pela organização."
+    }
+  ]
+}
