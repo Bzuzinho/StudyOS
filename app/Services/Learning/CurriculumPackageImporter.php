@@ -147,7 +147,11 @@ class CurriculumPackageImporter
                                 'set' => $item['set'] ?? 'geral',
                                 'pedagogical_origin' => 'chatgpt']]
                     );
-                    $exercise->topics()->syncWithoutDetaching([$topics[$item['topic_id']]->id]);
+                    if ($mode === 'replace') {
+                        $exercise->topics()->sync([$topics[$item['topic_id']]->id]);
+                    } else {
+                        $exercise->topics()->syncWithoutDetaching([$topics[$item['topic_id']]->id]);
+                    }
                     $exerciseCount++;
                 }
                 if ($mode === 'replace') {
