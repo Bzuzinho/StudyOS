@@ -7,6 +7,10 @@ class Curriculum
     public static function topics(Course $course): Collection
     {
         $topics = $course->topics->where('status', 'active');
+        $confirmed = $topics->where('source', 'confirmed_programme');
+        if ($confirmed->isNotEmpty()) {
+            return $confirmed->sortBy('position')->values();
+        }
         $package = $topics->where('source', 'chatgpt_package');
         return ($package->isNotEmpty() ? $package : $topics)->sortBy('position')->values();
     }
