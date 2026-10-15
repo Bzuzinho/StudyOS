@@ -45,7 +45,7 @@ class LearningExperienceTest extends TestCase
         foreach (['/courses/'.$course->id,'/study/create?course_id='.$course->id,'/practice/treinar?course_id='.$course->id] as $url) {
             $this->get($url)->assertOk()->assertSee('Organizações')->assertDontSee('Histórico antigo');
         }
-        $this->get('/courses/'.$course->id)->assertSee('Importar / atualizar pacote')->assertDontSee('excertos indexados');
+        $this->get('/courses/'.$course->id)->assertSee('Substituir conteúdos da UC')->assertSee('Acrescentar conteúdos à UC')->assertDontSee('Importar / atualizar pacote')->assertDontSee('excertos indexados');
         $this->assertNotNull($historical->fresh());
         $this->postJson('/practice/treinar',['course_id'=>$course->id,'topic_ids'=>[$historical->id],'count'=>1])->assertUnprocessable();
     }
