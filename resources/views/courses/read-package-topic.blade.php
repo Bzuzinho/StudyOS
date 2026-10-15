@@ -11,16 +11,12 @@
 <div class="shell narrow-shell">
 @include('partials.learning-nav',['active'=>'/study'])
 <div class="breadcrumb"><a href="{{ route('courses.show',$course,false) }}#package-curriculum">← {{ $course->name }}</a></div>
-<header class="form-header"><p class="eyebrow">Biblioteca pedagógica · {{ $topic->metadata['curricular_number'] ?? 'Subtema' }}</p><h1>{{ $topic->title }}</h1><p>Aprende os conceitos, consulta a síntese ou pratica com exercícios autónomos.</p></header>
+<header class="form-header"><p class="eyebrow">Biblioteca pedagógica · {{ $topic->metadata['curricular_number'] ?? 'Subtema' }}</p><h1>{{ $topic->title }}</h1><p>{{ $isReview ? "Síntese autónoma dos conceitos essenciais." : "Desenvolvimento teórico e exemplos para aprender este subtema." }}</p></header>
 @php($isReview = request()->query('mode') === 'review')
-<nav class="reader-modes" aria-label="Modo de aprendizagem">
-<a class="{{ !$isReview ? 'selected' : '' }}" @if(!$isReview) aria-current="page" @endif href="{{ route('courses.package-topic.read',['course'=>$course,'topic'=>$topic],false) }}">Estudar <small>Explicação completa</small></a>
-<a class="{{ $isReview ? 'selected' : '' }}" @if($isReview) aria-current="page" @endif href="{{ route('courses.package-topic.read',['course'=>$course,'topic'=>$topic,'mode'=>'review'],false) }}">Rever <small>Síntese essencial</small></a>
-<a href="{{ route('practice.runs.create',['course_id'=>$course->id,'topic_id'=>$topic->id],false) }}">Treinar <small>Questões e correção</small></a>
-</nav>
+
 @if($isReview)
     @if(count($reviewSections))
-    <div class="reader-stack">
+    <div class="reader-stack reader-focused">
     @foreach($reviewSections as $section)
     <section class="reader-section type-{{ $section['kind'] }}">
     <div class="reader-section-heading"><span class="reader-kicker">Revisão rápida</span><h2>{{ $section['title'] ?: 'Conceitos essenciais' }}</h2></div>
@@ -50,5 +46,5 @@
     @endforeach
     </div>
 @endif
-<div class="form-actions"><a class="button ghost" href="{{ route('courses.package-topic.read',['course'=>$course,'topic'=>$topic,'mode'=>$isReview?'study':'review'],false) }}">{{ $isReview ? 'Estudar matéria completa' : 'Consultar revisão' }}</a><a class="button primary" href="{{ route('practice.runs.create',['course_id'=>$course->id,'topic_id'=>$topic->id],false) }}">Treinar este subtema</a></div>
+
 </div></body></html>
