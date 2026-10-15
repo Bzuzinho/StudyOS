@@ -24,12 +24,17 @@ class CurriculumPackageController
             ->where('source', 'chatgpt_package')
             ->where('external_id', $topic->external_id)
             ->firstOrFail();
-        $version = $material->versions()->firstOrFail();
-        $sections = app(\App\Services\Learning\PedagogicalManual::class)->sections((string) $version->content_text);
+        $version = $material->versions()->orderByDesc('id')->firstOrFail();
+        $blocks = $version->metadata['pedagogical_blocks'] ?? null;
+        $isStructured = is_array($blocks);
+        $sections = $isStructured ? app(\App\Services\Learning\PedagogicalBlocks::class)->forMode($blocks, 'study')
+            : app(\App\Services\Learning\PedagogicalManual::class)->sections((string) $version->content_text);
         return view('courses.read-package-topic', [
             'course' => $course, 'topic' => $topic,
             'sections' => $sections,
-            'reviewSections' => app(\App\Services\Learning\PedagogicalManual::class)->review($sections),
+            'reviewSections' => $isStructured
+                ? app(\App\Services\Learning\PedagogicalBlocks::class)->forMode($blocks, 'review')
+                : app(\App\Services\Learning\PedagogicalManual::class)->review($sections),
         ]);
     }
 
