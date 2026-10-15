@@ -62,6 +62,6 @@ class PedagogicalBlocks
 
     public function forMode(array $blocks, string $mode): array
     {
-        return array_values(array_filter($blocks, fn ($block) => in_array($block['mode'], [$mode,'both'], true)));
+        return array_values(array_filter($blocks, fn ($block) => $block['mode'] === $mode));
     }
 }

@@ -31,7 +31,7 @@ class CurriculumPackageController
             : app(\App\Services\Learning\PedagogicalManual::class)->sections((string) $version->content_text);
         return view('courses.read-package-topic', [
             'course' => $course, 'topic' => $topic,
-            'sections' => $sections,
+            'sections' => $isStructured ? $sections : array_values(array_filter($sections, fn ($section) => $section['kind'] !== 'summary')),
             'reviewSections' => $isStructured
                 ? app(\App\Services\Learning\PedagogicalBlocks::class)->forMode($blocks, 'review')
                 : app(\App\Services\Learning\PedagogicalManual::class)->review($sections),
