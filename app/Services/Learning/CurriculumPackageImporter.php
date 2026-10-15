@@ -46,6 +46,7 @@ class CurriculumPackageImporter
             }
             $records = [];
             $paths = [];
+            $blocksByTopic = [];
             foreach ($manifest['themes'] as $theme) {
                 $this->validateNode($theme, $records);
                 if (!is_array($theme['children'] ?? null)) {
@@ -59,6 +60,15 @@ class CurriculumPackageImporter
                         throw new RuntimeException('Ficheiro de subtema inválido ou em falta.');
                     }
                     $paths[$child['id']] = $name;
+                    if (isset($child['blocks_file'])) {
+                        $blocksPath = $child['blocks_file'];
+                        if (!is_string($blocksPath) || !preg_match('#^temas/tema-[0-9]{2}/subtema-[0-9]{2}-[0-9]{2}\\.blocks\\.json$#', $blocksPath)
+                            || !isset($files[$blocksPath])) {
+                            throw new RuntimeException('Ficheiro de blocos pedagógicos inválido ou em falta.');
+                        }
+                        $decoded = json_decode((string) $zip->getFromName($blocksPath), true);
+                        $blocksByTopic[$child['id']] = app(PedagogicalBlocks::class)->validate($decoded);
+                    }
                 }
             }
             $exerciseIds = [];
@@ -89,7 +99,7 @@ class CurriculumPackageImporter
                 }
             }
 
-            return DB::transaction(function () use ($course, $manifest, $exercises, $zip, $paths) {
+            return DB::transaction(function () use ($course, $manifest, $exercises, $zip, $paths, $blocksByTopic) {
                 $this->preserveExistingQuestions($course);
                 $topics = [];
                 $created = 0;
@@ -106,12 +116,13 @@ class CurriculumPackageImporter
                                 'status' => 'active', 'metadata' => ['study_topic_id' => $topic->id,
                                     'pedagogical_origin' => 'chatgpt', 'official' => false]]
                         );
-                        $hash = hash('sha256', $text);
+                        $structuredBlocks = $blocksByTopic[$child['id']] ?? null;
+                        $hash = hash('sha256', $text.'|'.json_encode($structuredBlocks));
                         $version = MaterialVersion::firstOrCreate(
                             ['material_id' => $material->id, 'source_hash' => $hash],
                             ['version_label' => 'Pacote ChatGPT · '.now()->format('Y-m-d'),
                                 'content_text' => $text, 'manual_text' => $text, 'extraction_status' => 'manual_text',
-                                'observed_at' => now(), 'metadata' => ['sections' => [], 'file_extension' => 'md']]
+                                'observed_at' => now(), 'metadata' => ['sections' => [], 'file_extension' => 'md', 'pedagogical_blocks' => $structuredBlocks]]
                         );
                         // A later re-import must restore index links even when text is unchanged.
                         app(CorpusBuilder::class)->rebuildMaterialVersion($version);
