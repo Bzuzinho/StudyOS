@@ -40,14 +40,14 @@ class CurriculumPackageController
 
     public function store(Request $request, Course $course, CurriculumPackageImporter $importer): RedirectResponse
     {
-        $data = $request->validate(['package' => ['required', 'file', 'max:10240']]);
+        $data = $request->validate(['package' => ['required', 'file', 'max:10240'], 'mode' => ['required', 'in:replace,append']]);
         try {
-            $result = $importer->import($course, $data['package']->getRealPath());
+            $result = $importer->import($course, $data['package']->getRealPath(), $data['mode']);
         } catch (RuntimeException $exception) {
             return back()->withErrors(['package' => $exception->getMessage()]);
         }
         return redirect()->to(route('courses.show', $course, false).'#package-curriculum')
-            ->with('status', 'Pacote importado: '.$result['themes'].' temas, '.
+            ->with('status', ($data['mode'] === 'replace' ? 'Pacote substituído: ' : 'Conteúdos acrescentados: ').$result['themes'].' temas, '.
                 $result['subtopics'].' subtemas e '.$result['exercises'].' exercícios.');
     }
 }
