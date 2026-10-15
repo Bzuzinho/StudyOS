@@ -13,8 +13,11 @@ use ZipArchive;
 
 class CurriculumPackageImporter
 {
-    public function import(Course $course, string $path): array
+    public function import(Course $course, string $path, string $mode = 'append'): array
     {
+        if (!in_array($mode, ['append', 'replace'], true)) {
+            throw new RuntimeException('Modo de importação inválido.');
+        }
         $zip = new ZipArchive();
         if ($zip->open($path) !== true) {
             throw new RuntimeException('O ficheiro não é um ZIP válido.');
@@ -99,7 +102,7 @@ class CurriculumPackageImporter
                 }
             }
 
-            return DB::transaction(function () use ($course, $manifest, $exercises, $zip, $paths, $blocksByTopic) {
+            return DB::transaction(function () use ($course, $manifest, $exercises, $zip, $paths, $blocksByTopic, $mode, $exerciseIds) {
                 $this->preserveExistingQuestions($course);
                 $topics = [];
                 $created = 0;
@@ -146,6 +149,19 @@ class CurriculumPackageImporter
                     );
                     $exercise->topics()->syncWithoutDetaching([$topics[$item['topic_id']]->id]);
                     $exerciseCount++;
+                }
+                if ($mode === 'replace') {
+                    // Only records owned by this curricular package are deactivated.
+                    // Never delete topics, materials, attempts or past sessions.
+                    $activeTopicIds = array_values(array_map(fn ($id) => $course->academic_code.':'.$id, array_keys($topics)));
+                    Topic::query()->where('course_id', $course->id)->where('source', 'chatgpt_package')
+                        ->whereNotIn('external_id', $activeTopicIds)->update(['status' => 'inactive']);
+                    Material::query()->where('course_id', $course->id)->where('source', 'chatgpt_package')
+                        ->whereNotIn('external_id', array_map(fn ($id) => $course->academic_code.':'.$id, array_keys($paths)))
+                        ->update(['status' => 'inactive']);
+                    Exercise::query()->where('course_id', $course->id)->where('source', 'chatgpt_package')
+                        ->whereNotIn('external_id', array_map(fn ($id) => $course->academic_code.':'.$id, array_keys($exerciseIds)))
+                        ->update(['status' => 'inactive']);
                 }
                 return ['themes' => count($manifest['themes']), 'subtopics' => $created,
                     'exercises' => $exerciseCount];
