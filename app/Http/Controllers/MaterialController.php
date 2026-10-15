@@ -25,7 +25,7 @@ class MaterialController
     {
         $filters = $request->validate([
             'course_id' => ['nullable', 'integer', 'exists:courses,id'],
-            'source' => ['nullable', Rule::in(['moodle', 'manual', 'moodle_audit'])],
+            'source' => ['nullable', Rule::in(['moodle', 'manual', 'moodle_audit', 'chatgpt_package'])],
             'q' => ['nullable', 'string', 'max:200'],
         ]);
         $search = trim($filters['q'] ?? '');
