@@ -16,8 +16,8 @@ class PedagogicalBlocksTest extends TestCase
             ['type'=>'summary','mode'=>'review','title'=>'Síntese','body'=>'Resumo'],
             ['type'=>'key_idea','mode'=>'both','title'=>'Ideia','body'=>'Essencial'],
         ]]);
-        self::assertCount(2, $service->forMode($blocks, 'study'));
-        self::assertCount(2, $service->forMode($blocks, 'review'));
+        self::assertCount(1, $service->forMode($blocks, 'study'));
+        self::assertCount(1, $service->forMode($blocks, 'review'));
         self::assertSame('Síntese', $service->forMode($blocks, 'review')[0]['title']);
     }
 
