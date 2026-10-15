@@ -150,7 +150,7 @@ class LearningExperienceTest extends TestCase
             'title'=>'Manual','type'=>'document','status'=>'active']);
         $material->versions()->create(['source_hash'=>hash('sha256','manual'),'content_text'=>"# Conteúdo para estudar\n\nConceitos fundamentais.",
             'extraction_status'=>'manual_text','observed_at'=>now()]);
-        $this->get('/courses/'.$course->id.'/package-topics/'.$child->id)->assertOk()->assertSee('<h1>Conteúdo para estudar</h1>',false);
+        $this->get('/courses/'.$course->id.'/package-topics/'.$child->id)->assertOk()->assertSee('<h2>Conteúdo para estudar</h2>',false);
     }
 
     public function test_old_session_keeps_its_topics_but_training_uses_the_current_curriculum(): void {
