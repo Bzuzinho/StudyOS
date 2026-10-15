@@ -172,7 +172,10 @@ class LearningExperienceTest extends TestCase
             'extraction_status'=>'manual_text','observed_at'=>now()]);
         $url='/courses/'.$course->id.'/package-topics/'.$child->id;
         $this->get('/materials?source=chatgpt_package')->assertOk()
-            ->assertSee($url)->assertSee('Manual de estudo · Organizações');
+            ->assertSee($url.'?from=materials')->assertSee('Manual de estudo · Organizações');
+        $this->get($url.'?from=materials')->assertOk()
+            ->assertSee('Voltar aos materiais')->assertSee('/materials?course_id='.$course->id)
+            ->assertDontSee('Voltar à unidade curricular');
         $this->get($url)->assertOk()->assertSee('Organização');
     }
 
