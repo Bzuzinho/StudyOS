@@ -164,6 +164,18 @@ class LearningExperienceTest extends TestCase
             ->assertOk()->assertSee('Voltar à unidade curricular')->assertDontSee('Voltar à sessão de estudo');
     }
 
+    public function test_imported_manual_opens_from_materials_library(): void {
+        [$course,$parent,$child]=$this->curriculum();
+        $material=$course->materials()->create(['source'=>'chatgpt_package','external_id'=>$child->external_id,
+            'title'=>'Manual de estudo · Organizações','type'=>'document','status'=>'active']);
+        $material->versions()->create(['source_hash'=>hash('sha256','library-manual'),'content_text'=>'# Organização',
+            'extraction_status'=>'manual_text','observed_at'=>now()]);
+        $url='/courses/'.$course->id.'/package-topics/'.$child->id;
+        $this->get('/materials?source=chatgpt_package')->assertOk()
+            ->assertSee($url)->assertSee('Manual de estudo · Organizações');
+        $this->get($url)->assertOk()->assertSee('Organização');
+    }
+
     public function test_old_session_keeps_its_topics_but_training_uses_the_current_curriculum(): void {
         [$course,$parent,$child,$old]=$this->curriculum();
         $session=$course->studySessions()->create(['source'=>'manual','external_id'=>'old-session','type'=>'reading',
