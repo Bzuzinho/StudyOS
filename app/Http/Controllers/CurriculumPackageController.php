@@ -25,8 +25,11 @@ class CurriculumPackageController
             ->where('external_id', $topic->external_id)
             ->firstOrFail();
         $version = $material->versions()->firstOrFail();
+        $sections = app(\App\Services\Learning\PedagogicalManual::class)->sections((string) $version->content_text);
         return view('courses.read-package-topic', [
-            'course' => $course, 'topic' => $topic, 'content' => (string) $version->content_text,
+            'course' => $course, 'topic' => $topic,
+            'sections' => $sections,
+            'reviewSections' => app(\App\Services\Learning\PedagogicalManual::class)->review($sections),
         ]);
     }
 
