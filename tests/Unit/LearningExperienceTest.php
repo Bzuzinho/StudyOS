@@ -150,7 +150,18 @@ class LearningExperienceTest extends TestCase
             'title'=>'Manual','type'=>'document','status'=>'active']);
         $material->versions()->create(['source_hash'=>hash('sha256','manual'),'content_text'=>"# Conteúdo para estudar\n\nConceitos fundamentais.",
             'extraction_status'=>'manual_text','observed_at'=>now()]);
-        $this->get('/courses/'.$course->id.'/package-topics/'.$child->id)->assertOk()->assertSee('<h2>Conteúdo para estudar</h2>',false);
+        $this->get('/courses/'.$course->id.'/package-topics/'.$child->id)
+            ->assertOk()->assertSee('<h2>Conteúdo para estudar</h2>',false)->assertSee('Voltar à unidade curricular');
+        $session=$course->studySessions()->create(['source'=>'manual','external_id'=>'reader-back-session','type'=>'study',
+            'starts_at'=>now(),'planned_minutes'=>30,'status'=>'started']);
+        $session->topics()->attach($child);
+        $this->get('/courses/'.$course->id.'/package-topics/'.$child->id.'?study_session_id='.$session->id)
+            ->assertOk()->assertSee('Voltar à sessão de estudo')
+            ->assertSee('/study/'.$session->id);
+        $this->get('/study/'.$session->id)->assertOk()
+            ->assertSee('study_session_id='.$session->id);
+        $this->get('/courses/'.$course->id.'/package-topics/'.$child->id.'?study_session_id=99999999')
+            ->assertOk()->assertSee('Voltar à unidade curricular')->assertDontSee('Voltar à sessão de estudo');
     }
 
     public function test_old_session_keeps_its_topics_but_training_uses_the_current_curriculum(): void {
