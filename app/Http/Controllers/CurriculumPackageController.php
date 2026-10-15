@@ -24,7 +24,7 @@ class CurriculumPackageController
             ->where('source', 'chatgpt_package')
             ->where('external_id', $topic->external_id)
             ->firstOrFail();
-        $version = $material->versions()->firstOrFail();
+        $version = $material->versions()->orderByDesc('id')->firstOrFail();
         $blocks = $version->metadata['pedagogical_blocks'] ?? null;
         $isStructured = is_array($blocks);
         $sections = $isStructured ? app(\App\Services\Learning\PedagogicalBlocks::class)->forMode($blocks, 'study')
