@@ -10,7 +10,7 @@
 <body class="learning-page">
 <div class="shell narrow-shell">
 @include('partials.learning-nav',['active'=>'/study'])
-<div class="breadcrumb"><a href="{{ route('courses.show',$course,false) }}#package-curriculum">← {{ $course->name }}</a></div>
+<div class="breadcrumb"><a href="{{ $backUrl }}">← {{ $backLabel }}</a></div>
 @php($isReview = request()->query('mode') === 'review')
 <header class="form-header"><p class="eyebrow">Biblioteca pedagógica · {{ $topic->metadata['curricular_number'] ?? 'Subtema' }}</p><h1>{{ $topic->title }}</h1><p>{{ $isReview ? "Síntese autónoma dos conceitos essenciais." : "Desenvolvimento teórico e exemplos para aprender este subtema." }}</p></header>
 @php($isReview = request()->query('mode') === 'review')
@@ -48,4 +48,7 @@
     </div>
 @endif
 
+<nav aria-label="Regressar à sessão anterior" class="reader-return">
+<a class="button ghost" href="{{ $backUrl }}">← {{ $backLabel }}</a>
+</nav>
 </div></body></html>
