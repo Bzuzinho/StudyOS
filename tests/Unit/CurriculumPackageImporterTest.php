@@ -82,6 +82,44 @@ class CurriculumPackageImporterTest extends TestCase
         }
     }
 
+    public function test_append_preserves_omitted_records_and_replace_deactivates_only_package_records(): void
+    {
+        $course = Course::create(['academic_code'=>'14020','name'=>'Introdução à Gestão','status'=>'active']);
+        $other = Topic::create(['course_id'=>$course->id,'source'=>'manual','external_id'=>'manual-keep','title'=>'Notas pessoais','position'=>9,'status'=>'active']);
+        $extra = Topic::create(['course_id'=>$course->id,'source'=>'chatgpt_package','external_id'=>'14020:IG-01.02',
+            'title'=>'Subtema anterior','position'=>2,'status'=>'active']);
+        $exercise = Exercise::create(['course_id'=>$course->id,'source'=>'chatgpt_package','external_id'=>'14020:OLD-Q01',
+            'title'=>'Pergunta antiga','prompt'=>'Questão antiga?','expected_answer'=>'Resposta','type'=>'open_text','status'=>'active']);
+        $material = Material::create(['course_id'=>$course->id,'source'=>'chatgpt_package','external_id'=>'14020:IG-01.02',
+            'title'=>'Manual antigo','type'=>'document','status'=>'active']);
+        $moodle = Material::create(['course_id'=>$course->id,'source'=>'moodle','external_id'=>'moodle-keep',
+            'title'=>'Diapositivos','type'=>'document','status'=>'active']);
+        $path = tempnam(sys_get_temp_dir(), 'studyos-mode');
+        $zip = new ZipArchive();
+        $zip->open($path, ZipArchive::OVERWRITE);
+        $zip->addFromString('manifest.json', json_encode(['schema'=>'studyos.curriculum-package.proposal.v1',
+            'course'=>['academic_code'=>'14020'], 'themes'=>[['id'=>'IG-01','title'=>'Fundamentos',
+            'children'=>[['id'=>'IG-01.01','title'=>'Gestão','file'=>'temas/tema-01/subtema-01-01.md']]]]]));
+        $zip->addFromString('exercicios.json', json_encode(['items'=>[]]));
+        $zip->addFromString('temas/tema-01/subtema-01-01.md', str_repeat('A gestão articula recursos e objetivos. ', 15));
+        $zip->close();
+        try {
+            app(CurriculumPackageImporter::class)->import($course,$path,'append');
+            $this->assertSame('active',$extra->fresh()->status);
+            $this->assertSame('active',$exercise->fresh()->status);
+            $this->assertSame('active',$material->fresh()->status);
+            app(CurriculumPackageImporter::class)->import($course,$path,'replace');
+            $this->assertSame('inactive',$extra->fresh()->status);
+            $this->assertSame('inactive',$exercise->fresh()->status);
+            $this->assertSame('inactive',$material->fresh()->status);
+            $this->assertSame('active',$other->fresh()->status);
+            $this->assertSame('active',$moodle->fresh()->status);
+            $this->assertSame('active', Topic::where('external_id','14020:IG-01.01')->firstOrFail()->status);
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function test_it_rejects_a_package_for_the_wrong_course_before_writing(): void
     {
         $course=Course::create(['academic_code'=>'99999','name'=>'Outra UC','status'=>'active']);
