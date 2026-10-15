@@ -11,6 +11,7 @@
 <div class="shell narrow-shell">
 @include('partials.learning-nav',['active'=>'/study'])
 <div class="breadcrumb"><a href="{{ route('courses.show',$course,false) }}#package-curriculum">← {{ $course->name }}</a></div>
+@php($isReview = request()->query('mode') === 'review')
 <header class="form-header"><p class="eyebrow">Biblioteca pedagógica · {{ $topic->metadata['curricular_number'] ?? 'Subtema' }}</p><h1>{{ $topic->title }}</h1><p>{{ $isReview ? "Síntese autónoma dos conceitos essenciais." : "Desenvolvimento teórico e exemplos para aprender este subtema." }}</p></header>
 @php($isReview = request()->query('mode') === 'review')
 
