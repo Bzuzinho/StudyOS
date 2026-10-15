@@ -62,7 +62,7 @@
                 $packageTopic = $material->source === 'chatgpt_package' ? $packageTopics->get($material->external_id) : null;
                 $latestVersion = $material->versions->first();
                 $materialLink = $packageTopic && $packageTopic->course_id === $material->course_id
-                    ? route('courses.package-topic.read', ['course' => $material->course_id, 'topic' => $packageTopic->id], false)
+                    ? route('courses.package-topic.read', ['course' => $material->course_id, 'topic' => $packageTopic->id, 'from' => 'materials'], false)
                     : ($latestVersion?->storage_path ? route('materials.download', ['material' => $material, 'version' => $latestVersion], false) : $material->url);
                 $activeChunks = $latestVersion?->active_chunks_count ?? 0;
                 $richChunks = $latestVersion?->rich_chunks_count ?? 0;
