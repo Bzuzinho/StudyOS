@@ -12,7 +12,7 @@
 <div style="max-height:350px;overflow:auto;margin:12px 0">
 @foreach($topics as $topic)
 <label class="learning-actions" style="display:block;padding:8px">
-<input type="checkbox" data-assessment-topic value="{{ $topic->metadata['curricular_number'] ?? '' }}" data-topic-title="{{ $topic->title }}">
+<input type="checkbox" data-assessment-topic value="{{ $topic->metadata['curricular_number'] ?? '' }}" data-topic-title="{{ $topic->title }}" @checked(in_array((string)($topic->metadata['curricular_number'] ?? ''), $selectedTopicNumbers, true))>
 {{ $topic->metadata['curricular_number'] ?? '' }} · {{ $topic->title }}
 </label>
 @endforeach
