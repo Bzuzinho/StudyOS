@@ -62,6 +62,41 @@
     close.addEventListener('click',()=>toggle(false));
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&expanded)toggle(false);});
     if(window.ResizeObserver)new ResizeObserver(()=>{if(!restoring)requestAnimationFrame(paint);}).observe(canvas);
+    const localButton = root.querySelector('[data-ink-native-recognize]');
+    const localMessage = root.querySelector('[data-ink-native-message]');
+    const localResult = root.querySelector('[data-ink-native-result]');
+    const localText = root.querySelector('[data-ink-native-text]');
+    if (localButton && localMessage && localResult && localText) {
+      const available = typeof navigator.createHandwritingRecognizer === 'function' && typeof window.HandwritingStroke === 'function';
+      localButton.hidden = !available;
+      localMessage.textContent = available
+        ? 'Reconhecimento experimental no dispositivo; confirma sempre o resultado.'
+        : 'O navegador não disponibiliza reconhecimento manuscrito local. A folha funciona sem serviços externos.';
+      localButton.addEventListener('click', async () => {
+        localButton.disabled = true;
+        try {
+          const recognizer = await navigator.createHandwritingRecognizer({ languages: ['en'] });
+          const drawing = await recognizer.startDrawing();
+          const written = strokes.filter(s => s.color !== '#ffffff');
+          if (!written.length) throw new Error('Folha vazia');
+          for (const stroke of written) {
+            const fragment = new window.HandwritingStroke();
+            stroke.points.forEach((p, i) => fragment.addPoint({ x: p.x * 1000, y: p.y * 1000, t: i * 10 }));
+            drawing.addStroke(fragment);
+          }
+          const results = await drawing.getPrediction();
+          const text = results?.[0]?.text || '';
+          if (!text) throw new Error('Texto não reconhecido');
+          localText.value = text;
+          localResult.hidden = false;
+          localMessage.textContent = 'Confirma a transcrição. Não é uma classificação matemática.';
+        } catch (error) {
+          localMessage.textContent = 'Reconhecimento local não concluído: ' + error.message;
+        } finally {
+          localButton.disabled = false;
+        }
+      });
+    }
     requestAnimationFrame(paint);
   });
 })();
