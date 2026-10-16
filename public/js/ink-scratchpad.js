@@ -97,6 +97,30 @@
         }
       });
     }
+    const mathButton=root.querySelector('[data-ink-math-recognize]');
+    const mathResult=root.querySelector('[data-ink-math-result]');
+    const mathText=root.querySelector('[data-ink-math-text]');
+    const mathMessage=root.querySelector('[data-ink-math-message]');
+    if(mathButton && mathResult && mathText && mathMessage){
+      mathButton.addEventListener('click',async()=>{
+        if(!strokes.some(s=>s.points.length>1)){
+          mathMessage.textContent='Escreve primeiro a expressão na folha.';return;
+        }
+        mathButton.disabled=true;
+        mathMessage.textContent='A reconhecer localmente: no primeiro uso são carregados os modelos para este navegador...';
+        try{
+          const module=await import('/vendor/ink-math.js');
+          const latex=await module.recognizeMath(strokes,root.dataset.inkAnswerType==='numeric');
+          if(!latex)throw new Error('Nenhuma expressão foi reconhecida.');
+          mathText.value=latex;
+          mathResult.hidden=false;
+          mathMessage.textContent='Fórmula reconhecida no dispositivo. Confirma os símbolos e introduz o resultado final no campo de resposta.';
+          if(expanded)toggle(false);
+        }catch(error){
+          mathMessage.textContent='Reconhecimento local indisponível: '+error.message+'; a folha continua guardada e pode ser usada normalmente.';
+        }finally{mathButton.disabled=false;}
+      });
+    }
     requestAnimationFrame(paint);
   });
 })();
