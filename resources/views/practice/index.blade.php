@@ -1,9 +1,9 @@
 <!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Prática · StudyOS</title>@include('partials.app-identity')<link rel="stylesheet" href="/css/app.css?v=learning-20261013"></head><body class="learning-page"><div class="shell">
 @include('partials.learning-nav',['active'=>'/practice'])
 @if(session('status'))<div class="alert success" role="status">{{ session('status') }}</div>@endif
-<header class="learning-header"><div><p class="eyebrow">Avaliar e consolidar</p><h1>Prática</h1><p class="muted-text">Prepara avaliações no ChatGPT por UC, importa os resultados e acompanha a evolução da aprendizagem.</p></div><a class="button primary" href="{{ route('practice.runs.create',[],false) }}">Iniciar novo treino</a></header>
+<header class="learning-header"><div><p class="eyebrow">Avaliar e consolidar</p><h1>Prática</h1><p class="muted-text">Prepara avaliações no ChatGPT por UC, importa os resultados e acompanha a evolução da aprendizagem.</p></div><a class="button primary" href="#treinar-chatgpt">Treinar no ChatGPT</a></header>
 <main class="learning-stack">
-<section class="card"><div class="card-head"><h3>Treinar nos projetos ChatGPT</h3></div>
+<section class="card" id="treinar-chatgpt"><div class="card-head"><h3>Treinar nos projetos ChatGPT</h3></div>
 <p>Seleciona uma UC, gera uma prompt orientada para o seu programa e importa o relatório final de conhecimentos no StudyOS.</p>
 <div class="learning-actions">
 @foreach($courses as $course)
