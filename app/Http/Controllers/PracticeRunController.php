@@ -153,6 +153,26 @@ class PracticeRunController
         ]);
     }
 
+    public function transcribeInk(Request $request, int $run, \App\Services\Practice\HandwritingRecognizer $recognizer): \Illuminate\Http\JsonResponse
+    {
+        $data = $request->validate([
+            'question_id' => ['required', 'integer'],
+            'image' => ['required', 'string', 'max:3500000'],
+        ]);
+        $row = DB::table('practice_runs')->find($run);
+        abort_unless($row && $row->status === 'active', 404);
+        $ids = json_decode($row->exercise_ids, true) ?: [];
+        $id = $ids[$row->current_index] ?? null;
+        abort_unless($id && (int) $data['question_id'] === (int) $id, 409);
+        $exercise = $this->questions($row)->get($id);
+        abort_unless($exercise, 404);
+        try {
+            return response()->json($recognizer->transcribe($data['image'], (string) $exercise->prompt));
+        } catch (\RuntimeException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
+        }
+    }
+
     public function answer(Request $request,int $run,ExerciseGrader $grader,TopicMasteryService $mastery,OpenAnswerAiGrader $aiGrader): RedirectResponse
     {
         $data=$request->validate(['answer'=>['required','string','max:10000'], 'question_id'=>['nullable','integer']]);
