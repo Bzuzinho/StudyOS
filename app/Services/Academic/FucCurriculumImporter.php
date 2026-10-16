@@ -16,6 +16,15 @@ class FucCurriculumImporter
     {
         $version->loadMissing('material');
         $material = $version->material;
+        // User-confirmed programmes take precedence over previously extracted FUC text.
+        if ($material = $version->material) {
+            if (in_array($material->course?->academic_code, ['6709', '11909', '15436'], true)
+                && Topic::query()->where('course_id', $material->course_id)
+                    ->where('source', 'confirmed_programme')->where('status', 'active')->exists()) {
+                return ['recognized' => false, 'created' => 0, 'updated' => 0];
+            }
+        }
+
         $name = mb_strtolower(trim(($material?->title ?? '').' '.($version->original_filename ?? '')));
         $text = (string) $version->content_text;
 
