@@ -26,7 +26,20 @@
             const requested = Number(data.get('count'));
             accept.hidden = count === 0 || count >= requested;
             if (accept.hidden) accept.querySelector('input').checked = false;
-            label.textContent = `${count} perguntas elegíveis${count > 0 && count < requested ? ` — pediste ${requested}; confirma abaixo para usar as disponíveis.` : '.'}`;
+            if (count === 0 && Number(result.course_total) === 0) {
+                label.innerHTML = '';
+                label.append(document.createTextNode('Esta UC ainda não tem exercícios importados. '));
+                const link = document.createElement('a');
+                link.href = result.import_url;
+                link.textContent = 'Importar banco de exercícios';
+                label.append(link);
+            } else if (count === 0 && Number(result.selected_total) === 0) {
+                label.textContent = 'Não existem exercícios associados aos subtemas escolhidos. Seleciona outra matéria ou importa exercícios para esta UC.';
+            } else if (count === 0) {
+                label.textContent = 'Há exercícios para estes subtemas, mas nenhum corresponde aos filtros. Experimenta Todas as dificuldades e todos os tipos de perguntas.';
+            } else {
+                label.textContent = `${count} perguntas elegíveis${count < requested ? ` — pediste ${requested}; confirma abaixo para usar as disponíveis.` : '.'}`;
+            }
             button.disabled = count === 0;
         } catch (error) {
             if (error.name === 'AbortError') return;
