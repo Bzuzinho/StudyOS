@@ -36,10 +36,14 @@ class CurriculumPackageController
             ->where('course_id', $course->id)
             ->whereHas('topics', fn ($query) => $query->whereKey($topic->id))
             ->first() : null;
+        $fromMaterials = request()->query('from') === 'materials';
         $backUrl = $studySession
             ? route('study.show', $studySession, false)
-            : route('courses.show', $course, false).'#package-curriculum';
-        $backLabel = $studySession ? 'Voltar à sessão de estudo' : 'Voltar à unidade curricular';
+            : ($fromMaterials
+                ? route('materials.index', ['course_id' => $course->id], false)
+                : route('courses.show', $course, false).'#package-curriculum');
+        $backLabel = $studySession ? 'Voltar à sessão de estudo'
+            : ($fromMaterials ? 'Voltar aos materiais' : 'Voltar à unidade curricular');
         return view('courses.read-package-topic', [
             'course' => $course, 'topic' => $topic,
             'backUrl' => $backUrl, 'backLabel' => $backLabel,
