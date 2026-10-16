@@ -4,6 +4,25 @@ on:
     branches: [main]
   pull_request:
 jobs:
+  ink-math-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ink-recognition
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+      - name: Check bundled recognition and ONNX model availability
+        run: |
+          test -s dist/ink-math.js
+          for file in encoder_int8.onnx decoder_int8.onnx vocab.json; do
+            curl --fail --location --retry 3 --silent --show-error "https://github.com/kimseungdae/ink-on/releases/download/v0.1.0/$file" -o "/tmp/$file"
+            test -s "/tmp/$file"
+          done
   moodle-browser:
     runs-on: ubuntu-latest
     defaults:

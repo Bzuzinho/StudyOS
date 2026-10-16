@@ -97,6 +97,49 @@
         }
       });
     }
+    const mathButton=root.querySelector('[data-ink-math-recognize]');
+    const mathResult=root.querySelector('[data-ink-math-result]');
+    const mathText=root.querySelector('[data-ink-math-text]');
+    const mathMessage=root.querySelector('[data-ink-math-message]');
+    const mathUse=root.querySelector('[data-ink-math-use]');
+    if(mathUse && mathText && mathMessage)mathUse.addEventListener('click',()=>{
+      const answer=document.querySelector('form[action*="/responder"] [name="answer"]');
+      if(!answer || answer.tagName==='SELECT')return;
+      const raw=mathText.value.trim();
+      const normalized=raw.replaceAll('−','-').replaceAll('\\,','').replaceAll(' ','');
+      if(root.dataset.inkAnswerType==='numeric'){
+        if(!/^[+-]?(?:[0-9]+(?:[.,][0-9]+)?|[.,][0-9]+)$/.test(normalized)){
+          mathMessage.textContent='A fórmula não é um número simples. Confirma e escreve o valor final no campo de resposta.';
+          return;
+        }
+        answer.value=normalized.replace(',','.');
+      }else{
+        answer.value=raw;
+      }
+      answer.dispatchEvent(new Event('input',{bubbles:true}));
+      mathMessage.textContent='Transcrição transferida para o campo de resposta. Confirma antes de submeter.';
+      answer.focus();
+    });
+    if(mathButton && mathResult && mathText && mathMessage){
+      mathButton.addEventListener('click',async()=>{
+        if(!strokes.some(s=>s.points.length>1)){
+          mathMessage.textContent='Escreve primeiro a expressão na folha.';return;
+        }
+        mathButton.disabled=true;
+        mathMessage.textContent='A reconhecer localmente: no primeiro uso são carregados os modelos para este navegador...';
+        try{
+          const module=await import('/vendor/ink-math.js');
+          const latex=await module.recognizeMath(strokes,root.dataset.inkAnswerType==='numeric');
+          if(!latex)throw new Error('Nenhuma expressão foi reconhecida.');
+          mathText.value=latex;
+          mathResult.hidden=false;
+          mathMessage.textContent='Fórmula reconhecida no dispositivo. Confirma os símbolos e introduz o resultado final no campo de resposta.';
+          if(expanded)toggle(false);
+        }catch(error){
+          mathMessage.textContent='Reconhecimento local indisponível: '+error.message+'; a folha continua guardada e pode ser usada normalmente.';
+        }finally{mathButton.disabled=false;}
+      });
+    }
     requestAnimationFrame(paint);
   });
 })();
