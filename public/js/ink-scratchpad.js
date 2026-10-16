@@ -62,6 +62,80 @@
     close.addEventListener('click',()=>toggle(false));
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&expanded)toggle(false);});
     if(window.ResizeObserver)new ResizeObserver(()=>{if(!restoring)requestAnimationFrame(paint);}).observe(canvas);
+    const recognize = root.querySelector('[data-ink-recognize]');
+    const review = root.querySelector('[data-ink-review]');
+    const transcription = root.querySelector('[data-ink-transcription]');
+    const notes = root.querySelector('[data-ink-notes]');
+    const use = root.querySelector('[data-ink-use]');
+    if (recognize && review && transcription && notes && use) {
+      recognize.addEventListener('click', async () => {
+        if(!strokes.length){status.textContent='Escreve primeiro a resolução na folha.';return;}
+        recognize.disabled=true;status.textContent='A reconhecer a escrita; aguarda...';
+        try {
+          paint();
+          const offscreen=document.createElement('canvas');
+          offscreen.width=canvas.width;offscreen.height=canvas.height;
+          const out=offscreen.getContext('2d');
+          out.fillStyle='#ffffff';out.fillRect(0,0,offscreen.width,offscreen.height);
+          out.drawImage(canvas,0,0);
+          const form=document.querySelector('form[action*="/responder"]');
+          const token=form?.querySelector('input[name="_token"]')?.value;
+          const response=await fetch(root.dataset.recognizeUrl,{
+            method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':token},
+            credentials:'same-origin',
+            body:JSON.stringify({question_id:Number(root.dataset.questionId),image:offscreen.toDataURL('image/png')})
+          });
+          const result=await response.json();
+          if(!response.ok)throw new Error(result.message||'Falha no reconhecimento');
+          transcription.value=result.transcription||'';
+          root.dataset.inkFinalAnswer=result.final_answer||'';
+          notes.textContent=(result.uncertain?'Atenção: reconhecimento incerto. ':'')+(result.notes||'');
+          review.hidden=false;
+          status.textContent='Transcrição recebida. Confirma os símbolos antes de usar.';
+          if(expanded)toggle(false);
+        }catch(e){status.textContent='Não foi possível reconhecer: '+e.message;}
+        finally{recognize.disabled=false;}
+      });
+      const evaluate=root.querySelector('[data-ink-evaluate]');
+      const feedback=root.querySelector('[data-ink-feedback]');
+      if(evaluate && feedback){
+        evaluate.addEventListener('click',async()=>{
+          if(!transcription.value.trim()){feedback.textContent='Confirma primeiro a transcrição do manuscrito.';return;}
+          evaluate.disabled=true;feedback.textContent='A analisar os passos. Esta avaliação é provisória...';
+          try{
+            const form=document.querySelector('form[action*="/responder"]');
+            const token=form?.querySelector('input[name="_token"]')?.value;
+            const response=await fetch(root.dataset.reviewUrl,{
+              method:'POST',credentials:'same-origin',
+              headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':token},
+              body:JSON.stringify({question_id:Number(root.dataset.questionId),transcription:transcription.value})
+            });
+            const result=await response.json();
+            if(!response.ok)throw new Error(result.message||'Não foi possível analisar os passos');
+            feedback.textContent='Avaliação provisória ('+result.provisional_percent+'%): '+result.feedback+' Esta análise não conta para o domínio.';
+          }catch(e){feedback.textContent=e.message;}
+          finally{evaluate.disabled=false;}
+        });
+      }
+      use.addEventListener('click',()=>{
+        const answer=document.querySelector('form[action*="/responder"] [name="answer"]');
+        if(!answer){status.textContent='Campo de resposta não encontrado.';return;}
+        if(root.dataset.inkAnswerType==='numeric'){
+          const value=(root.dataset.inkFinalAnswer||'').trim().replace(',', '.');
+          if(/^[+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+)$/.test(value)){
+            answer.value=value;answer.dispatchEvent(new Event('input',{bubbles:true}));
+            status.textContent='Valor manuscrito transferido. CONFIRMA o número antes de submeter; a análise dos passos é independente.';
+          }else{status.textContent='Não foi identificado um resultado numérico seguro. Introduz-o no campo de resposta.';}
+          answer.focus();return;
+        }
+        if(answer.tagName==='SELECT'){
+          status.textContent='Seleciona Verdadeiro ou Falso no campo de resposta.';answer.focus();return;
+        }
+        answer.value=transcription.value;answer.dispatchEvent(new Event('input',{bubbles:true}));
+        status.textContent='Transcrição colocada na resposta. Revê antes de submeter.';
+        answer.focus();
+      });
+    }
     requestAnimationFrame(paint);
   });
 })();
