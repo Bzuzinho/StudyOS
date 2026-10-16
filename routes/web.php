@@ -54,6 +54,7 @@ Route::post('/practice/treinar', [PracticeRunController::class, 'store'])->name(
 Route::get('/practice/sessao/{run}', [PracticeRunController::class, 'show'])->name('practice.runs.show');
 Route::post('/practice/sessao/{run}/responder', [PracticeRunController::class, 'answer'])->name('practice.runs.answer');
 Route::post('/practice/sessao/{run}/reconhecer-manuscrito', [PracticeRunController::class, 'transcribeInk'])->name('practice.runs.transcribe-ink');
+Route::post('/practice/sessao/{run}/rever-manuscrito', [PracticeRunController::class, 'reviewInk'])->name('practice.runs.review-ink');
 Route::get('/practice/create', [PracticeController::class, 'create'])->name('practice.create');
 Route::post('/practice', [PracticeController::class, 'store'])->name('practice.store');
 Route::post('/practice/generate/topic/{topic}', [PracticeController::class, 'generateForTopic'])->name('practice.generate-topic');
