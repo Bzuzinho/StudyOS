@@ -129,11 +129,11 @@
         mathMessage.textContent='A reconhecer localmente: no primeiro uso são carregados os modelos para este navegador...';
         try{
           const module=await import('/vendor/ink-math.js');
-          const latex=await module.recognizeMath(strokes,root.dataset.inkAnswerType==='numeric');
+          const latex=await module.recognizeMath(strokes);
           if(!latex)throw new Error('Nenhuma expressão foi reconhecida.');
           mathText.value=latex;
           mathResult.hidden=false;
-          mathMessage.textContent='Fórmula reconhecida no dispositivo. Confirma os símbolos e introduz o resultado final no campo de resposta.';
+          mathMessage.textContent='Transcrição automática experimental: verifica cuidadosamente os símbolos. Para melhor resultado, escreve uma única expressão por reconhecimento.';
           if(expanded)toggle(false);
         }catch(error){
           mathMessage.textContent='Reconhecimento local indisponível: '+error.message+'; a folha continua guardada e pode ser usada normalmente.';
