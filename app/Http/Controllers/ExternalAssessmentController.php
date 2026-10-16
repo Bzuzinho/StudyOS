@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
-use App\Models\Topic;
+use App\Models\StudySession;
 use App\Services\Learning\Curriculum;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,11 +11,28 @@ use Illuminate\Validation\ValidationException;
 
 class ExternalAssessmentController
 {
-    public function index(Course $course)
+    public function index(Request $request, Course $course)
     {
         $topics = Curriculum::leaves($course->load('topics'));
+        $selectedIds = collect();
+
+        if ($request->integer('study_session_id')) {
+            $session = StudySession::with('topics')
+                ->where('course_id', $course->id)
+                ->find($request->integer('study_session_id'));
+            if ($session) {
+                $selectedIds = collect(Curriculum::expand($course, $session->topics->pluck('id')->all()));
+            }
+        } elseif ($request->integer('topic_id')) {
+            $selectedIds = collect(Curriculum::expand($course, [$request->integer('topic_id')]));
+        }
+
+        $selectedTopicNumbers = $topics->whereIn('id', $selectedIds)
+            ->map(fn ($topic) => (string) ($topic->metadata['curricular_number'] ?? ''))
+            ->filter()->values()->all();
         $history = DB::table('external_assessments')->where('course_id',$course->id)->latest('assessed_on')->limit(20)->get();
-        return view('practice.external', compact('course','topics','history'));
+
+        return view('practice.external', compact('course','topics','history','selectedTopicNumbers'));
     }
 
     public function store(Request $request, Course $course)
