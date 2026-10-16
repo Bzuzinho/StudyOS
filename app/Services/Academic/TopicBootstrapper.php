@@ -25,6 +25,12 @@ class TopicBootstrapper
             $course = Course::query()->where('academic_code', '6709')->first()
                 ?? throw new RuntimeException('Contabilidade Financeira I must exist before topic bootstrap.');
 
+            // Observed lesson notes must never reactivate obsolete programme topics.
+            if (Topic::query()->where('course_id', $course->id)
+                ->where('source', 'confirmed_programme')->where('status', 'active')->exists()) {
+                return ['topics_upserted' => 0];
+            }
+
             foreach (self::CFIN_TOPICS as $position => $definition) {
                 Topic::query()->updateOrCreate(
                     ['source' => 'inforestudante_audit', 'external_id' => $definition['id']],
