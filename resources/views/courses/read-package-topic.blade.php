@@ -6,6 +6,7 @@
 @include('partials.app-identity')
 <link rel="stylesheet" href="/css/app.css?v=learning-20261013">
 <link rel="stylesheet" href="/css/pedagogical-reader.css?v=20261015">
+<link rel="stylesheet" href="/css/study-mindmaps.css?v=1">
 </head>
 <body class="learning-page">
 <div class="shell narrow-shell">
@@ -23,7 +24,13 @@
     <div class="reader-section-heading"><span class="reader-kicker">Revisão rápida</span><h2>{{ $section['title'] ?: 'Conceitos essenciais' }}</h2></div>
     <div class="reader-prose">{!! \Illuminate\Support\Str::markdown($section['body'],['html_input'=>'strip','allow_unsafe_links'=>false]) !!}</div>
 @if(!empty($section['rows']))<div class="reader-table-wrap"><table><tbody>@foreach($section['rows'] as $row)<tr>@foreach($row as $cell)<td>{{ $cell }}</td>@endforeach</tr>@endforeach</tbody></table></div>@endif
-@if(!empty($section['steps']))<ol class="reader-flow">@foreach($section['steps'] as $step)<li>{{ $step }}</li>@endforeach</ol>@endif
+@if(!empty($section['steps']))
+@if($section['kind'] === 'diagram')
+<div class="study-mindmap" role="group" aria-label="{{ $section['title'] }}"><div class="study-mindmap-core">{{ $section['title'] }}</div><ul class="study-mindmap-branches">@foreach($section['steps'] as $step)<li class="study-mindmap-branch">{{ $step }}</li>@endforeach</ul></div>
+@else
+<ol class="reader-flow">@foreach($section['steps'] as $step)<li>{{ $step }}</li>@endforeach</ol>
+@endif
+@endif
     </section>
     @endforeach
     </div>
@@ -42,7 +49,13 @@
     @endif
     <div class="reader-prose">{!! \Illuminate\Support\Str::markdown($section['body'],['html_input'=>'strip','allow_unsafe_links'=>false]) !!}</div>
 @if(!empty($section['rows']))<div class="reader-table-wrap"><table><tbody>@foreach($section['rows'] as $row)<tr>@foreach($row as $cell)<td>{{ $cell }}</td>@endforeach</tr>@endforeach</tbody></table></div>@endif
-@if(!empty($section['steps']))<ol class="reader-flow">@foreach($section['steps'] as $step)<li>{{ $step }}</li>@endforeach</ol>@endif
+@if(!empty($section['steps']))
+@if($section['kind'] === 'diagram')
+<div class="study-mindmap" role="group" aria-label="{{ $section['title'] }}"><div class="study-mindmap-core">{{ $section['title'] }}</div><ul class="study-mindmap-branches">@foreach($section['steps'] as $step)<li class="study-mindmap-branch">{{ $step }}</li>@endforeach</ul></div>
+@else
+<ol class="reader-flow">@foreach($section['steps'] as $step)<li>{{ $step }}</li>@endforeach</ol>
+@endif
+@endif
     </section>
     @endforeach
     </div>
