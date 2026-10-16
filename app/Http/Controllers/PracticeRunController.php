@@ -58,7 +58,15 @@ class PracticeRunController
         $data = $this->filters($request, false);
         if (empty($data['topic_ids'])) return response()->json(['count' => 0]);
         $course = Course::with('topics')->findOrFail($data['course_id']);
-        return response()->json(['count' => $pool->query($course, $data['topic_ids'], $data)->count()]);
+        $count = $pool->query($course, $data['topic_ids'], $data)->count();
+        $courseTotal = Exercise::query()->where('course_id', $course->id)->where('status', 'active')->count();
+        $selectedTotal = $pool->query($course, $data['topic_ids'], [])->count();
+        return response()->json([
+            'count' => $count,
+            'course_total' => $courseTotal,
+            'selected_total' => $selectedTotal,
+            'import_url' => route('courses.import-package', $course, false),
+        ]);
     }
 
     public function store(Request $request, \App\Services\Practice\PracticeQuestionPool $pool): RedirectResponse
