@@ -16,6 +16,10 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npm run build
+      - name: Check ONNX runtime browser loader assets
+        run: |
+          test -n "$(find node_modules/onnxruntime-web/dist -maxdepth 1 -name 'ort-wasm*.mjs' -print -quit)"
+          test -n "$(find node_modules/onnxruntime-web/dist -maxdepth 1 -name '*.wasm' -print -quit)"
       - name: Check bundled recognition and ONNX model availability
         run: |
           test -s dist/ink-math.js
