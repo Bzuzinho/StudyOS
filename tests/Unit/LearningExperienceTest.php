@@ -42,9 +42,11 @@ class LearningExperienceTest extends TestCase
         $plan=app(StudyRecommendationService::class)->forCourse($course->fresh());
         $this->assertSame(1,$plan['topic_count']);
         $this->assertSame($child->id,$plan['recommendations'][0]['topic']->id);
-        foreach (['/courses/'.$course->id,'/study/create?course_id='.$course->id,'/practice/treinar?course_id='.$course->id] as $url) {
+        foreach (['/courses/'.$course->id,'/study/create?course_id='.$course->id] as $url) {
             $this->get($url)->assertOk()->assertSee('Organizações')->assertDontSee('Histórico antigo');
         }
+        $this->get('/practice/treinar?course_id='.$course->id)
+            ->assertRedirect('/practice/chatgpt/'.$course->id);
         $this->get('/courses/'.$course->id)->assertSee('Substituir conteúdos da UC')->assertSee('Acrescentar conteúdos à UC')->assertDontSee('Importar / atualizar pacote')->assertDontSee('excertos indexados');
         $this->assertNotNull($historical->fresh());
         $this->postJson('/practice/treinar',['course_id'=>$course->id,'topic_ids'=>[$historical->id],'count'=>1])->assertUnprocessable();
@@ -95,7 +97,8 @@ class LearningExperienceTest extends TestCase
         $this->assertSame('started',$session->fresh()->status);
         $this->assertSame([$child->id],$session->topics()->pluck('topics.id')->all());
         $this->assertNull($child->fresh()->taught_at);
-        $this->get('/practice/treinar?study_session_id='.$session->id)->assertOk()->assertViewHas('selectedTopics',fn($ids)=>$ids->all()===[$child->id]);
+        $this->get('/practice/treinar?study_session_id='.$session->id)
+            ->assertRedirect('/practice/chatgpt/'.$course->id.'?study_session_id='.$session->id);
         $this->get('/study')->assertOk()->assertViewHas('completedMinutes',0);
         $this->patch('/study/'.$session->id.'/complete',['actual_minutes'=>22])->assertRedirect();
         $this->get('/study')->assertOk()->assertViewHas('completedMinutes',22);
@@ -186,7 +189,8 @@ class LearningExperienceTest extends TestCase
         $session->topics()->attach($old);
         $this->get('/study')->assertOk()->assertSee('1 tópicos associados')->assertDontSee('Histórico antigo');
         $this->get('/study/'.$session->id)->assertOk()->assertSee('Consultar matéria original da sessão')->assertSee('Histórico antigo');
-        $this->get('/practice/treinar?study_session_id='.$session->id)->assertOk()->assertViewHas('selectedTopics',fn($ids)=>$ids->isEmpty());
+        $this->get('/practice/treinar?study_session_id='.$session->id)
+            ->assertRedirect('/practice/chatgpt/'.$course->id.'?study_session_id='.$session->id);
         $this->assertSame([$old->id],$session->topics()->pluck('topics.id')->all());
     }
 

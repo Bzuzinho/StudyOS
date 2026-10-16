@@ -19,20 +19,24 @@ use Illuminate\Http\RedirectResponse;
 
 class PracticeRunController
 {
-    public function create(Request $request): View
+    public function create(Request $request): RedirectResponse
     {
-        $courses = Course::query()->where('status', 'active')->with(['topics' => fn ($q) => $q
-            ->where('status', 'active')->orderBy('position')])->orderBy('name')->get();
-        $session = $request->integer('study_session_id') ? StudySession::with('topics')->findOrFail($request->integer('study_session_id')) : null;
-        $selected = collect($request->input('topic_ids', array_filter([$request->integer('topic_id')])))->map(fn ($id) => (int) $id);
-        if ($session) $selected = $session->topics->pluck('id')->intersect(\App\Services\Learning\Curriculum::topics($session->course)->pluck('id'))->values();
-        $repeat = $request->integer('repeat_run_id') ? DB::table('practice_runs')->find($request->integer('repeat_run_id')) : null;
-        if ($repeat && $selected->isEmpty()) $selected = collect(data_get(json_decode($repeat->settings ?? 'null', true), 'topic_ids', []));
-        return view('practice.start', [
-            'courses' => $courses, 'selectedCourseId' => $session?->course_id ?: ($repeat?->course_id ?: $request->integer('course_id')),
-            'selectedTopics' => collect(old('topic_ids', $selected->all()))->map(fn ($id) => (int) $id),
-            'studySessionId' => $session?->id, 'repeatRunId' => $repeat?->id,
-        ]);
+        $session = $request->integer('study_session_id')
+            ? StudySession::where('id', $request->integer('study_session_id'))->first()
+            : null;
+        $courseId = $session?->course_id ?: $request->integer('course_id');
+
+        if ($courseId && Course::where('status', 'active')->whereKey($courseId)->exists()) {
+            $params = ['course' => $courseId];
+            if ($request->integer('topic_id')) $params['topic_id'] = $request->integer('topic_id');
+            if ($session) $params['study_session_id'] = $session->id;
+
+            return redirect()->route('practice.external.index', $params)
+                ->with('status', 'O treino é agora preparado no StudyOS e realizado no projeto ChatGPT desta UC.');
+        }
+
+        return redirect()->route('practice.index')
+            ->with('status', 'O treino é agora realizado nos projetos ChatGPT das unidades curriculares.');
     }
 
     private function filters(Request $request, bool $starting): array

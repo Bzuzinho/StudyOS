@@ -32,43 +32,35 @@ for (const variant of [
     await page.getByRole('status').getByText('Matéria lecionada atualizada.').waitFor();
     await page.locator('.curriculum-theme summary').first().click();
     await page.locator('.curriculum-row').first().getByRole('link',{name:'Treinar',exact:true}).click();
-    await page.getByText(/8 perguntas elegíveis/).waitFor();
-    await page.getByRole('button',{name:'Selecionar tudo',exact:true}).click();
-    await page.getByText('264 perguntas elegíveis.',{exact:true}).waitFor();
-    await page.getByRole('button',{name:'Limpar seleção',exact:true}).click();
-    await page.getByText('Seleciona a UC e pelo menos um subtema.',{exact:true}).waitFor();
-    assert(!(await page.getByRole('button',{name:'Iniciar treino',exact:true}).isEnabled()));
-    await page.getByRole('button',{name:'Toda a matéria lecionada',exact:true}).click();
-    await page.getByText('24 perguntas elegíveis.',{exact:true}).waitFor();
-    await page.getByRole('button',{name:'Limpar seleção',exact:true}).click();
-    await page.locator('[data-topic-course="1"] [data-leaf]').first().check();
-    await page.getByText(/8 perguntas elegíveis/).waitFor();
+    await page.getByRole('heading',{name:'Praticar Introdução à Gestão no ChatGPT'}).waitFor();
+    const selectedTopic=page.locator('[data-assessment-topic][value="1.1"]');
+    assert(await selectedTopic.isChecked(),'selected course topic must be preselected in ChatGPT training');
     await page.getByLabel('Número de perguntas').selectOption('5');
-    await page.getByLabel('Dificuldade').selectOption('advanced');
-    await page.getByText('0 perguntas elegíveis.',{exact:true}).waitFor();
-    assert(!(await page.getByRole('button',{name:'Iniciar treino',exact:true}).isEnabled()));
-    await page.getByLabel('Dificuldade').selectOption('intermediate');
-    await page.getByText('8 perguntas elegíveis.',{exact:true}).waitFor();
+    await page.getByLabel('Grau de dificuldade').selectOption('progressiva');
+    await page.getByRole('button',{name:'Gerar prompt',exact:true}).click();
+    const generatedPrompt=await page.locator('#external-prompt').inputValue();
+    assert(generatedPrompt.includes('studyos.external-assessment.v1'),'generated prompt must include the StudyOS import schema');
+    assert(generatedPrompt.includes('1.1'),'generated prompt must include the selected curricular number');
+    assert(generatedPrompt.includes('UMA pergunta de cada vez'),'generated prompt must enforce interactive training');
     await checkWidth();
-    const width=await page.locator('[data-topic-course="1"]').evaluate(e=>e.getBoundingClientRect().width);
-    assert(width>250,'curriculum selector collapsed into narrow card');
-    await page.screenshot({path:`browser-evidence/${variant.name}-configurator.png`,fullPage:true});
-    await page.getByRole('button',{name:'Iniciar treino',exact:true}).click();
-    await page.getByText('Treino em curso · Pergunta 1 de 5',{exact:true}).waitFor();
-    await page.getByLabel('Resposta',{exact:true}).selectOption('verdadeiro');
-    await page.getByRole('button',{name:'Responder e avançar'}).click();
-    await page.getByText('Treino em curso · Pergunta 2 de 5',{exact:true}).waitFor();
-    await page.getByRole('link',{name:'Sair e retomar depois'}).click();
-    await page.getByRole('link',{name:'Retomar treino',exact:true}).first().click();
-    await page.getByText('Treino em curso · Pergunta 2 de 5',{exact:true}).waitFor();
-    for(let n=2;n<=5;n++) {
-        await page.getByLabel('Resposta',{exact:true}).selectOption('verdadeiro');
-        await page.getByRole('button',{name:n===5?'Terminar e ver resultados':'Responder e avançar'}).click();
-    }
-    await page.getByRole('heading',{name:'Resultados e correção'}).waitFor();
-    await page.getByRole('heading',{name:'20,0 / 20'}).waitFor();
+    await page.screenshot({path:`browser-evidence/${variant.name}-chatgpt-training.png`,fullPage:true});
+    const report={
+        schema:'studyos.external-assessment.v1',
+        assessment_id:'STUDYOS-BROWSER-001',
+        academic_code:'14020',
+        assessed_on:'2026-10-16',
+        score_20:16,
+        topics:[{number:'1.1',score_percent:80,feedback:'Boa compreensão; rever aplicação dos conceitos.'}],
+        strengths:['Conceitos fundamentais'],
+        difficulties:['Aplicação a casos'],
+        next_steps:['Rever exemplos do subtema 1.1']
+    };
+    await page.getByLabel('Relatório JSON devolvido pelo ChatGPT').fill(JSON.stringify(report));
+    await page.getByRole('button',{name:'Importar avaliação',exact:true}).click();
+    await page.getByText('Avaliação externa importada. O histórico oficial e as notas universitárias não foram alterados.',{exact:true}).waitFor();
+    await page.getByText('16,00/20',{exact:false}).waitFor();
     await checkWidth();
-    await page.screenshot({path:`browser-evidence/${variant.name}-result.png`,fullPage:true});
+    await page.screenshot({path:`browser-evidence/${variant.name}-chatgpt-result.png`,fullPage:true});
     await page.goto('http://127.0.0.1:8000/study/create?course_id=1&now=1');
     await page.getByRole('button',{name:'Toda a matéria lecionada'}).click();
     await page.getByRole('button',{name:'Iniciar estudo',exact:true}).click();
@@ -87,5 +79,5 @@ for (const variant of [
         throw error;
     }
     await browser.close();
-    console.log(`${variant.name}: curriculum, partial marks, filters, sequential training, resume, result, study/manual and responsive layout passed`);
+    console.log(`${variant.name}: curriculum, partial marks, ChatGPT training/import, study/manual and responsive layout passed`);
 }
