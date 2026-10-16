@@ -1,0 +1,16 @@
+{
+  "name": "studyos-ink-local",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "ink-on": "0.1.0",
+    "onnxruntime-web": "1.24.2"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  },
+  "scripts": {
+    "build": "esbuild src.js --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/ink-math.js"
+  }
+}
