@@ -27,6 +27,7 @@ class PracticeController
         return view('practice.index', [
             'courses' => Course::where('status', 'active')->orderBy('name')->get(),
             'runs' => $runs,
+            'externalAssessments' => DB::table('external_assessments')->orderByDesc('assessed_on')->orderByDesc('id')->limit(20)->get(),
             'activeRuns' => DB::table('practice_runs')->where('status', 'active')->orderByDesc('id')->get(),
             'summaries' => app(\App\Services\Practice\PracticeRunSummary::class)->forRuns($runs),
         ]);
