@@ -38,6 +38,6 @@ class PracticeReadinessTest extends TestCase
         $this->get('/practice')->assertOk()->assertSee('Treinar no ChatGPT')->assertSee('Resultados recentes')
             ->assertDontSee('Produto interno bruto')->assertDontSee('Inflação')
             ->assertViewHas('courses', fn ($items) => $items->contains('id', $course->id) && $items->contains('id', $empty->id));
-        $this->get('/practice/treinar')->assertOk()->assertSee('Inglês')->assertSee('Macroeconomia');
+        $this->get('/practice/treinar')->assertRedirect('/practice');
     }
 }
