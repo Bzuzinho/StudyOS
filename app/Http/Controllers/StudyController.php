@@ -182,7 +182,7 @@ class StudyController
 
     public function destroy(StudySession $studySession): RedirectResponse
     {
-        abort_unless($studySession->source === 'manual' && $studySession->status === 'planned', 409);
+        abort_unless($studySession->source === 'manual' && in_array($studySession->status, ['planned', 'started', 'completed'], true), 409);
 
         DB::transaction(function () use ($studySession) {
             ClassOccurrence::query()
@@ -190,10 +190,12 @@ class StudyController
                 ->where('external_uid', $studySession->external_id)
                 ->delete();
 
+            // Linked attempts and practice runs retain their evidence; their nullable FK is set to NULL.
+            $studySession->topics()->detach();
             $studySession->delete();
         });
 
-        return redirect()->route('study.index')->with('status', 'Sessão planeada eliminada.');
+        return redirect()->route('study.index')->with('status', 'Sessão de estudo eliminada. As tentativas e avaliações existentes foram preservadas.');
     }
 
     private function types(): array
