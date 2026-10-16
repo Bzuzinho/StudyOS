@@ -11,6 +11,15 @@
 @endforeach
 </div></section>
 @if($activeRuns->isNotEmpty())<section class="card"><div class="card-head"><h3>Retomar treino</h3></div>@foreach($activeRuns as $run)<div class="learning-line"><strong>{{ $courses->firstWhere('id',$run->course_id)?->name ?? 'UC' }}</strong><p>{{ $run->current_index }} de {{ count(json_decode($run->exercise_ids,true)?:[]) }} respostas guardadas</p><a class="button" href="{{ route('practice.runs.show',$run->id,false) }}">Retomar treino</a></div>@endforeach</section>@endif
+<section class="card"><div class="card-head"><h3>Avaliações importadas do ChatGPT</h3><span>Últimas avaliações pedagógicas</span></div>
+@forelse($externalAssessments as $assessment)
+<div class="learning-line">
+<strong>{{ $courses->firstWhere('id',$assessment->course_id)?->name ?? 'UC' }}</strong>
+<p>{{ $assessment->assessed_on }} · {{ number_format((float)$assessment->score_20,1,',','.') }}/20 · avaliação externa (ChatGPT)</p>
+<a href="{{ route('practice.external.index',$assessment->course_id,false) }}">Ver evolução e diagnóstico →</a>
+</div>
+@empty<p class="empty">Ainda não importaste avaliações do ChatGPT.</p>@endforelse
+</section>
 <section class="card"><div class="card-head"><h3>Resultados recentes</h3></div>@forelse($runs->where('status','completed')->take(10) as $run)<div class="learning-line"><strong>{{ $courses->firstWhere('id',$run->course_id)?->name ?? 'UC' }}</strong><p>{{ \Illuminate\Support\Carbon::parse($run->created_at)->timezone(config('app.timezone'))->format('d/m/Y · H:i') }} · {{ count(json_decode($run->exercise_ids,true)?:[]) }} perguntas · {{ $summaries[$run->id]['score'] !== null ? number_format($summaries[$run->id]['score'],1,',','.').' / 20'.($summaries[$run->id]['provisional'] ? ' (provisória)' : '') : 'Classificação pendente' }}</p><a href="{{ route('practice.runs.show',$run->id,false) }}">Ver classificação e correção →</a></div>@empty<p class="empty">Os resultados aparecem aqui depois do primeiro treino.</p>@endforelse</section>
 <section class="card"><div class="card-head"><h3>Evolução por UC</h3><span>Últimos treinos concluídos</span></div>@forelse($runs->where('status','completed')->groupBy('course_id') as $courseId=>$courseRuns)<div class="learning-line"><strong>{{ $courses->firstWhere('id',$courseId)?->name ?? 'UC' }}</strong><p>{{ $courseRuns->count() }} treinos nesta amostra. Consulta os resultados em ordem de realização:</p><div class="learning-actions">@foreach($courseRuns->sortBy('id') as $run)<a class="button ghost" href="{{ route('practice.runs.show',$run->id,false) }}">{{ \Illuminate\Support\Carbon::parse($run->created_at)->timezone(config('app.timezone'))->format('d/m · H:i') }} · {{ $summaries[$run->id]['score'] !== null ? number_format($summaries[$run->id]['score'],1,',','.').'/20'.($summaries[$run->id]['provisional'] ? ' *' : '') : 'Pendente' }}</a>@endforeach</div></div>@empty<p class="empty">Ainda sem treinos concluídos para comparar.</p>@endforelse</section>
 </main></div></body></html>
