@@ -71,7 +71,7 @@
       localButton.hidden = !available;
       localMessage.textContent = available
         ? 'Reconhecimento experimental no dispositivo; confirma sempre o resultado.'
-        : 'O navegador não disponibiliza reconhecimento manuscrito local. A folha funciona sem serviços externos.';
+        : '';
       localButton.addEventListener('click', async () => {
         localButton.disabled = true;
         try {
@@ -129,7 +129,7 @@
         mathMessage.textContent='A reconhecer localmente: no primeiro uso são carregados os modelos para este navegador...';
         try{
           const module=await import('/vendor/ink-math.js');
-          const latex=await module.recognizeMath(strokes);
+          const latex=await module.recognizeMath(strokes, canvas.clientWidth, canvas.clientHeight);
           if(!latex)throw new Error('Nenhuma expressão foi reconhecida.');
           mathText.value=latex;
           mathResult.hidden=false;
