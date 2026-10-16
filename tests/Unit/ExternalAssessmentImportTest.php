@@ -44,7 +44,7 @@ class ExternalAssessmentImportTest extends TestCase
         ];
         $this->post('/practice/chatgpt/'.$course->id,['report'=>json_encode($report)])->assertRedirect();
         $this->assertSame(1,DB::table('external_assessments')->count());
-        $this->assertSame('16.00',(string) DB::table('external_assessments')->value('score_20'));
+        $this->assertEquals(16.0,(float) DB::table('external_assessments')->value('score_20'));
         $this->assertSame(0,DB::table('topic_masteries')->count());
     }
 
