@@ -20,7 +20,7 @@ class CurriculumPackageController
 
     public function read(Course $course, Topic $topic): View
     {
-        abort_unless($topic->course_id === $course->id && $topic->source === 'chatgpt_package', 404);
+        abort_unless($topic->course_id === $course->id && in_array($topic->source, ['chatgpt_package','confirmed_programme'], true), 404);
         $material = Material::query()->where('course_id', $course->id)
             ->where('source', 'chatgpt_package')
             ->where('external_id', $topic->external_id)
@@ -58,7 +58,18 @@ class CurriculumPackageController
     {
         $data = $request->validate(['package' => ['required', 'file', 'max:10240'], 'mode' => ['required', 'in:replace,append']]);
         try {
-            $result = $importer->import($course, $data['package']->getRealPath(), $data['mode']);
+            $zip = new \ZipArchive();
+            if ($zip->open($data['package']->getRealPath()) !== true) {
+                throw new RuntimeException('ZIP inválido.');
+            }
+            try {
+                $manifest = json_decode((string) $zip->getFromName('manifest.json'), true);
+            } finally {
+                $zip->close();
+            }
+            $result = ($manifest['schema'] ?? null) === 'studyos.canonical-manuals.v1'
+                ? app(\App\Services\Learning\CanonicalManualImporter::class)->import($course, $data['package']->getRealPath())
+                : $importer->import($course, $data['package']->getRealPath(), $data['mode']);
         } catch (RuntimeException $exception) {
             return back()->withErrors(['package' => $exception->getMessage()]);
         }

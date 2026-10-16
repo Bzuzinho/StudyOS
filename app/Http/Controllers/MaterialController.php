@@ -47,7 +47,7 @@ class MaterialController
                 ->paginate(24)
                 ->withPath(route('materials.index', [], false))
                 ->withQueryString();
-        $packageTopics = Topic::query()->where('source', 'chatgpt_package')
+        $packageTopics = Topic::query()->whereIn('source', ['chatgpt_package', 'confirmed_programme'])
             ->where('status', 'active')
             ->whereIn('external_id', $materials->getCollection()
                 ->where('source', 'chatgpt_package')->pluck('external_id')->all())
