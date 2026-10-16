@@ -88,6 +88,7 @@
           const result=await response.json();
           if(!response.ok)throw new Error(result.message||'Falha no reconhecimento');
           transcription.value=result.transcription||'';
+          root.dataset.inkFinalAnswer=result.final_answer||'';
           notes.textContent=(result.uncertain?'Atenção: reconhecimento incerto. ':'')+(result.notes||'');
           review.hidden=false;
           status.textContent='Transcrição recebida. Confirma os símbolos antes de usar.';
@@ -120,7 +121,11 @@
         const answer=document.querySelector('form[action*="/responder"] [name="answer"]');
         if(!answer){status.textContent='Campo de resposta não encontrado.';return;}
         if(root.dataset.inkAnswerType==='numeric'){
-          status.textContent='Confirma o valor final no campo numérico; os passos reconhecidos não são pontuados automaticamente.';
+          const value=(root.dataset.inkFinalAnswer||'').trim().replace(',', '.');
+          if(/^[+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+)$/.test(value)){
+            answer.value=value;answer.dispatchEvent(new Event('input',{bubbles:true}));
+            status.textContent='Valor manuscrito transferido. CONFIRMA o número antes de submeter; a análise dos passos é independente.';
+          }else{status.textContent='Não foi identificado um resultado numérico seguro. Introduz-o no campo de resposta.';}
           answer.focus();return;
         }
         if(answer.tagName==='SELECT'){
