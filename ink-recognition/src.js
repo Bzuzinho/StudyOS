@@ -19,12 +19,12 @@ async function setup() {
   })().catch(error => {boot = undefined;throw error;});
   return boot;
 }
-export async function recognizeMath(strokes, numeric=false) {
+export async function recognizeMath(strokes) {
   await setup();
   const ink = strokes.filter(s => s.color !== '#ffffff').map(s => ({
-    lineWidth: 3, points: s.points.map(p => ({x:p.x*1000,y:p.y*1000}))
+    lineWidth: 3, points: s.points.map(p => ({x:p.x*900,y:p.y*400}))
   }));
   if (!isStrokeMeaningful(ink)) throw new Error('A escrita é demasiado curta para reconhecimento.');
-  const result = await engine.recognize(preprocessStrokes(ink), vocab, numeric ? 'number' : 'expression');
+  const result = await engine.recognize(preprocessStrokes(ink), vocab, 'expression');
   return result.latex;
 }
