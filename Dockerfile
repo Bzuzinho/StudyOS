@@ -7,6 +7,7 @@ COPY ink-recognition/src.js ./
 RUN npm run build
 RUN mkdir -p dist/onnx dist/ink-models \
  && cp node_modules/onnxruntime-web/dist/*.wasm dist/onnx/ \
+ && cp node_modules/onnxruntime-web/dist/ort-wasm*.mjs dist/onnx/ \
  && for file in encoder_int8.onnx decoder_int8.onnx vocab.json; do \
       curl -fL --retry 3 --silent --show-error \
       "https://github.com/kimseungdae/ink-on/releases/download/v0.1.0/$file" \
