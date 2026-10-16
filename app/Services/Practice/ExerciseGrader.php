@@ -11,6 +11,11 @@ class ExerciseGrader
         string $submittedAnswer,
         float $maxPoints,
     ): array {
+        if ($type === 'single_answer' && ($answerConfig['math_expression'] ?? false) === true) {
+            return app(FreePolynomialGrader::class)->compare(
+                (string) $expectedAnswer, $submittedAnswer, $maxPoints
+            );
+        }
         return match ($type) {
             'single_answer' => $this->gradeSingleAnswer($expectedAnswer, $answerConfig, $submittedAnswer, $maxPoints),
             'true_false' => $this->gradeTrueFalse($expectedAnswer, $submittedAnswer, $maxPoints),
