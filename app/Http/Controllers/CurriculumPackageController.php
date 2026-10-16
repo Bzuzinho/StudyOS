@@ -67,9 +67,11 @@ class CurriculumPackageController
             } finally {
                 $zip->close();
             }
-            $result = ($manifest['schema'] ?? null) === 'studyos.canonical-manuals.v1'
-                ? app(\App\Services\Learning\CanonicalManualImporter::class)->import($course, $data['package']->getRealPath())
-                : $importer->import($course, $data['package']->getRealPath(), $data['mode']);
+            $result = match ($manifest['schema'] ?? null) {
+                'studyos.canonical-manuals.v1' => app(\App\Services\Learning\CanonicalManualImporter::class)->import($course, $data['package']->getRealPath()),
+                'studyos.canonical-exercises.v1' => app(\App\Services\Learning\CanonicalExerciseImporter::class)->import($course, $data['package']->getRealPath()),
+                default => $importer->import($course, $data['package']->getRealPath(), $data['mode']),
+            };
         } catch (RuntimeException $exception) {
             return back()->withErrors(['package' => $exception->getMessage()]);
         }
