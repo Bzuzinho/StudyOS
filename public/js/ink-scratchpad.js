@@ -95,6 +95,27 @@
         }catch(e){status.textContent='Não foi possível reconhecer: '+e.message;}
         finally{recognize.disabled=false;}
       });
+      const evaluate=root.querySelector('[data-ink-evaluate]');
+      const feedback=root.querySelector('[data-ink-feedback]');
+      if(evaluate && feedback){
+        evaluate.addEventListener('click',async()=>{
+          if(!transcription.value.trim()){feedback.textContent='Confirma primeiro a transcrição do manuscrito.';return;}
+          evaluate.disabled=true;feedback.textContent='A analisar os passos. Esta avaliação é provisória...';
+          try{
+            const form=document.querySelector('form[action*="/responder"]');
+            const token=form?.querySelector('input[name="_token"]')?.value;
+            const response=await fetch(root.dataset.reviewUrl,{
+              method:'POST',credentials:'same-origin',
+              headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':token},
+              body:JSON.stringify({question_id:Number(root.dataset.questionId),transcription:transcription.value})
+            });
+            const result=await response.json();
+            if(!response.ok)throw new Error(result.message||'Não foi possível analisar os passos');
+            feedback.textContent='Avaliação provisória ('+result.provisional_percent+'%): '+result.feedback+' Esta análise não conta para o domínio.';
+          }catch(e){feedback.textContent=e.message;}
+          finally{evaluate.disabled=false;}
+        });
+      }
       use.addEventListener('click',()=>{
         const answer=document.querySelector('form[action*="/responder"] [name="answer"]');
         if(!answer){status.textContent='Campo de resposta não encontrado.';return;}
