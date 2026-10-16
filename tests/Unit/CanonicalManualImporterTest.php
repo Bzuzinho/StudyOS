@@ -5,13 +5,10 @@ namespace Tests\Unit;
 use App\Models\Course;
 use App\Services\Academic\ConfirmedCurriculum;
 use App\Services\Learning\CanonicalManualImporter;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use ZipArchive;
 
-class CanonicalManualImporterTest extends TestCase
+class CanonicalManualImporterTest extends FucCurriculumImporterTest
 {
-    use RefreshDatabase;
 
     public function test_manual_import_preserves_confirmed_curriculum_and_opens_reader(): void
     {
