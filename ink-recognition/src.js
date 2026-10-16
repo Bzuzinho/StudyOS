@@ -13,16 +13,16 @@ async function setup() {
       encoderUrl: '/vendor/ink-models/encoder_int8.onnx',
       decoderUrl: '/vendor/ink-models/decoder_int8.onnx',
       executionProvider: 'wasm',
-      beamWidth: 2
+      beamWidth: 3
     });
     await engine.init();
   })().catch(error => {boot = undefined;throw error;});
   return boot;
 }
-export async function recognizeMath(strokes) {
+export async function recognizeMath(strokes, width=900, height=400) {
   await setup();
   const ink = strokes.filter(s => s.color !== '#ffffff').map(s => ({
-    lineWidth: 3, points: s.points.map(p => ({x:p.x*900,y:p.y*400}))
+    lineWidth: 3, points: s.points.map(p => ({x:p.x*width,y:p.y*height}))
   }));
   if (!isStrokeMeaningful(ink)) throw new Error('A escrita é demasiado curta para reconhecimento.');
   const result = await engine.recognize(preprocessStrokes(ink), vocab, 'expression');
