@@ -5,7 +5,7 @@
 <title>{{ $topic->title }} · StudyOS</title>
 @include('partials.app-identity')
 <link rel="stylesheet" href="/css/app.css?v=learning-20261013">
-<link rel="stylesheet" href="/css/pedagogical-reader.css?v=20261015">
+<link rel="stylesheet" href="/css/pedagogical-reader.css?v=20261017">
 <link rel="stylesheet" href="/css/study-mindmaps.css?v=1">
 </head>
 <body class="learning-page">
