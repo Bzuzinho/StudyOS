@@ -35,9 +35,9 @@ class PracticeReadinessTest extends TestCase
         $course = Course::create(['name' => 'Macroeconomia', 'status' => 'active']);
         Topic::create(['course_id' => $course->id, 'source' => 'manual', 'title' => 'Produto interno bruto', 'status' => 'active', 'taught_at' => now()]);
         Topic::create(['course_id' => $course->id, 'source' => 'manual', 'title' => 'Inflação', 'status' => 'active']);
-        $this->get('/practice')->assertOk()->assertSee('Iniciar novo treino')->assertSee('Resultados recentes')
+        $this->get('/practice')->assertOk()->assertSee('Treinar no ChatGPT')->assertSee('Avaliações importadas do ChatGPT')
             ->assertDontSee('Produto interno bruto')->assertDontSee('Inflação')
             ->assertViewHas('courses', fn ($items) => $items->contains('id', $course->id) && $items->contains('id', $empty->id));
-        $this->get('/practice/treinar')->assertOk()->assertSee('Inglês')->assertSee('Macroeconomia');
+        $this->get('/practice/treinar')->assertRedirect('/practice');
     }
 }
