@@ -50,7 +50,6 @@ document.getElementById('copy-external-prompt').addEventListener('click',async()
  try{await navigator.clipboard.writeText(output.value);status.textContent='Prompt copiada. Cola-a no projeto ChatGPT da UC.';}
  catch(e){output.focus();output.select();status.textContent='Seleciona e copia o texto manualmente (Ctrl+C).';}
 });
-})();
 // Clipboard permission is triggered by a genuine user click; window opens synchronously to avoid popup blockers.
 document.getElementById('open-chatgpt-project')?.addEventListener('click',()=>{
  if(!output.value){status.textContent='Gera primeiro a prompt.';return;}
@@ -63,3 +62,5 @@ document.getElementById('open-chatgpt-project')?.addEventListener('click',()=>{
  });
  if(!tab)status.textContent='Permite pop-ups para abrir o projeto, ou utiliza o endereço guardado. A prompt continua disponível para copiar.';
 });
+
+})();
