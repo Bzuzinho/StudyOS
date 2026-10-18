@@ -48,6 +48,7 @@ Route::patch('/study/{studySession}/complete', [StudyController::class, 'complet
 Route::delete('/study/{studySession}', [StudyController::class, 'destroy'])->name('study.destroy');
 
 Route::get('/practice', [PracticeController::class, 'index'])->name('practice.index');
+Route::post('/practice/chatgpt/{course}/project', [\App\Http\Controllers\CourseChatgptProjectController::class, 'store'])->name('practice.external.project');
 Route::get('/practice/chatgpt/{course}', [\App\Http\Controllers\ExternalAssessmentController::class, 'index'])->name('practice.external.index');
 Route::post('/practice/chatgpt/{course}', [\App\Http\Controllers\ExternalAssessmentController::class, 'store'])->name('practice.external.store');
 Route::get('/practice/treinar', [PracticeRunController::class, 'create'])->name('practice.runs.create');
