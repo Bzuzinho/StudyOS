@@ -54,7 +54,8 @@ document.getElementById('copy-external-prompt').addEventListener('click',async()
 document.getElementById('open-chatgpt-project')?.addEventListener('click',()=>{
  if(!output.value){status.textContent='Gera primeiro a prompt.';return;}
  const url=document.getElementById('open-chatgpt-project').dataset.projectUrl;
- const tab=window.open(url,'_blank','noopener,noreferrer');
+ const tab=window.open(url,'_blank');
+ if(tab)tab.opener=null;
  navigator.clipboard.writeText(output.value).then(()=>{
    status.textContent='Projeto aberto e prompt copiada. Cola-a no ChatGPT com Ctrl+V.';
  }).catch(()=>{
