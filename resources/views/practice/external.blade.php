@@ -7,7 +7,18 @@
 @if(session('status'))<div class="alert success">{{ session('status') }}</div>@endif
 @if($errors->any())<div class="alert error">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
 <section class="card" id="external-prompt-builder" data-code="{{ $course->academic_code }}" data-course="{{ $course->name }}">
-<h2>1. Preparar treino</h2>
+<h2>1. Preparar atividade no ChatGPT</h2>
+<form method="POST" action="{{ route('practice.external.project',$course,false) }}" class="learning-actions">
+@csrf
+<label class="field" style="flex:1"><span>Endereço do projeto ChatGPT desta UC</span><input type="url" name="project_url" value="{{ $projectUrl }}" required placeholder="https://chatgpt.com/g/g-p-.../project"></label>
+<button class="button ghost" type="submit">Guardar ligação</button>
+</form>
+<p class="muted-text">O projeto abre noutra janela. Por segurança, o ChatGPT não aceita que o StudyOS introduza mensagens diretamente no seu campo; a prompt é copiada para colares.</p>
+<div class="field"><span>Objetivo</span><select id="external-mode">
+<option value="practice" @selected(request('mode') !== 'study' && request('mode') !== 'status')>Praticar e avaliar</option>
+<option value="study" @selected(request('mode') === 'study')>Estudar ou rever matéria</option>
+<option value="status" @selected(request('mode') === 'status')>Pedir relatório de conhecimento</option>
+</select></div>
 <p>Seleciona os subtemas que pretendes praticar. Podes escolher vários.</p>
 <div style="max-height:350px;overflow:auto;margin:12px 0">
 @foreach($topics as $topic)
@@ -23,10 +34,11 @@
 </div>
 <button class="button primary" type="button" id="generate-external-prompt">Gerar prompt</button>
 <label class="field"><span>Prompt para copiar para o projeto da UC no ChatGPT</span><textarea id="external-prompt" rows="16" readonly placeholder="Seleciona os subtemas e clica em Gerar prompt"></textarea></label>
-<button class="button ghost" type="button" id="copy-external-prompt">Copiar prompt</button>
+<div class="learning-actions"><button class="button ghost" type="button" id="copy-external-prompt">Copiar prompt</button>
+<button class="button primary" type="button" id="open-chatgpt-project" data-project-url="{{ $projectUrl ?: 'https://chatgpt.com/' }}">Copiar e abrir projeto ChatGPT ↗</button></div>
 <p class="muted-text" id="external-prompt-status" role="status"></p>
 </section>
-<section class="card"><h2>2. Importar a avaliação concluída</h2>
+<section class="card"><h2>2. Registar o estado de conhecimento</h2>
 <p>Depois de terminares o treino no ChatGPT, copia exclusivamente o bloco JSON final e cola-o aqui. O StudyOS valida os códigos dos subtemas e regista o histórico sem alterar notas oficiais.</p>
 <form method="POST" action="{{ route('practice.external.store',$course,false) }}">@csrf
 <label class="field"><span>Relatório JSON devolvido pelo ChatGPT</span><textarea name="report" rows="12" maxlength="100000" required placeholder='{"schema":"studyos.external-assessment.v1", ...}'>{{ old('report') }}</textarea></label>
@@ -45,4 +57,4 @@
 @endforeach
 @endif
 </section>
-</div><script src="/js/external-assessment-prompt.js?v=1" defer></script></body></html>
+</div><script src="/js/external-assessment-prompt.js?v=2" defer></script></body></html>
