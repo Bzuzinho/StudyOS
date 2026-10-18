@@ -14,7 +14,7 @@ class CourseChatgptProjectController
    $url=$data['project_url'];
    $parts=parse_url($url);
    if (($parts['scheme']??'')!=='https' || ($parts['host']??'')!=='chatgpt.com'
-       || !preg_match('#^/(?:g/g-p-[^/?#]+|g-p-[^/?#]+|project/[^/?#]+)(?:/[^?#]*)?$#', $parts['path']??'')) {
+       || !preg_match('~^/(?:g/g-p-[^/?#]+|g-p-[^/?#]+|project/[^/?#]+)(?:/[^?#]*)?$~', $parts['path']??'')) {
       throw ValidationException::withMessages(['project_url'=>'Indica o endereço HTTPS do projeto no chatgpt.com, não uma conversa ou outro site.']);
    }
    DB::table('course_chatgpt_projects')->updateOrInsert(
