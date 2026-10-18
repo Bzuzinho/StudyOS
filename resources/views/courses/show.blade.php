@@ -6,7 +6,7 @@
 @if($errors->any())<div class="alert error" role="alert"><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 <header class="learning-header">
 <div><p class="eyebrow">{{ $course->academic_code }} · {{ $course->semester }}.º semestre · {{ $course->status === 'active' ? 'Ativa' : 'Planeada' }}</p><h1>{{ $course->name }}</h1></div>
-<div><div class="learning-actions"><a class="button primary" href="{{ route('study.create', ['course_id' => $course->id, 'now' => 1], false) }}">Estudar</a><a class="button" href="{{ route('practice.external.index', ['course' => $course->id], false) }}">Treinar no ChatGPT</a><a class="button ghost" href="{{ route('materials.index', ['course_id' => $course->id], false) }}">Materiais</a></div><div class="learning-actions" aria-label="Gestão dos pacotes pedagógicos"><a class="button ghost" href="{{ route('courses.import-package', $course, false) }}?mode=replace">Substituir conteúdos da UC</a><a class="button ghost" href="{{ route('courses.import-package', $course, false) }}?mode=append">Acrescentar conteúdos à UC</a></div></div>
+<div><div class="learning-actions"><a class="button primary" href="{{ route('practice.external.index', ['course'=>$course, 'mode'=>'study'], false) }}">Preparar estudo no ChatGPT</a><a class="button" href="{{ route('practice.external.index', ['course' => $course->id], false) }}">Treinar no ChatGPT</a></div></div>
 </header>
 <section class="learning-stats" aria-label="Resumo da unidade curricular">
 <div class="learning-stat"><span>Aulas</span><strong>{{ $course->elapsed_classes_count }} / {{ $course->scheduled_classes_count }}</strong><small>decorridas / programadas</small></div>
