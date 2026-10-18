@@ -47,7 +47,7 @@ class LearningExperienceTest extends TestCase
         }
         $this->get('/practice/treinar?course_id='.$course->id)
             ->assertRedirect('/practice/chatgpt/'.$course->id);
-        $this->get('/courses/'.$course->id)->assertSee('Substituir conteúdos da UC')->assertSee('Acrescentar conteúdos à UC')->assertDontSee('Importar / atualizar pacote')->assertDontSee('excertos indexados');
+        $this->get('/courses/'.$course->id)->assertDontSee('Substituir conteúdos da UC')->assertDontSee('Acrescentar conteúdos à UC')->assertDontSee('Importar / atualizar pacote')->assertDontSee('excertos indexados');
         $this->assertNotNull($historical->fresh());
         $this->postJson('/practice/treinar',['course_id'=>$course->id,'topic_ids'=>[$historical->id],'count'=>1])->assertUnprocessable();
     }

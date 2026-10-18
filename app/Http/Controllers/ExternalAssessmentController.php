@@ -32,7 +32,8 @@ class ExternalAssessmentController
             ->filter()->values()->all();
         $history = DB::table('external_assessments')->where('course_id',$course->id)->latest('assessed_on')->limit(20)->get();
 
-        return view('practice.external', compact('course','topics','history','selectedTopicNumbers'));
+        $projectUrl = DB::table('course_chatgpt_projects')->where('course_id',$course->id)->value('project_url');
+        return view('practice.external', compact('course','topics','history','selectedTopicNumbers','projectUrl'));
     }
 
     public function store(Request $request, Course $course)

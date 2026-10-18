@@ -37,7 +37,7 @@ class StudyMaterialRequestTest extends TestCase
         Topic::create(['course_id' => $course->id, 'source' => 'manual', 'title' => 'Planeamento Estratégico', 'status' => 'active']);
 
         $this->get('/courses/'.$course->id)->assertOk()
-            ->assertSee('Abrir biblioteca da UC')
+            ->assertDontSee('Abrir biblioteca da UC')->assertSee('Preparar treino no ChatGPT')
             ->assertSee('Abordagem Clássica')
             ->assertDontSee('excertos indexados')->assertDontSee('Fonte auditada');
     }
