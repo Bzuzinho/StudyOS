@@ -141,7 +141,15 @@ class MasteryCalculator
 
     private function setting(string $key, mixed $default): mixed
     {
-        return function_exists('config') ? config('studyos.mastery.'.$key, $default) : $default;
+        try {
+            if (function_exists('app') && app()->bound('config')) {
+                return config('studyos.mastery.'.$key, $default);
+            }
+        } catch (\Throwable) {
+            // The calculator is also used as a pure unit-testable domain service.
+        }
+
+        return $default;
     }
 
     private function dateOrNull(mixed $value): ?DateTimeImmutable
