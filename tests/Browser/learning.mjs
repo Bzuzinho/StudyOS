@@ -65,7 +65,8 @@ for (const variant of [
     assert((await page.locator('#import-preview').innerText()).includes('Estado proposto após integrar o histórico'),'preview must show proposed mastery state');
     await page.getByRole('button',{name:'Confirmar e importar',exact:true}).click();
     await page.getByText('Relatório importado e estado de conhecimento atualizado. As notas oficiais não foram alteradas.',{exact:true}).waitFor();
-    await page.getByText('16,00/20',{exact:false}).waitFor();
+    const importedAssessment=page.getByRole('article').filter({hasText:report.assessment_id});
+    await importedAssessment.getByText('16,00/20',{exact:false}).waitFor();
     await checkWidth();
     await page.screenshot({path:`browser-evidence/${variant.name}-chatgpt-result.png`,fullPage:true});
     await page.goto('http://127.0.0.1:8000/study/create?course_id=1&now=1');
