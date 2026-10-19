@@ -40,7 +40,7 @@
 <p class="muted-text" id="external-prompt-status" role="status"></p>
 </section>
 
-<section class="card"><h2>2. Analisar relatório antes de importar</h2>
+<section class="card"><h2>2. Registar o estado de conhecimento</h2><p class="muted-text">Primeiro analisamos o relatório; nada é gravado antes da confirmação.</p>
 <p>Cola o relatório completo devolvido pelo ChatGPT. Pode ser o JSON estruturado ou texto normal. O StudyOS tenta normalizar localmente e não grava nada antes da tua confirmação.</p>
 <form method="POST" action="{{ route('practice.external.preview',$course,false) }}">@csrf
 <label class="field"><span>Relatório do ChatGPT</span><textarea name="report" rows="12" maxlength="100000" required placeholder="Cola aqui o relatório completo ou o bloco JSON">{{ $rawReport ?? old('report') }}</textarea></label>
