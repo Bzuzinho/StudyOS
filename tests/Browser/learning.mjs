@@ -32,33 +32,41 @@ for (const variant of [
     await page.getByRole('status').getByText('Matéria lecionada atualizada.').waitFor();
     await page.locator('.curriculum-theme summary').first().click();
     await page.locator('.curriculum-row').first().getByRole('link',{name:'Treinar',exact:true}).click();
-    await page.getByRole('heading',{name:'Praticar Introdução à Gestão no ChatGPT'}).waitFor();
+    await page.getByRole('heading',{name:'Introdução à Gestão no ChatGPT'}).waitFor();
     const selectedTopic=page.locator('[data-assessment-topic][value="1.1"]');
     assert(await selectedTopic.isChecked(),'selected course topic must be preselected in ChatGPT training');
     await page.getByLabel('Número de perguntas').selectOption('5');
     await page.getByLabel('Grau de dificuldade').selectOption('progressiva');
     await page.getByRole('button',{name:'Gerar prompt',exact:true}).click();
     const generatedPrompt=await page.locator('#external-prompt').inputValue();
-    assert(generatedPrompt.includes('studyos.external-assessment.v1'),'generated prompt must include the StudyOS import schema');
+    assert(generatedPrompt.includes('studyos.external-assessment.v2'),'generated prompt must include the StudyOS import schema');
     assert(generatedPrompt.includes('1.1'),'generated prompt must include the selected curricular number');
     assert(generatedPrompt.includes('UMA pergunta de cada vez'),'generated prompt must enforce interactive training');
     await checkWidth();
     await page.screenshot({path:`browser-evidence/${variant.name}-chatgpt-training.png`,fullPage:true});
     const report={
-        schema:'studyos.external-assessment.v1',
-        assessment_id:'STUDYOS-BROWSER-001',
+        schema:'studyos.external-assessment.v2',
+        assessment_id:'STUDYOS-BROWSER-'+variant.name.toUpperCase().replace(/[^A-Z0-9_-]/g,'-'),
         academic_code:'14020',
-        assessed_on:'2026-10-16',
+        assessed_on:'2026-10-19',
+        activity_type:'practice',
         score_20:16,
-        topics:[{number:'1.1',score_percent:80,feedback:'Boa compreensão; rever aplicação dos conceitos.'}],
+        topics:[{number:'1.1',score_percent:80,evidence_count:3,feedback:'Boa compreensão; rever aplicação dos conceitos.'}],
         strengths:['Conceitos fundamentais'],
         difficulties:['Aplicação a casos'],
-        next_steps:['Rever exemplos do subtema 1.1']
+        conceptual_errors:[],
+        recommendations:['Rever exemplos do subtema 1.1'],
+        review_topics:['1.1'],
+        mastered_topics:[]
     };
-    await page.getByLabel('Relatório JSON devolvido pelo ChatGPT').fill(JSON.stringify(report));
-    await page.getByRole('button',{name:'Importar avaliação',exact:true}).click();
-    await page.getByText('Avaliação externa importada. O histórico oficial e as notas universitárias não foram alterados.',{exact:true}).waitFor();
-    await page.getByText('16,00/20',{exact:false}).waitFor();
+    await page.getByLabel('Relatório do ChatGPT').fill(JSON.stringify(report));
+    await page.getByRole('button',{name:'Analisar relatório',exact:true}).click();
+    await page.getByRole('heading',{name:'3. Pré-visualização da importação'}).waitFor();
+    assert((await page.locator('#import-preview').innerText()).includes('Estado proposto após integrar o histórico'),'preview must show proposed mastery state');
+    await page.getByRole('button',{name:'Confirmar e importar',exact:true}).click();
+    await page.getByText('Relatório importado e estado de conhecimento atualizado. As notas oficiais não foram alteradas.',{exact:true}).waitFor();
+    const importedAssessment=page.getByRole('article').filter({hasText:report.assessment_id});
+    await importedAssessment.getByText('16,00/20',{exact:false}).waitFor();
     await checkWidth();
     await page.screenshot({path:`browser-evidence/${variant.name}-chatgpt-result.png`,fullPage:true});
     await page.goto('http://127.0.0.1:8000/study/create?course_id=1&now=1');

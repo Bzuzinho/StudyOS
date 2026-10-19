@@ -32,4 +32,15 @@ return [
             explode(',', env('MOODLE_ALLOWED_EXTENSIONS', 'pdf,pptx,docx,txt,md'))
         ))),
     ],
+
+    'mastery' => [
+        'minimum_evidence_units' => 3,
+        'recency_half_life_days' => 120,
+        'minimum_recency_weight' => 0.25,
+        'thresholds' => [
+            'developing_from' => 50,
+            'competent_from' => 70,
+            'strong_from' => 85,
+        ],
+    ],
 ];
