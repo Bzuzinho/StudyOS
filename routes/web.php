@@ -50,6 +50,8 @@ Route::delete('/study/{studySession}', [StudyController::class, 'destroy'])->nam
 Route::get('/practice', [PracticeController::class, 'index'])->name('practice.index');
 Route::post('/practice/chatgpt/{course}/project', [\App\Http\Controllers\CourseChatgptProjectController::class, 'store'])->name('practice.external.project');
 Route::get('/practice/chatgpt/{course}', [\App\Http\Controllers\ExternalAssessmentController::class, 'index'])->name('practice.external.index');
+Route::post('/practice/chatgpt/{course}/preview', [\App\Http\Controllers\ExternalAssessmentController::class, 'preview'])->name('practice.external.preview');
+Route::post('/practice/chatgpt/{course}/confirm', [\App\Http\Controllers\ExternalAssessmentController::class, 'confirm'])->name('practice.external.confirm');
 Route::post('/practice/chatgpt/{course}', [\App\Http\Controllers\ExternalAssessmentController::class, 'store'])->name('practice.external.store');
 Route::get('/practice/treinar', [PracticeRunController::class, 'create'])->name('practice.runs.create');
 Route::get('/practice/treinar/disponiveis', [PracticeRunController::class, 'eligible'])->name('practice.runs.eligible');
