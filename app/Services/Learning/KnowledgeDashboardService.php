@@ -60,7 +60,7 @@ class KnowledgeDashboardService
         $importedTopics = collect($reports)->flatMap(function ($row) {
             $report = json_decode((string) $row->report, true);
             return is_array($report) ? ($report['topics'] ?? []) : [];
-        })->filter('is_array')->values();
+        })->filter(fn ($entry) => is_array($entry))->values();
 
         $priorities = $leaves->map(function ($topic) {
             $status = $topic->mastery?->status ?? 'no_evidence';
