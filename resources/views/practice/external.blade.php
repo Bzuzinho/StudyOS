@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Avaliação no ChatGPT · {{ $course->name }} · StudyOS</title>@include('partials.app-identity')<link rel="stylesheet" href="/css/app.css?v=learning-20261013"></head>
 <body class="learning-page"><div class="shell narrow-shell">
-@include('partials.learning-nav',['active'=>'/practice'])
-<div class="breadcrumb"><a href="/practice">← Prática</a></div>
+@include('partials.learning-nav',['active'=>'/courses'])
+<div class="breadcrumb"><a href="{{ route('courses.show',$course,false) }}">← {{ $course->name }}</a></div>
 <header class="form-header"><p class="eyebrow">Estudo, prática e conhecimento</p><h1>{{ $course->name }} no ChatGPT</h1><p>O ChatGPT trata do conteúdo pedagógico; o StudyOS valida os resultados, mantém o histórico e atualiza o estado de conhecimento.</p></header>
 @if(session('status'))<div class="alert success">{{ session('status') }}</div>@endif
 @if($errors->any())<div class="alert error">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
