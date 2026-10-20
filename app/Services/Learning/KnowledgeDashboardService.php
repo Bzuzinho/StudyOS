@@ -98,13 +98,20 @@ class KnowledgeDashboardService
 
         $assessed = $leaves->filter(fn ($topic) =>
             ! in_array($topic->mastery?->status ?? 'no_evidence', ['no_evidence', 'insufficient_evidence'], true))->count();
-        $withEvidence = $leaves->filter(fn ($topic) => ($topic->mastery?->status ?? 'no_evidence') !== 'no_evidence')->count();
+        $withEvidence = $leaves->filter(function ($topic) use ($latestByNumber) {
+            $number = (string) ($topic->metadata['curricular_number'] ?? '');
+            $observed = $latestByNumber[$number] ?? null;
+            return ($topic->mastery?->status ?? 'no_evidence') !== 'no_evidence'
+                || ($observed && $observed['score_percent'] !== null && $observed['evidence_count'] > 0);
+        })->count();
+        $importedCurricularTopics = $leaves->filter(fn ($topic) => array_key_exists((string) ($topic->metadata['curricular_number'] ?? ''), $latestByNumber))->count();
 
         return [
             'course' => $course,
             'total' => $leaves->count(),
             'taught' => $leaves->whereNotNull('taught_at')->count(),
             'with_evidence' => $withEvidence,
+            'with_imported_report' => $importedCurricularTopics,
             'assessed' => $assessed,
             'mastered' => $leaves->filter(fn ($topic) => in_array($topic->mastery?->status, ['competent', 'strong'], true))->count(),
             'status_counts' => collect(['no_evidence','insufficient_evidence','fragile','developing','competent','strong'])
