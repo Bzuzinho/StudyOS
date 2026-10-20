@@ -41,6 +41,22 @@ class KnowledgeDashboardService
         $latestReport = $reports->first();
         $latest = $latestReport ? json_decode((string) $latestReport->report, true) : null;
         $latest = is_array($latest) ? $latest : [];
+        $latestByNumber = [];
+        foreach ($reports as $row) {
+            $report = json_decode((string) $row->report, true);
+            foreach ((is_array($report) ? ($report['topics'] ?? []) : []) as $entry) {
+                if (! is_array($entry)) { continue; }
+                $number = trim((string) ($entry['number'] ?? ''));
+                if ($number !== '' && ! isset($latestByNumber[$number])) {
+                    $latestByNumber[$number] = [
+                        'assessed_on' => $row->assessed_on,
+                        'score_percent' => is_numeric($entry['score_percent'] ?? null) ? (float) $entry['score_percent'] : null,
+                        'feedback' => (string) ($entry['feedback'] ?? ''),
+                        'evidence_count' => (int) ($entry['evidence_count'] ?? (is_numeric($entry['score_percent'] ?? null) ? 1 : 0)),
+                    ];
+                }
+            }
+        }
         $importedTopics = collect($reports)->flatMap(function ($row) {
             $report = json_decode((string) $row->report, true);
             return is_array($report) ? ($report['topics'] ?? []) : [];
@@ -96,6 +112,7 @@ class KnowledgeDashboardService
             'last_assessed_on' => $latestReport?->assessed_on,
             'imported_topics_count' => $importedTopics->count(),
             'imported_topics' => $importedTopics->take(20)->values()->all(),
+            'latest_by_number' => $latestByNumber,
             'last_score_20' => $latestReport?->score_20,
             'report_count' => DB::table('external_assessments')->where('course_id', $course->id)->count(),
             'difficulties' => array_slice(array_values(array_filter($latest['difficulties'] ?? [], 'is_string')), 0, 4),
