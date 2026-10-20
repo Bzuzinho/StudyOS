@@ -70,7 +70,7 @@ class KnowledgeDashboardTest extends TestCase
         Topic::create(['course_id'=>$course->id,'title'=>'Tema A','source'=>'confirmed_programme','external_id'=>'confirmed:14020:1.1','status'=>'active','metadata'=>['curricular_number'=>'1.1']]);
         DB::table('external_assessments')->insert([
             'course_id'=>$course->id,'external_id'=>'STUDYOS-OLD-REPORT-001','assessed_on'=>'2026-10-10',
-            'score_20'=>12,'report'=>json_encode(['schema'=>'studyos.external-assessment.v1','topics'=>[['number'=>'1.1','score_percent'=>60,'feedback'=>'Confusão nos conceitos']]]]),
+            'score_20'=>12,'report'=>json_encode(['schema'=>'studyos.external-assessment.v1','topics'=>[['number'=>'1.1','score_percent'=>60,'feedback'=>'Confusão nos conceitos']]]),
             'created_at'=>now(),'updated_at'=>now(),
         ]);
 
