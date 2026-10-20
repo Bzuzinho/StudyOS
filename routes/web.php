@@ -40,14 +40,14 @@ Route::get('/materials/{material}/edit', [MaterialController::class, 'edit'])->n
 Route::put('/materials/{material}', [MaterialController::class, 'update'])->name('materials.update');
 Route::delete('/materials/{material}', [MaterialController::class, 'destroy'])->name('materials.destroy');
 
-Route::get('/study', [StudyController::class, 'index'])->name('study.index');
+Route::redirect('/study', '/courses')->name('study.index');
 Route::get('/study/create', [StudyController::class, 'create'])->name('study.create');
 Route::get('/study/{studySession}', [StudyController::class, 'show'])->name('study.show');
 Route::post('/study', [StudyController::class, 'store'])->name('study.store');
 Route::patch('/study/{studySession}/complete', [StudyController::class, 'complete'])->name('study.complete');
 Route::delete('/study/{studySession}', [StudyController::class, 'destroy'])->name('study.destroy');
 
-Route::get('/practice', [PracticeController::class, 'index'])->name('practice.index');
+Route::redirect('/practice', '/courses')->name('practice.index');
 Route::post('/practice/chatgpt/{course}/project', [\App\Http\Controllers\CourseChatgptProjectController::class, 'store'])->name('practice.external.project');
 Route::get('/practice/chatgpt/{course}', [\App\Http\Controllers\ExternalAssessmentController::class, 'index'])->name('practice.external.index');
 Route::post('/practice/chatgpt/{course}/preview', [\App\Http\Controllers\ExternalAssessmentController::class, 'preview'])->name('practice.external.preview');
