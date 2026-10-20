@@ -52,7 +52,7 @@
 </section>
 </div>
 <aside class="learning-stack">
-<section class="card"><div class="card-head"><h3>Prioridades de estudo</h3><a href="/study">Planificação →</a></div>
+<section class="card"><div class="card-head"><h3>Prioridades de estudo</h3><a href="/courses">Ver UCs →</a></div>
 <p class="muted-text">Prioridades orientativas: matéria lecionada com domínio frágil ou insuficientemente avaliado vem primeiro.</p>
 @forelse($knowledge['priorities'] as $item)
 <div class="learning-line"><strong>{{ $item['number'] }} · {{ $item['title'] }}</strong>
@@ -66,10 +66,6 @@
 <article class="item"><div class="date">{{ $task->due_at ? $task->due_at->copy()->timezone(config('app.timezone'))->format('d/m') : '—' }}</div><div><strong>{{ $task->title }}</strong><p>{{ $task->course?->name }}</p></div></article>
 @empty<p class="empty">Sem tarefas pendentes.</p>@endforelse
 </section>
-<section class="card"><div class="card-head"><h3>Sessões planeadas</h3><a href="/study">Plano de estudo →</a></div>
-@forelse($upcomingStudySessions as $session)
-<article class="item"><div class="date">{{ $session->localStartsAt()->format('d/m') }}</div><div><strong>{{ $session->title ?: $session->course?->name }}</strong><p>{{ $session->localStartsAt()->format('H:i') }} · {{ $session->planned_minutes }} min</p></div></article>
-@empty<p class="empty">Ainda não há sessões futuras.</p>@endforelse
-</section>
+
 </aside>
 </main></div></body></html>
