@@ -64,4 +64,22 @@ class KnowledgeDashboardTest extends TestCase
         $this->get('/courses/'.$course->id)->assertOk()->assertSee('sem nota global')->assertSee('Regra da cadeia');
         $this->get('/practice')->assertOk()->assertSee('sem classificação global');
     }
+    public function test_previous_import_is_visible_on_its_curricular_subtopic_without_inventing_mastery(): void
+    {
+        $course = Course::create(['academic_code'=>'14020','name'=>'Gestão','status'=>'active']);
+        Topic::create(['course_id'=>$course->id,'title'=>'Tema A','source'=>'confirmed_programme','external_id'=>'confirmed:14020:1.1','status'=>'active','metadata'=>['curricular_number'=>'1.1']]);
+        DB::table('external_assessments')->insert([
+            'course_id'=>$course->id,'external_id'=>'STUDYOS-OLD-REPORT-001','assessed_on'=>'2026-10-10',
+            'score_20'=>12,'report'=>json_encode(['schema'=>'studyos.external-assessment.v1','topics'=>[['number'=>'1.1','score_percent'=>60,'feedback'=>'Confusão nos conceitos']]]]),
+            'created_at'=>now(),'updated_at'=>now(),
+        ]);
+
+        $this->get('/courses/'.$course->id)
+            ->assertOk()
+            ->assertSee('Estados de conhecimento importados')
+            ->assertSee('Última importação:')
+            ->assertSee('Confusão nos conceitos')
+            ->assertSee('Importação guardada, ainda sem domínio consolidado');
+    }
+
 }
