@@ -40,6 +40,11 @@ class KnowledgeDashboardService
             ->orderByDesc('assessed_on')->orderByDesc('id')->limit(30)->get();
         $latestReport = $reports->first();
         $latest = $latestReport ? json_decode((string) $latestReport->report, true) : null;
+        $latest = is_array($latest) ? $latest : [];
+        $importedTopics = collect($reports)->flatMap(function ($row) {
+            $report = json_decode((string) $row->report, true);
+            return is_array($report) ? ($report['topics'] ?? []) : [];
+        })->filter('is_array')->values();
 
         $priorities = $leaves->map(function ($topic) {
             $status = $topic->mastery?->status ?? 'no_evidence';
@@ -89,8 +94,10 @@ class KnowledgeDashboardService
             'status_counts' => collect(['no_evidence','insufficient_evidence','fragile','developing','competent','strong'])
                 ->mapWithKeys(fn ($status) => [$status => $leaves->filter(fn ($topic) => ($topic->mastery?->status ?? 'no_evidence') === $status)->count()])->all(),
             'last_assessed_on' => $latestReport?->assessed_on,
+            'imported_topics_count' => $importedTopics->count(),
+            'imported_topics' => $importedTopics->take(20)->values()->all(),
             'last_score_20' => $latestReport?->score_20,
-            'report_count' => $reports->count(),
+            'report_count' => DB::table('external_assessments')->where('course_id', $course->id)->count(),
             'difficulties' => array_slice(array_values(array_filter($latest['difficulties'] ?? [], 'is_string')), 0, 4),
             'conceptual_errors' => array_slice(array_values(array_filter($latest['conceptual_errors'] ?? [], 'is_string')), 0, 4),
             'recommendations' => array_slice(array_values(array_filter($latest['recommendations'] ?? ($latest['next_steps'] ?? []), 'is_string')), 0, 4),
