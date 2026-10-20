@@ -18,7 +18,7 @@
 <div class="card-head"><h3>Conhecimento demonstrado</h3><a href="{{ route('practice.external.index',['course'=>$course,'mode'=>'status'],false) }}">Atualizar diagnóstico no ChatGPT →</a></div>
 <p class="muted-text">O estado é calculado a partir de evidências de exercícios e avaliações importadas. Não representa uma classificação oficial. Estudar um tema não equivale a dominá-lo.</p>
 <div class="learning-metrics">
-<div><strong>{{ $knowledge['with_evidence'] }}/{{ $knowledge['total'] }}</strong><span>com alguma evidência</span></div>
+<div><strong>{{ $knowledge['with_evidence'] }}/{{ $knowledge['total'] }}</strong><span>com evidência ou avaliação importada</span></div>
 <div><strong>{{ $knowledge['assessed'] }}/{{ $knowledge['total'] }}</strong><span>com nível sustentado</span></div>
 <div><strong>{{ $knowledge['mastered'] }}/{{ $knowledge['total'] }}</strong><span>competentes ou fortes</span></div>
 <div><strong>{{ $knowledge['status_counts']['fragile'] + $knowledge['status_counts']['developing'] }}</strong><span>por consolidar</span></div>
@@ -39,7 +39,7 @@
 @if($knowledge['report_count'] > 0)
 <section class="card" aria-label="Relatórios de conhecimento importados">
 <div class="card-head"><h3>Estados de conhecimento importados</h3><a href="{{ route('practice.external.index',$course,false) }}#import-history">Consultar histórico completo →</a></div>
-<p><strong>{{ $knowledge['report_count'] }}</strong> relatório(s) guardado(s) nesta UC · <strong>{{ $knowledge['imported_topics_count'] }}</strong> referência(s) a subtemas nos últimos relatórios.</p>
+<p><strong>{{ $knowledge['report_count'] }}</strong> relatório(s) guardado(s) nesta UC · <strong>{{ $knowledge['with_imported_report'] }}</strong> subtema(s) do programa identificados em importações.</p>
 @if($knowledge['assessed'] === 0)
 <p class="muted-text">Existe histórico importado, mas nenhum subtema tem ainda um nível de conhecimento sustentado nos indicadores atuais. Os relatórios anteriores estão preservados para consulta; não são convertidos automaticamente em domínio demonstrado sem evidência compatível.</p>
 @endif
