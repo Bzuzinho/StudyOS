@@ -90,7 +90,7 @@
 </section>
 @endif
 
-<section class="card"><h2>Histórico de avaliações externas</h2>
+<section class="card" id="import-history"><h2>Histórico de avaliações externas</h2>
 @if($history->isEmpty())<p>Ainda não existem avaliações importadas.</p>@else
 @foreach($history as $item)
 @php($rep=json_decode($item->report,true))
