@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Services\Learning\KnowledgeDashboardService;
 use Illuminate\View\View;
 
 class CourseController
@@ -51,7 +52,7 @@ class CourseController
         ]);
     }
 
-    public function show(Course $course): View
+    public function show(Course $course, KnowledgeDashboardService $knowledgeDashboard): View
     {
         $course->loadCount([
             'classOccurrences as scheduled_classes_count' => fn ($q) => $q->scheduledClasses(),
@@ -75,6 +76,7 @@ class CourseController
             ->sortBy(fn ($t) => $t->mastery->score_percent)->first();
         $availableMaterials = $course->materials->filter(fn ($m) => $m->versions->contains(fn ($v) => $v->storage_path || trim((string) $v->content_text) !== ''));
         $manualTopicIds = $leaves->filter(fn ($t) => $availableMaterials->contains(fn ($m) => $m->source === 'chatgpt_package' && $m->external_id === $t->external_id))->pluck('id');
-        return view('courses.show', compact('course', 'curriculum', 'leaves', 'nextClass', 'nextAssessment', 'nextSession', 'priority', 'availableMaterials', 'manualTopicIds'));
+        $knowledge = $knowledgeDashboard->forCourse($course);
+        return view('courses.show', compact('course', 'curriculum', 'leaves', 'nextClass', 'nextAssessment', 'nextSession', 'priority', 'availableMaterials', 'manualTopicIds', 'knowledge'));
     }
 }

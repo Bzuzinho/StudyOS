@@ -14,7 +14,7 @@
 @forelse($externalAssessments as $assessment)
 <div class="learning-line">
 <strong>{{ $courses->firstWhere('id',$assessment->course_id)?->name ?? 'UC' }}</strong>
-<p>{{ $assessment->assessed_on }} · {{ number_format((float)$assessment->score_20,1,',','.') }}/20 · avaliação externa (ChatGPT)</p>
+<p>{{ $assessment->assessed_on }} · {{ $assessment->score_20 === null ? 'sem classificação global' : number_format((float)$assessment->score_20,1,',','.').'/20' }} · avaliação externa (ChatGPT)</p>
 <a href="{{ route('practice.external.index',$assessment->course_id,false) }}">Ver evolução e diagnóstico →</a>
 </div>
 @empty<p class="empty">Ainda não importaste avaliações do ChatGPT.</p>@endforelse

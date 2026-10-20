@@ -14,6 +14,28 @@
 <div class="learning-stat"><span>Aprendizagem</span><strong>{{ $leaves->filter(fn ($t) => in_array($t->mastery?->status, ['competent', 'strong']))->count() }} / {{ $leaves->count() }}</strong><small>subtemas com domínio demonstrado</small></div>
 <div class="learning-stat"><span>Próxima avaliação</span><strong class="stat-detail">{{ $nextAssessment?->title ?? 'Sem avaliação agendada' }}</strong><small>{{ $nextAssessment?->due_at?->copy()->timezone(config('app.timezone'))->format('d/m/Y · H:i') }}</small></div>
 </section>
+<section class="card" aria-label="Diagnóstico de conhecimento">
+<div class="card-head"><h3>Conhecimento demonstrado</h3><a href="{{ route('practice.external.index',['course'=>$course,'mode'=>'status'],false) }}">Atualizar diagnóstico no ChatGPT →</a></div>
+<p class="muted-text">O estado é calculado a partir de evidências de exercícios e avaliações importadas. Não representa uma classificação oficial. Estudar um tema não equivale a dominá-lo.</p>
+<div class="learning-metrics">
+<div><strong>{{ $knowledge['with_evidence'] }}/{{ $knowledge['total'] }}</strong><span>com alguma evidência</span></div>
+<div><strong>{{ $knowledge['assessed'] }}/{{ $knowledge['total'] }}</strong><span>com nível sustentado</span></div>
+<div><strong>{{ $knowledge['mastered'] }}/{{ $knowledge['total'] }}</strong><span>competentes ou fortes</span></div>
+<div><strong>{{ $knowledge['status_counts']['fragile'] + $knowledge['status_counts']['developing'] }}</strong><span>por consolidar</span></div>
+</div>
+<div class="learning-actions" style="flex-wrap:wrap">
+<span class="muted-text">Sem evidência: {{ $knowledge['status_counts']['no_evidence'] }}</span>
+<span class="muted-text">Insuficiente: {{ $knowledge['status_counts']['insufficient_evidence'] }}</span>
+<span class="muted-text">Frágil: {{ $knowledge['status_counts']['fragile'] }}</span>
+<span class="muted-text">Em desenvolvimento: {{ $knowledge['status_counts']['developing'] }}</span>
+<span class="muted-text">Competente: {{ $knowledge['status_counts']['competent'] }}</span>
+<span class="muted-text">Forte: {{ $knowledge['status_counts']['strong'] }}</span>
+</div>
+@if($knowledge['last_assessed_on'])<p class="muted-text">Último relatório importado: {{ $knowledge['last_assessed_on'] }} · {{ $knowledge['last_score_20'] === null ? 'sem nota global' : number_format((float)$knowledge['last_score_20'],1,',',' ').'/20' }}</p>@endif
+@if(count($knowledge['difficulties']))<p><strong>Dificuldades recentes:</strong> {{ implode(' · ', $knowledge['difficulties']) }}</p>@endif
+@if(count($knowledge['conceptual_errors']))<p><strong>Erros conceptuais:</strong> {{ implode(' · ', $knowledge['conceptual_errors']) }}</p>@endif
+@if(count($knowledge['recommendations']))<p><strong>Recomendações do último relatório:</strong> {{ implode(' · ', $knowledge['recommendations']) }}</p>@endif
+</section>
 <main class="learning-columns">
 <section class="card" id="package-curriculum"><div id="course-topics"></div><div class="card-head"><h3>Programa curricular</h3><span>{{ $curriculum->whereNull('parent_id')->count() }} temas · {{ $leaves->count() }} subtemas</span></div>
 <p class="muted-text">Abre um tema para consultar os subtemas, estudar ou treinar. Assinala a matéria dada nas aulas e guarda as alterações.</p>
@@ -24,7 +46,7 @@
 <details class="curriculum-theme"><summary>{{ isset($theme->metadata['curricular_number']) ? $theme->metadata['curricular_number'].'. ' : '' }}{{ $theme->title }}<small>{{ $taught }} de {{ $themeLeaves->count() }} lecionados · {{ round($taught / max(1,$themeLeaves->count()) * 100) }}% de cobertura @if($mastered) · {{ $mastered }} com domínio demonstrado @endif</small></summary>
 @if($children->isNotEmpty())<label class="curriculum-check"><input type="hidden" form="package-taught-form" name="topic_ids[]" value="{{ $theme->id }}"><input form="package-taught-form" class="package-theme-check" type="checkbox" name="taught_topic_ids[]" value="{{ $theme->id }}" data-theme="{{ $theme->id }}" @checked($taught === $children->count())><span>Todo o tema lecionado</span></label>@endif
 @foreach($themeLeaves as $topic)
-<div class="curriculum-row"><div class="curriculum-row-content"><strong>{{ isset($topic->metadata['curricular_number']) ? $topic->metadata['curricular_number'].' ' : '' }}{{ $topic->title }}</strong><div class="curriculum-row-meta"><label class="learning-actions"><input type="hidden" form="package-taught-form" name="topic_ids[]" value="{{ $topic->id }}"><input form="package-taught-form" class="package-child-check" data-parent="{{ $theme->id }}" type="checkbox" name="taught_topic_ids[]" value="{{ $topic->id }}" @checked($topic->taught_at !== null)> Lecionado</label><span>{{ $topic->completed_study_sessions_count > 0 ? 'Estudado' : 'Estudo por realizar' }}</span><span>Domínio: {{ ['no_evidence'=>'sem evidência','insufficient_evidence'=>'evidência insuficiente','fragile'=>'frágil','developing'=>'em desenvolvimento','competent'=>'competente','strong'=>'forte'][$topic->mastery?->status ?? 'no_evidence'] ?? 'sem evidência' }}</span></div></div>
+<div class="curriculum-row"><div class="curriculum-row-content"><strong>{{ isset($topic->metadata['curricular_number']) ? $topic->metadata['curricular_number'].' ' : '' }}{{ $topic->title }}</strong><div class="curriculum-row-meta"><label class="learning-actions"><input type="hidden" form="package-taught-form" name="topic_ids[]" value="{{ $topic->id }}"><input form="package-taught-form" class="package-child-check" data-parent="{{ $theme->id }}" type="checkbox" name="taught_topic_ids[]" value="{{ $topic->id }}" @checked($topic->taught_at !== null)> Lecionado</label><span>{{ $topic->completed_study_sessions_count > 0 ? 'Estudado' : 'Estudo por realizar' }}</span><span>Conhecimento: {{ ['no_evidence'=>'sem evidência','insufficient_evidence'=>'evidência insuficiente','fragile'=>'frágil','developing'=>'em desenvolvimento','competent'=>'competente','strong'=>'forte'][$topic->mastery?->status ?? 'no_evidence'] ?? 'sem evidência' }}</span></div></div>
 <div class="learning-actions"><a class="button ghost" href="{{ route('study.create', ['course_id'=>$course->id,'topic_id'=>$topic->id,'now'=>1], false) }}">Estudar</a><a class="button" href="{{ route('practice.external.index', ['course'=>$course->id,'topic_id'=>$topic->id], false) }}">Treinar</a></div></div>
 @endforeach</details>@endforeach
 <div class="learning-actions"><button class="button primary" type="submit" form="package-taught-form">Guardar matéria lecionada</button><span class="muted-text" id="coverage-feedback" role="status">A marcação não altera o domínio.</span></div>
