@@ -36,6 +36,23 @@
 @if(count($knowledge['conceptual_errors']))<p><strong>Erros conceptuais:</strong> {{ implode(' · ', $knowledge['conceptual_errors']) }}</p>@endif
 @if(count($knowledge['recommendations']))<p><strong>Recomendações do último relatório:</strong> {{ implode(' · ', $knowledge['recommendations']) }}</p>@endif
 </section>
+@if($knowledge['report_count'] > 0)
+<section class="card" aria-label="Relatórios de conhecimento importados">
+<div class="card-head"><h3>Estados de conhecimento importados</h3><a href="{{ route('practice.external.index',$course,false) }}#import-history">Consultar histórico completo →</a></div>
+<p><strong>{{ $knowledge['report_count'] }}</strong> relatório(s) guardado(s) nesta UC · <strong>{{ $knowledge['imported_topics_count'] }}</strong> referência(s) a subtemas nos últimos relatórios.</p>
+@if($knowledge['assessed'] === 0)
+<p class="muted-text">Existe histórico importado, mas nenhum subtema tem ainda um nível de conhecimento sustentado nos indicadores atuais. Os relatórios anteriores estão preservados para consulta; não são convertidos automaticamente em domínio demonstrado sem evidência compatível.</p>
+@endif
+@foreach(array_slice($knowledge['imported_topics'],0,8) as $item)
+@if(is_array($item))
+<div class="learning-line"><strong>{{ $item['number'] ?? 'Subtema' }}</strong>
+<p>{{ $item['feedback'] ?? ($item['notes'] ?? 'Avaliação registada no histórico') }}</p>
+@if(isset($item['score_percent']) && is_numeric($item['score_percent']))<p class="muted-text">{{ number_format((float)$item['score_percent'],0) }}% indicado no relatório original</p>@endif
+</div>
+@endif
+@endforeach
+</section>
+@endif
 <main class="learning-columns">
 <section class="card" id="package-curriculum"><div id="course-topics"></div><div class="card-head"><h3>Programa curricular</h3><span>{{ $curriculum->whereNull('parent_id')->count() }} temas · {{ $leaves->count() }} subtemas</span></div>
 <p class="muted-text">Abre um tema para consultar os subtemas, estudar ou treinar. Assinala a matéria dada nas aulas e guarda as alterações.</p>
