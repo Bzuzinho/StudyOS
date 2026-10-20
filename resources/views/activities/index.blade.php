@@ -9,18 +9,7 @@
 </head>
 <body>
 <div class="shell">
-    <nav class="nav">
-        <a class="brand" href="/" aria-label="StudyOS — Painel académico"><img src="/brand/studyos-mark.svg" width="36" height="36" alt=""><span>StudyOS</span></a>
-        <div class="nav-links">
-            <a href="/">Dashboard</a>
-            <a href="/calendar">Calendário</a>
-            <a href="/courses">UCs</a>
-            <a class="active" href="/activities">Atividades</a>
-            <a href="/materials">Materiais</a>
-            <a href="/study">Estudo</a>
-            <a href="/practice">Prática</a>
-        </div>
-    </nav>
+    @include('partials.learning-nav',['active'=>'/activities'])
 
     <header class="calendar-header">
         <div>

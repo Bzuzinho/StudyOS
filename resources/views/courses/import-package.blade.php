@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Importar pacote · StudyOS</title>@include('partials.app-identity')<link rel="stylesheet" href="/css/app.css"></head>
 <body><div class="shell narrow-shell">
-<nav class="nav"><a class="brand" href="/"><img src="/brand/studyos-mark.svg" width="36" height="36" alt=""><span>StudyOS</span></a><div class="nav-links"><a href="/">Dashboard</a><a href="/calendar">Calendário</a><a class="active" href="/courses">UCs</a><a href="/materials">Materiais</a><a href="/study">Estudo</a><a href="/practice">Prática</a></div></nav>
+@include('partials.learning-nav',['active'=>'/courses'])
 <div class="breadcrumb"><a href="{{ route('courses.show', $course, false) }}">← {{ $course->name }}</a></div>
 <header class="form-header"><p class="eyebrow">Material pedagógico estruturado</p><h1>Importar pacote da UC</h1><p>Importa de uma só vez a árvore curricular, os manuais de estudo de cada subtema e os exercícios com respostas. Os ficheiros ficam associados automaticamente pelos códigos do manifesto.</p></header>
 @if($errors->any())<div class="alert error" role="alert"><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
