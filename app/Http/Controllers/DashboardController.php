@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assessment;
+use App\Services\Learning\KnowledgeDashboardService;
 use App\Models\ClassOccurrence;
 use App\Models\Course;
 use App\Models\Exercise;
@@ -23,7 +24,7 @@ class DashboardController
 {
     public function __construct(private readonly CalendarEventPresenter $presenter) {}
 
-    public function __invoke(): View
+    public function __invoke(KnowledgeDashboardService $knowledge): View
     {
         $now = now()->timezone(config('app.timezone', 'Europe/Lisbon'));
         $dayStart = $now->copy()->startOfDay()->utc();
@@ -35,6 +36,7 @@ class DashboardController
             ->get();
 
         return view('dashboard', [
+            'knowledge' => $knowledge->overview(),
             'courseCount' => Course::query()->where('status', 'active')->count(),
             'plannedCourseCount' => Course::query()->where('status', 'planned')->count(),
             'activeCourses' => Course::query()
