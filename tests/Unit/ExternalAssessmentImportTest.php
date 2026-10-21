@@ -128,6 +128,60 @@ class ExternalAssessmentImportTest extends TestCase
         $this->assertSame(0, DB::table('external_assessments')->count());
     }
 
+    public function test_backfill_recovers_v1_history_without_overwriting_official_assessments(): void
+    {
+        [$course, $topic] = $this->courseWithTopic();
+        DB::table('external_assessments')->insert([
+            'course_id' => $course->id,
+            'external_id' => 'STUDYOS-HISTORICAL-V1',
+            'assessed_on' => '2026-10-16',
+            'score_20' => 16,
+            'report' => json_encode([
+                'schema' => 'studyos.external-assessment.v1',
+                'topics' => [['number' => '1.1', 'score_percent' => 80,
+                    'feedback' => 'Conceito compreendido; rever exemplos.']],
+            ]),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->assertSame(0, DB::table('topic_masteries')->count());
+        $migration = require base_path('database/migrations/2026_10_21_150000_backfill_historical_external_mastery.php');
+        $migration->up();
+
+        $mastery = DB::table('topic_masteries')->where('topic_id', $topic->id)->first();
+        $this->assertNotNull($mastery);
+        $this->assertSame('insufficient_evidence', $mastery->status);
+        $this->assertEquals(80, (float) $mastery->score_percent);
+        $this->assertSame(0, DB::table('assessments')->count());
+        $this->assertSame(1, DB::table('external_assessments')->count());
+
+        // Safe to run again: no duplicates and no reclassification of valid rows.
+        $migration->up();
+        $this->assertSame(1, DB::table('topic_masteries')->count());
+        $this->get('/courses/'.$course->id)->assertOk()->assertSee('80% estimados');
+    }
+
+    public function test_backfill_ignores_unmatched_numbers_in_legacy_reports(): void
+    {
+        [$course] = $this->courseWithTopic();
+        DB::table('external_assessments')->insert([
+            'course_id' => $course->id,
+            'external_id' => 'STUDYOS-HISTORICAL-OTHER',
+            'assessed_on' => '2026-10-16',
+            'score_20' => null,
+            'report' => json_encode([
+                'schema' => 'studyos.external-assessment.v1',
+                'topics' => [['number' => '9.9', 'score_percent' => 85, 'feedback' => 'Outro programa']],
+            ]),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $migration = require base_path('database/migrations/2026_10_21_150000_backfill_historical_external_mastery.php');
+        $migration->up();
+        $this->assertSame(0, DB::table('topic_masteries')->count());
+        $this->assertSame(1, DB::table('external_assessments')->count());
+    }
+
     private function courseWithTopic(): array
     {
         $course = Course::create(['academic_code' => '15436', 'name' => 'Métodos Quantitativos', 'status' => 'active']);
